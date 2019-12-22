@@ -1,0 +1,22 @@
+language: cpp
+dist: trusty
+
+#limit to git depth to 1 because don't use any git command in this script
+git:
+  depth: 1
+  
+before_install:
+#g++ 7
+- echo 'Installing G++ 7'
+- sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+- sudo apt-get update -qq
+- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-7; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
+
+script:
+# SugarConvDsk
+- echo 'Generating makefile'
+- cd zlib
+- cmake .
+- make all

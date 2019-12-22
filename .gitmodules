@@ -1,0 +1,3 @@
+[submodule "CPCCore"]
+	path = CPCCore
+	url = https://github.com/Tom1975/CPCCore.git
