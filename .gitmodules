@@ -1,3 +1,9 @@
 [submodule "CPCCore"]
 	path = CPCCore
 	url = https://github.com/Tom1975/CPCCore.git
+[submodule "imgui-sfml"]
+	path = imgui-sfml
+	url = https://github.com/eliasdaler/imgui-sfml.git
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/ocornut/imgui.git
