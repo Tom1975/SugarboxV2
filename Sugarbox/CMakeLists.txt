@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../wxWidgets/include)
+
+
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -38,7 +41,7 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox zlibstatic CPCCoreEmu sfml-graphics ${LIBZA})
+target_link_libraries(Sugarbox zlibstatic CPCCoreEmu sfml-graphics ${LIBZA} )
 
 
 # CPACK
