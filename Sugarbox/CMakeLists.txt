@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../wxWidgets/include)
-
+include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include/msvc/wx)
+include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include)
+include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/lib/vc_x64_lib)
 
 set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -15,6 +16,7 @@ set(CompilerFlags
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
 
+
 file(GLOB HEADERS
     *.h
 )
@@ -23,6 +25,7 @@ file(GLOB SRCS
 )
 
 IF(MSVC)
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
    if (USE_SHARED_CRT)
    else()
       foreach(CompilerFlag ${CompilerFlags})
@@ -33,15 +36,15 @@ IF(MSVC)
 ENDIF(MSVC)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z)
-   set (LIBZA libz.a stdc++fs)
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
+   set ( LIBZA libz.a stdc++fs )
 endif()
 
 
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox zlibstatic CPCCoreEmu sfml-graphics ${LIBZA} )
+target_link_libraries(Sugarbox zlibstatic CPCCoreEmu sfml-graphics sfml-window ${LIBZA} net core base)
 
 
 # CPACK

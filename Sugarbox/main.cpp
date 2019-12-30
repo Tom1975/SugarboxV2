@@ -2,10 +2,13 @@
 
 // wxWidgets "Hello World" Program
 // For compilers that support precompilation, includes "wx/wx.h".
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
+
 #include <wx/wx.h>
-#endif
+//#include <wx/app.h>
+//#include <wx/frame.h>
+//#include <wx/menu.h>
+//#include <wx/msgdlg.h>
+
 class MyApp : public wxApp
 {
 public:
