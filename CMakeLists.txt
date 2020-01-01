@@ -19,8 +19,6 @@ set(CMAKE_INSTALL_PREFIX libs)
 
 add_subdirectory(CPCCore)
 add_subdirectory(wxWidgets)
-
-
 add_subdirectory(Sugarbox)
 
 
