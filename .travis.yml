@@ -18,6 +18,7 @@ before_install:
 - sudo apt-get install udev
 - sudo apt-get install libudev-dev
 - sudo apt-get install build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libsndfile1-dev libopenal-dev
+- sudo apt-get install libgtk-3-dev checkinstall
 
 script:
 # SugarConvDsk
