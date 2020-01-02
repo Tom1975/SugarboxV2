@@ -4,7 +4,6 @@ project(Sugarbox)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include/msvc/wx)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/lib/vc_x64_lib)
-include_directories (${CPCCoreEmu})
 
 
 set(CompilerFlags
