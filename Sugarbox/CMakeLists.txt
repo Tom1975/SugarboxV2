@@ -5,7 +5,6 @@ include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include/msvc/wx)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include)
 include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/lib/vc_x64_lib)
 
-
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG

@@ -15,9 +15,9 @@ before_install:
 - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi
 - if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50
-- sudo apt-get install udev
-- sudo apt-get install libudev-dev libgtk2.0-dev
-- sudo apt-get install libgtk-3-dev checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libsdl1.2-dev libgstreamer-plugins-base0.10-dev libcairo2-dev
+- sudo apt-get install udev libopenal-dev
+- sudo apt-get install libudev-dev 
+- sudo apt-get install libgtk2.0-dev libgtk-3-dev checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libsdl1.2-dev libgstreamer-plugins-base0.10-dev libcairo2-dev
 - sudo apt-get install libgstreamermm-1.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libwebkit2gtk-4.0-dev libwebkitgtk-3.0-dev libwebkitgtk-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev
 
 script:

@@ -5,6 +5,8 @@
 #include "Motherboard.h"
 #include "KeyboardHandler.h"
 #include "Snapshot.h"
+#include "Screen.h"
+#include "ConfigurationManager.h"
 
 class SugarApp : public wxApp
 {
@@ -17,5 +19,8 @@ public:
 protected:
    KeyboardHandler keyboard_handler_;
    CSnapshot sna_handler_;
+
+   ConfigurationManager config_manager_;
+   IDisplay* display_;
    Motherboard* motherboard_;
 };
