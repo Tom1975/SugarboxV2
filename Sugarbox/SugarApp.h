@@ -4,6 +4,7 @@
 
 #include "Motherboard.h"
 #include "KeyboardHandler.h"
+#include "Snapshot.h"
 
 class SugarApp : public wxApp
 {
