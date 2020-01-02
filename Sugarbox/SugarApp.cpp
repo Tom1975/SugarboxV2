@@ -25,7 +25,7 @@ bool SugarApp::OnInit()
    frame->Show(true);
 
    // Create emulation
-   motherboard_->InitMotherbard(nullptr, &sna_handler_, );
+   //motherboard_->InitMotherbard(nullptr, &sna_handler_, );
 
    return true;
 }
