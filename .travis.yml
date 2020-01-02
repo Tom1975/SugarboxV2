@@ -18,10 +18,10 @@ before_install:
 - sudo apt-get install udev
 - sudo apt-get install libudev-dev
 - sudo apt-get install build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libsndfile1-dev libopenal-dev
-- sudo apt-get install libgtk-3-dev checkinstall
+- sudo apt-get install libgtk-3-dev checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libsdl1.2-dev libgstreamer-plugins-base0.10-dev libcairo2-dev
 
 script:
 # SugarConvDsk
 - echo 'Generating makefile'
-- cmake .
+- cmake . 
 - make all

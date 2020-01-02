@@ -3,6 +3,7 @@
 #include <wx/wx.h>
 
 #include "Motherboard.h"
+#include "KeyboardHandler.h"
 
 class SugarApp : public wxApp
 {
@@ -13,5 +14,7 @@ public:
 
 
 protected:
+   KeyboardHandler keyboard_handler_;
+   CSnapshot sna_handler_;
    Motherboard* motherboard_;
 };
