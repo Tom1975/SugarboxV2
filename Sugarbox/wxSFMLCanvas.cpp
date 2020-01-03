@@ -1,5 +1,10 @@
 #include "wxSFMLCanvas.h"
 
+#ifdef __WXGTK__
+#include <gdk/gdkx.h>
+#include <gtk/gtk.h>
+#endif
+
 wxBEGIN_EVENT_TABLE(wxSfmlCanvas, wxControl)
 EVT_IDLE(wxSfmlCanvas::onIdle)
 EVT_PAINT(wxSfmlCanvas::onPaint)
@@ -45,14 +50,15 @@ void wxSfmlCanvas::onEraseBackground(wxEraseEvent& event)
 
 void wxSfmlCanvas::createRenderWindow()
 {
+ 
 #ifdef __WXGTK__
+   // GTK implementation requires to go deeper to find the
+   // low-level X11 identifier of the widget
    gtk_widget_realize(m_wxwindow);
    gtk_widget_set_double_buffered(m_wxwindow, false);
-
-   GdkWindow* gdkWindow = gtk_widget_get_window((GtkWidget*)GetHandle());
-   XFlush(GDK_WINDOW_XDISPLAY(gdkWindow));
-
-   sf::RenderWindow::create(GDK_WINDOW_XWINDOW(gdkWindow));
+   GdkWindow* Win = gtk_widget_get_window((GtkWidget*)GetHandle());
+   XFlush(GDK_WINDOW_XDISPLAY(Win));
+   sf::RenderWindow::create(GDK_WINDOW_XWINDOW(Win));
 #else
    sf::RenderWindow::create(GetHandle());
 #endif
