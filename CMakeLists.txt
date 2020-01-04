@@ -8,6 +8,7 @@ set (USE_SFML TRUE)
 # Static wxWidget runtime
 set (wxBUILD_USE_STATIC_RUNTIME TRUE)
 set (wxUSE_CAIRO FALSE)
+set (wxUSE_MEDIACTRL FALSE)
 
 if (MSVC)
    MESSAGE("Force Unicode")

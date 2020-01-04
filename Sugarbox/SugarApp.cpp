@@ -5,7 +5,8 @@ static const int kDefaultWindowWidth = 1280;
 static const int kDefaultWindowHeight = 720;
 
 SugarApp::SugarApp() :  wxApp  (), 
-                        sna_handler_(nullptr)
+   sna_handler_(nullptr),
+   display_(nullptr)
 {
 
    motherboard_ = new Motherboard (nullptr, &keyboard_handler_);
