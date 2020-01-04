@@ -1,6 +1,6 @@
 #pragma once
 
-#include "wxSfmlCanvas.h"
+#include "wxSFMLCanvas.h"
 
 class Canvas : public wxSfmlCanvas
 {

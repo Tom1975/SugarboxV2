@@ -16,7 +16,6 @@ set(CompilerFlags
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
 
-
 file(GLOB HEADERS
     *.h
 )
