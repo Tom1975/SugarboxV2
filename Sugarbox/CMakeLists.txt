@@ -16,25 +16,14 @@ set(CompilerFlags
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../imgui-sfml/)
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../imgui/)
-
 file(GLOB HEADERS
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui-sfml/imconfig-SFML.h
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui-sfml/imgui-SFML.h
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui-sfml/imgui-SFML_export.h
     *.h
 )
 
-set ( SRCS
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui/imgui.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui/imgui_widgets.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui/imgui_draw.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/../imgui-sfml/imgui-SFML.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+file(GLOB SRCS
+    *.cpp
 )
 
-MESSAGE( "SRCS = ${SRCS}")
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
    if (USE_SHARED_CRT)
