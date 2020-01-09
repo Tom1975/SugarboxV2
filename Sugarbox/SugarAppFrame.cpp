@@ -15,6 +15,7 @@ SugarAppFrame::SugarAppFrame(const wxString& title, const wxPoint& pos, const wx
          wxSize(kDefaultWindowWidth - (2 * kCanvasMargin), kDefaultWindowHeight - (2 * kCanvasMargin))
       ))
 {
+   display_.Init(_canvas.get());
    _panel->SetBackgroundColour(*wxCYAN);
 
    ////////////////////////////////////////////////////////////////////////////////

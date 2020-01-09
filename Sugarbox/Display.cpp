@@ -58,10 +58,9 @@ void CDisplay::Show ( bool bShow )
       window_->setVisible(bShow);
 }
 
-void CDisplay::Init (bool show)
+void CDisplay::Init (sf::RenderWindow* window)
 {
-   if (show)
-      window_ = new sf::RenderWindow(sf::VideoMode(680, 500), "My window");
+   window_ = window;
    framebuffer_ = new sf::Texture();
    renderTexture_ = new sf::RenderTexture();
    framebufferArray_ = new int[REAL_DISP_X * REAL_DISP_Y ];

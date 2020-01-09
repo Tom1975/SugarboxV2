@@ -17,7 +17,9 @@ public :
    CDisplay ();
    virtual ~CDisplay ();
 
-   // Screenshot detection
+   void Init(sf::RenderWindow* window);
+   void Show(bool bShow);
+
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
    virtual void Display() {};
@@ -46,8 +48,6 @@ public :
    virtual bool GetBlackScreenInterval () { return false ;};
    virtual void SetBlackScreenInterval (bool bBS) { };
 
-   void Init (bool show);
-   void Show ( bool bShow );
    virtual void StopMessaging  ( bool bStop ){stop_=bStop;};
 
    virtual void SetSize (SizeEnum size){};

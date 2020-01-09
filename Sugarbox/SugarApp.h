@@ -15,6 +15,7 @@ public:
    virtual ~SugarApp();
    virtual bool OnInit();
 
+   void EmulationLoop();
 
 protected:
    KeyboardHandler keyboard_handler_;
@@ -23,4 +24,7 @@ protected:
    ConfigurationManager config_manager_;
    IDisplay* display_;
    Motherboard* motherboard_;
+
+   std::thread* worker_thread_;
+   std::atomic_bool finished_;
 };
