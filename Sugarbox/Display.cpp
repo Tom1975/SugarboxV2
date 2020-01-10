@@ -13,16 +13,15 @@
 #define DISP_WINDOW_Y   600
 
 
-CDisplay::CDisplay () : window_(nullptr), renderTexture_(nullptr), framebuffer_(nullptr), framebufferArray_(nullptr)
+CDisplay::CDisplay () : window_(nullptr), framebuffer_(nullptr), current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
+   memset(index_to_display_, 0, sizeof index_to_display_);
 }
 
 CDisplay::~CDisplay()
 {
-   delete renderTexture_;
    delete framebuffer_;
-   delete window_;
-   delete[]framebufferArray_;
+   delete []framebufferArray_;
 
 }
 
@@ -43,17 +42,16 @@ int CDisplay::GetHeight ()
 
 int* CDisplay::GetVideoBuffer (int y )
 {
-   return &framebufferArray_[ REAL_DISP_X * y*2];
+   return &((framebufferArray_[current_texture_])[ REAL_DISP_X * y*2]);
 }
 
 void CDisplay::Reset () 
 {
-   memset( framebufferArray_ , 0, REAL_DISP_X * REAL_DISP_Y*4);
+   memset( framebufferArray_[current_texture_], 0, REAL_DISP_X * REAL_DISP_Y*4);
 }
 
 void CDisplay::Show ( bool bShow )
 {
-   m_bShow = bShow;
    if (window_)
       window_->setVisible(bShow);
 }
@@ -61,12 +59,16 @@ void CDisplay::Show ( bool bShow )
 void CDisplay::Init (sf::RenderWindow* window)
 {
    window_ = window;
+
    framebuffer_ = new sf::Texture();
-   renderTexture_ = new sf::RenderTexture();
-   framebufferArray_ = new int[REAL_DISP_X * REAL_DISP_Y ];
    if (!framebuffer_->create(REAL_DISP_X, REAL_DISP_Y))
    {
       // error...
+   }
+
+   for (int i = 0; i < NB_FRAMES; i++)
+   {
+      framebufferArray_[i] = new int[REAL_DISP_X * REAL_DISP_Y];
    }
 
    Reset();
@@ -84,22 +86,35 @@ void CDisplay::StartSync()
 
 void CDisplay::VSync (bool bDbg)
 {
-   framebuffer_->update((const sf::Uint8*)framebufferArray_);
-
-   sf::Sprite sprite;
-   sprite.setTexture(*framebuffer_);
-   sprite.setTextureRect(sf::IntRect(143, 47, 680, 500));
-
-   window_->draw(sprite);
-   window_->display();
-
-   sf::Event event;
-   while (window_->pollEvent(event))
+   // Add a frame to display, if display buffer is not full !
+   if (number_of_frame_to_display_ < NB_FRAMES)
    {
+      index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
+      current_texture_ = (current_texture_ + 1) % NB_FRAMES;
+      number_of_frame_to_display_++;
    }
+}
+
+void CDisplay::Display()
+{
+   if (number_of_frame_to_display_ > 0)
+   {
+      // Get next available texture
+      framebuffer_->update((const sf::Uint8*)framebufferArray_[index_to_display_[current_index_of_index_to_display_]]);
+
+      sf::Sprite sprite;
+      sprite.setTexture(*framebuffer_);
+      sprite.setTextureRect(sf::IntRect(143, 47, 680, 500));
+
+      window_->draw(sprite);
+      window_->display();
+
+      current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
+      number_of_frame_to_display_--;
+   }
+
 }
 
 void CDisplay::WaitVbl ()
 {
 }
-

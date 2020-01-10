@@ -10,6 +10,7 @@
 // SFML
 #include <SFML/Graphics.hpp>
 
+#define NB_FRAMES 3
 // Display
 class CDisplay : public IDisplay
 {
@@ -19,10 +20,10 @@ public :
 
    void Init(sf::RenderWindow* window);
    void Show(bool bShow);
+   void Display();
 
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
-   virtual void Display() {};
    virtual bool AFrameIsReady  () {return true;};
    virtual void Config () {};
    virtual const char* GetInformations () { return "TCL GDI";};
@@ -48,8 +49,6 @@ public :
    virtual bool GetBlackScreenInterval () { return false ;};
    virtual void SetBlackScreenInterval (bool bBS) { };
 
-   virtual void StopMessaging  ( bool bStop ){stop_=bStop;};
-
    virtual void SetSize (SizeEnum size){};
    virtual SizeEnum  GetSize () { return S_STANDARD; };
 
@@ -63,18 +62,24 @@ public :
    virtual int GetDnDPart () { return 0;};
 
 protected:
-   bool m_bShow;
-   bool stop_; 
+
    // Displayed window : 
    int m_X, m_Y;
    int m_Width;
    int m_Height;
 
-   sf::RenderTexture *renderTexture_;
-   sf::Texture* framebuffer_;
-   sf::RenderWindow *window_;
+   // Window
+   sf::RenderWindow* window_;
 
-   sf::Image screenshot_texture_;
-   const unsigned char* screenshot_buffer_;
-   int* framebufferArray_;
+   // Textures
+   sf::Texture* framebuffer_;
+   int* framebufferArray_[NB_FRAMES];
+
+   // Textures to display indexes
+   int index_to_display_[NB_FRAMES];
+   int current_index_of_index_to_display_;
+   int number_of_frame_to_display_;
+
+   // Texture Indexes
+   int current_texture_;
 };

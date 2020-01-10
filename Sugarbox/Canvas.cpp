@@ -12,9 +12,14 @@ Canvas::Canvas(
 {
 }
 
+void Canvas::Init(CDisplay* display)
+{
+   display_ = display;
+}
+
 void Canvas::onUpdate()
 {
-   clear(sf::Color::Yellow);
+   display_->Display();
 }
 
 void Canvas::onResize(wxSizeEvent& event)

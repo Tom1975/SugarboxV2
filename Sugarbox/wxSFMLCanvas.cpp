@@ -28,6 +28,8 @@ wxSfmlCanvas::~wxSfmlCanvas()
 
 void wxSfmlCanvas::onUpdate()
 {
+   // Display emulation
+
 }
 
 void wxSfmlCanvas::onIdle(wxIdleEvent& event)
