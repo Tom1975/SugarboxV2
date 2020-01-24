@@ -13,21 +13,15 @@ Emulation::~Emulation()
 
 void Emulation::Init(KeyboardHandler* keyboard_handler, IDisplay* display)
 {
-   motherboard_ = new Motherboard(nullptr, keyboard_handler);
+   emulator_engine_ = new EmulatorEngine();
 
-   // Create emulation
-   motherboard_->SetPlus(true);
-   motherboard_->InitMotherbard(nullptr, &sna_handler_, display, nullptr, nullptr, &config_manager_);
-   motherboard_->OnOff();
-   motherboard_->GetMem()->InitMemory();
-   motherboard_->GetMem()->SetRam(1);
-   motherboard_->GetCRTC()->DefinirTypeCRTC(CRTC::AMS40226);
-   motherboard_->GetVGA()->SetPAL(true);
-   motherboard_->GetPSG()->Reset();
-   motherboard_->GetSig()->Reset();
-   motherboard_->InitStartOptimizedPlus();
-   motherboard_->OnOff();
-
+   emulator_engine_->SetConfigurationManager(&config_manager_);
+   emulator_engine_->SetDefaultConfiguration();
+   emulator_engine_->SetSettings(emulator_settings_);
+   emulator_engine_->Init(display, nullptr);
+   emulator_engine_->GetMem()->Initialisation();
+   // Update computer
+   emulator_engine_->Reinit();
 
 }
 
@@ -35,7 +29,7 @@ void Emulation::EmulationLoop()
 {
    while (true)
    {
-      motherboard_->StartOptimizedPlus<true, true, true>(40000);
+      emulator_engine_->RunTimeSlice(true);
 
    }
 }

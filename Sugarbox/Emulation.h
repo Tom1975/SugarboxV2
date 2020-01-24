@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
@@ -16,8 +17,10 @@ public :
 
 protected:
    Motherboard* motherboard_;
+
+   EmulatorEngine* emulator_engine_;
    CSnapshot sna_handler_;
 
    ConfigurationManager config_manager_;
-
+   EmulatorSettings emulator_settings_;
 };
