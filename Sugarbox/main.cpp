@@ -2,9 +2,9 @@
    #pragma comment(linker, " /ENTRY:mainCRTStartup")
 #endif
 
-#include <SFML\Graphics.hpp>
 #include "Emulation.h"
 #include "Display.h"
+#include "SFML/Graphics.hpp"
 
 
 void RunLoop(Emulation* emulator)
