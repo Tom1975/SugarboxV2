@@ -42,7 +42,7 @@ int CDisplay::GetHeight ()
 
 int* CDisplay::GetVideoBuffer (int y )
 {
-   return &((framebufferArray_[current_texture_])[ REAL_DISP_X * y*2]);
+   return &((framebufferArray_[current_texture_])[ REAL_DISP_X * y]);
 }
 
 void CDisplay::Reset () 
@@ -70,6 +70,17 @@ void CDisplay::Init (sf::RenderWindow* window)
    {
       framebufferArray_[i] = new int[REAL_DISP_X * REAL_DISP_Y];
    }
+
+   // Create shaders
+   if (standard_display_shader_.loadFromFile("defaut.frag", sf::Shader::Fragment)) 
+   {
+      if (standard_display_shader_.isAvailable())
+      {
+         standard_display_shader_.setUniform("texture", sf::Shader::CurrentTexture);
+      }
+   }
+
+
 
    Reset();
 
@@ -104,9 +115,11 @@ void CDisplay::Display()
 
       sf::Sprite sprite;
       sprite.setTexture(*framebuffer_);
-      sprite.setTextureRect(sf::IntRect(143, 47, 680, 500));
+      //sprite.setTextureRect(sf::IntRect(143, 23, 680, 250));
+      //sprite.setTextureRect(sf::IntRect(143, 47, 680, 500));
+      sprite.setTextureRect(sf::IntRect(0, 0, 1024, 1024));
 
-      window_->draw(sprite);
+      window_->draw(sprite, &standard_display_shader_);
       window_->display();
 
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;

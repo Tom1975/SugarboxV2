@@ -82,4 +82,7 @@ protected:
 
    // Texture Indexes
    int current_texture_;
+
+   // Shader
+   sf::Shader standard_display_shader_;
 };

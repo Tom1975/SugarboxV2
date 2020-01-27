@@ -1,6 +1,6 @@
 #include "Canvas.h"
 
-static const int kCanvasMargin = 50;
+static const int kCanvasMargin = 0;
 
 Canvas::Canvas(
    wxWindow* parent,

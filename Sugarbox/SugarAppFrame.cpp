@@ -1,9 +1,8 @@
 #include "SugarAppFrame.h"
 
-static const int kDefaultWindowWidth = 1280;
-static const int kDefaultWindowHeight = 720;
-static const int kCanvasMargin = 50;
-
+static const int kDefaultWindowWidth = 1024;
+static const int kDefaultWindowHeight = 500;
+static const int kCanvasMargin = 0;
 
 SugarAppFrame::SugarAppFrame(const wxString& title, const wxPoint& pos, const wxSize& size) :
       wxFrame(NULL, wxID_ANY, title, pos, size),
@@ -13,11 +12,13 @@ SugarAppFrame::SugarAppFrame(const wxString& title, const wxPoint& pos, const wx
          wxID_ANY,
          wxPoint(kCanvasMargin, kCanvasMargin),
          wxSize(kDefaultWindowWidth - (2 * kCanvasMargin), kDefaultWindowHeight - (2 * kCanvasMargin))
-      ))
+      )),
+      key_handler_(nullptr)
 {
    display_.Init(_canvas.get());
    _canvas->Init(&display_);
    _panel->SetBackgroundColour(*wxCYAN);
+
 
    ////////////////////////////////////////////////////////////////////////////////
    // Probably due to some RTTI, IDE is getting confused by this dynamic call
@@ -30,9 +31,32 @@ SugarAppFrame::SugarAppFrame(const wxString& title, const wxPoint& pos, const wx
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wint-conversion"
    Bind(wxEVT_SIZE, &SugarAppFrame::onResize, this);
+   _canvas->Bind(wxEVT_KEY_DOWN, &SugarAppFrame::onKeyDown, this);
+   _canvas->Bind(wxEVT_KEY_UP, &SugarAppFrame::onKeyUp, this);
 #pragma clang diagnostic pop
    ////////////////////////////////////////////////////////////////////////////////
 
+}
+
+void SugarAppFrame::SetKeyboardHandler(IKeyboard* key_handler)
+{
+   key_handler_ = key_handler;
+}
+
+void SugarAppFrame::onKeyUp(wxKeyEvent& event)
+{
+   key_handler_->SendScanCode(event.GetKeyCode(), false);
+   //pMainWindow->emulator_settings_.GetJoystickSettings()->joystick_1_.KeyDown((lParam >> 16) & 0x1FF);
+
+   event.Skip();
+}
+
+void SugarAppFrame::onKeyDown(wxKeyEvent& event)
+{
+   key_handler_->SendScanCode( event.GetKeyCode(), true);
+   //pMainWindow->emulator_settings_.GetJoystickSettings()->joystick_1_.KeyDown((lParam >> 16) & 0x1FF);
+
+   event.Skip();
 }
 
 void SugarAppFrame ::onResize(wxSizeEvent& event)

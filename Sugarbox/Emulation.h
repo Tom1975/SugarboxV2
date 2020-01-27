@@ -14,6 +14,8 @@ public :
    virtual void Init(KeyboardHandler * keyboard_handler, IDisplay* display);
    virtual void EmulationLoop();
 
+   IKeyboard* GetKeyboardHandler();
+
 
 protected:
    Motherboard* motherboard_;

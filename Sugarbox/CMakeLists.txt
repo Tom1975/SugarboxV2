@@ -40,7 +40,6 @@ if(CMAKE_COMPILER_IS_GNUCC)
    set ( LIBZA libz.a stdc++fs )
 endif()
 
-
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main

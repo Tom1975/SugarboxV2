@@ -33,6 +33,8 @@ bool SugarApp::OnInit()
    frame->Show(true);
 
    emulation_engine_->Init(&keyboard_handler_, frame->GetDisplay());
+
+   frame->SetKeyboardHandler(emulation_engine_->GetKeyboardHandler());
    
    // Create dedicated thread for emulation
    worker_thread_ = new std::thread( ::EmulationLoop, emulation_engine_);
