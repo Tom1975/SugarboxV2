@@ -16,7 +16,7 @@ IKeyboard* Emulation::GetKeyboardHandler()
    return emulator_engine_->GetKeyboardHandler();
 }
 
-void Emulation::Init(KeyboardHandler* keyboard_handler, IDisplay* display)
+void Emulation::Init( IDisplay* display)
 {
    emulator_settings_.Init(&config_manager_, nullptr);
    emulator_settings_.Load("Sugarbox.ini");

@@ -11,7 +11,7 @@ public :
    Emulation();
    virtual ~Emulation();
 
-   virtual void Init(KeyboardHandler * keyboard_handler, IDisplay* display);
+   virtual void Init(IDisplay* display);
    virtual void EmulationLoop();
 
    IKeyboard* GetKeyboardHandler();

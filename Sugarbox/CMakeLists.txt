@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include/msvc/wx)
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include)
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/lib/vc_x64_lib)
-
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -43,7 +39,7 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window ${LIBZA} net core base)
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window ${LIBZA})
 
 # CPACK
 set(CPACK_GENERATOR WIX)
