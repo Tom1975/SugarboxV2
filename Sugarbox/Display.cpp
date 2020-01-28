@@ -15,7 +15,7 @@
 const std::string std_shader = "uniform sampler2D texture;"\
 "void main()"\
 "{"\
-"   vec2 coord = vec2((gl_TexCoord[0].x * 768.0 + 143.0) / 1024.0, (gl_TexCoord[0].y * 500 + 23) / 1024.0);"\
+"   vec2 coord = vec2((gl_TexCoord[0].x * 768.0 + 143.0) / 1024.0, (gl_TexCoord[0].y * 500.0 + 23.0) / 1024.0);"\
 "   vec4 pixel = texture2D(texture, coord);"\
 "   gl_FragColor = gl_Color * pixel;"\
 "}";
