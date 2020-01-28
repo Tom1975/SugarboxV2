@@ -12,6 +12,7 @@ public :
    virtual ~Emulation();
 
    virtual void Init(IDisplay* display);
+   virtual void Stop();
    virtual void EmulationLoop();
 
    IKeyboard* GetKeyboardHandler();
@@ -25,4 +26,7 @@ protected:
 
    ConfigurationManager config_manager_;
    EmulatorSettings emulator_settings_;
+
+   std::thread* worker_thread_;
+   bool running_thread_;
 };

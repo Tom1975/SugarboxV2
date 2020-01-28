@@ -6,12 +6,6 @@
 #include "Display.h"
 #include "SFML/Graphics.hpp"
 
-
-void RunLoop(Emulation* emulator)
-{
-   emulator->EmulationLoop();
-}
-
 int main()
 {
 
@@ -19,16 +13,11 @@ int main()
    CDisplay display;
 
    // Create the main window
-   sf::RenderWindow window(sf::VideoMode(800, 600), "Sugarbox v2");
+   sf::RenderWindow window(sf::VideoMode(640, 480), "Sugarbox v2");
 
    display.Init(&window);
    emulation.Init(&display);
 
-   std::thread* worker_thread = new std::thread(RunLoop, &emulation);
-
-
-
-   // Start the game loop
    while (window.isOpen())
    {
       // Process events
@@ -45,6 +34,9 @@ int main()
 
       display.Display();
    }
+
+   emulation.Stop();
+
    return EXIT_SUCCESS;
 }
 

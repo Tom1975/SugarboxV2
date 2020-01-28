@@ -2,7 +2,9 @@
 
 Emulation::Emulation() :
    motherboard_(nullptr), 
-   sna_handler_(nullptr)
+   sna_handler_(nullptr),
+   running_thread_(false),
+   worker_thread_(nullptr)
 {
 }
 
@@ -14,6 +16,11 @@ Emulation::~Emulation()
 IKeyboard* Emulation::GetKeyboardHandler()
 {
    return emulator_engine_->GetKeyboardHandler();
+}
+
+void RunLoop(Emulation* emulator)
+{
+   emulator->EmulationLoop();
 }
 
 void Emulation::Init( IDisplay* display)
@@ -34,13 +41,21 @@ void Emulation::Init( IDisplay* display)
    // Update computer
    emulator_engine_->Reinit();
 
+   running_thread_ = true;
+   worker_thread_ = new std::thread(RunLoop, this);
+}
+
+void Emulation::Stop()
+{
+   running_thread_ = false;
+   worker_thread_->join();
+   delete worker_thread_;
 }
 
 void Emulation::EmulationLoop()
 {
-   while (true)
+   while (running_thread_)
    {
       emulator_engine_->RunTimeSlice(true);
-
    }
 }

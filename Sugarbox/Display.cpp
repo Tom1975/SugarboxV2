@@ -12,6 +12,13 @@
 #define DISP_WINDOW_X   800
 #define DISP_WINDOW_Y   600
 
+const std::string std_shader = "uniform sampler2D texture;"\
+"void main()"\
+"{"\
+"   vec2 coord = vec2((gl_TexCoord[0].x * 768.0 + 143.0) / 1024.0, (gl_TexCoord[0].y * 500 + 23) / 1024.0);"\
+"   vec4 pixel = texture2D(texture, coord);"\
+"   gl_FragColor = gl_Color * pixel;"\
+"}";
 
 CDisplay::CDisplay () : window_(nullptr), framebuffer_(nullptr), current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
@@ -21,7 +28,10 @@ CDisplay::CDisplay () : window_(nullptr), framebuffer_(nullptr), current_texture
 CDisplay::~CDisplay()
 {
    delete framebuffer_;
-   delete []framebufferArray_;
+   for (int i = 0; i < NB_FRAMES; i++)
+   {
+      delete[]framebufferArray_[i];
+   }
 
 }
 
@@ -72,7 +82,7 @@ void CDisplay::Init (sf::RenderWindow* window)
    }
 
    // Create shaders
-   if (standard_display_shader_.loadFromFile("defaut.frag", sf::Shader::Fragment)) 
+   if (standard_display_shader_.loadFromMemory(std_shader, sf::Shader::Fragment))
    {
       if (standard_display_shader_.isAvailable())
       {
