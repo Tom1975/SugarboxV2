@@ -12,7 +12,8 @@
 #define DISP_WINDOW_X   800
 #define DISP_WINDOW_Y   600
 
-const std::string std_shader = "uniform sampler2D texture;"\
+const std::string std_shader = \
+"uniform sampler2D texture;"\
 "void main()"\
 "{"\
 "   vec2 coord = vec2((gl_TexCoord[0].x * 768.0 + 143.0) / 1024.0, (gl_TexCoord[0].y * 500.0 + 23.0) / 1024.0);"\
