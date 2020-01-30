@@ -1,4 +1,6 @@
 #include "SugarboxApp.h"
+#include "imgui.h"
+#include "imgui-SFML.h"
 
 SugarboxApp::SugarboxApp()
 {
@@ -19,12 +21,18 @@ int SugarboxApp::RunApp()
    emulation.Init(&display);
    IKeyboard* keyboard_handler = emulation.GetKeyboardHandler();
 
+   ImGui::SFML::Init(window);
+
+   sf::Clock deltaClock;
+
    while (window.isOpen())
    {
       // Process events
       sf::Event event;
       while (window.pollEvent(event))
       {
+         ImGui::SFML::ProcessEvent(event);
+
          // Close window: exit
          if (event.type == sf::Event::Closed)
             window.close();
@@ -39,11 +47,22 @@ int SugarboxApp::RunApp()
             keyboard_handler->SendScanCode(event.key.code, false);
          }
       }
+      ImGui::SFML::Update(window, deltaClock.restart());
+      ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration| ImGuiWindowFlags_NoMove);
+      display.Display(); 
+      ImGui::Image(display.GetTexture());
+      
+      ImGui::End();
 
-      display.Display();
+      
+      ImGui::SFML::Render(window);
+      window.display();
    }
 
    emulation.Stop();
+
+   window.close();
+   ImGui::SFML::Shutdown();
 
    return 0;
 }

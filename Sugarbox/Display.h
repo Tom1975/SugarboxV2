@@ -61,6 +61,10 @@ public :
    virtual void SetCurrentPart (int x, int y ){};
    virtual int GetDnDPart () { return 0;};
 
+   sf::Sprite* GetSprite() { return sprite_; }
+   const sf::Texture& GetTexture() {
+      return frame_->getTexture();
+   };
 protected:
 
    // Displayed window : 
@@ -72,8 +76,11 @@ protected:
    sf::RenderWindow* window_;
 
    // Textures
+   sf::RenderTexture *frame_;
    sf::Texture* framebuffer_;
    int* framebufferArray_[NB_FRAMES];
+
+   sf::Sprite* sprite_;
 
    // Textures to display indexes
    int index_to_display_[NB_FRAMES];

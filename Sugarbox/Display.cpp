@@ -21,14 +21,17 @@ const std::string std_shader = \
 "   gl_FragColor = gl_Color * pixel;"\
 "}";
 
-CDisplay::CDisplay () : window_(nullptr), framebuffer_(nullptr), current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
+CDisplay::CDisplay() : window_(nullptr), frame_(nullptr), framebuffer_(nullptr), current_texture_(0), sprite_(nullptr), 
+current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
    memset(index_to_display_, 0, sizeof index_to_display_);
 }
 
 CDisplay::~CDisplay()
 {
+   delete sprite_;
    delete framebuffer_;
+   delete frame_;
    for (int i = 0; i < NB_FRAMES; i++)
    {
       delete[]framebufferArray_[i];
@@ -72,10 +75,20 @@ void CDisplay::Init (sf::RenderWindow* window)
    window_ = window;
 
    framebuffer_ = new sf::Texture();
+   frame_ = new sf::RenderTexture();
+   sprite_ = new sf::Sprite();
    if (!framebuffer_->create(REAL_DISP_X, REAL_DISP_Y))
    {
       // error...
    }
+
+   if (!frame_->create(REAL_DISP_X, REAL_DISP_Y))
+   {
+      // error...
+   }
+
+   sprite_->setTexture(*framebuffer_);
+   sprite_->setTextureRect(sf::IntRect(0, 0, 1024, 1024));
 
    for (int i = 0; i < NB_FRAMES; i++)
    {
@@ -124,15 +137,9 @@ void CDisplay::Display()
       // Get next available texture
       framebuffer_->update((const sf::Uint8*)framebufferArray_[index_to_display_[current_index_of_index_to_display_]]);
 
-      sf::Sprite sprite;
-      sprite.setTexture(*framebuffer_);
-      //sprite.setTextureRect(sf::IntRect(143, 23, 680, 250));
-      //sprite.setTextureRect(sf::IntRect(143, 47, 680, 500));
-      sprite.setTextureRect(sf::IntRect(0, 0, 1024, 1024));
-
-      window_->draw(sprite, &standard_display_shader_);
-      window_->display();
-
+      frame_->draw(*sprite_, &standard_display_shader_);
+      frame_->display();
+      
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
    }

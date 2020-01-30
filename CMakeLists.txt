@@ -7,7 +7,18 @@ set (USE_SFML TRUE)
 
 set(CMAKE_INSTALL_PREFIX libs)
 
+
 add_subdirectory(CPCCore)
+
+set (IMGUI_SFML_FIND_SFML FALSE)
+set (SFML_DIR ${CMAKE_BINARY_DIR}/CPCCore/SFML)
+set (IMGUI_DIR ${CMAKE_SOURCE_DIR}/imgui)
+
+MESSAGE ("IMGUI_SFML_FIND_SFML  : ${IMGUI_SFML_FIND_SFML}")
+MESSAGE ("SFML_DIR  : ${SFML_DIR}")
+MESSAGE ("IMGUI_DIR  : ${IMGUI_DIR}")
+
+add_subdirectory(imgui-sfml)
 add_subdirectory(Sugarbox)
 
 
