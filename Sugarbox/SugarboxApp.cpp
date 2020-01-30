@@ -17,6 +17,7 @@ int SugarboxApp::RunApp()
 
    display.Init(&window);
    emulation.Init(&display);
+   IKeyboard* keyboard_handler = emulation.GetKeyboardHandler();
 
    while (window.isOpen())
    {
@@ -27,6 +28,16 @@ int SugarboxApp::RunApp()
          // Close window: exit
          if (event.type == sf::Event::Closed)
             window.close();
+
+         //Respond to key pressed events
+         if (event.type == sf::Event::EventType::KeyPressed) 
+         {
+            keyboard_handler->SendScanCode(event.key.code, true);
+         }
+         if (event.type == sf::Event::EventType::KeyReleased)
+         {
+            keyboard_handler->SendScanCode(event.key.code, false);
+         }
       }
 
       display.Display();
