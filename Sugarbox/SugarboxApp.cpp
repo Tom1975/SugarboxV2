@@ -2,9 +2,9 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
-SugarboxApp::SugarboxApp()
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%")
 {
-
+   
 }
 
 SugarboxApp::~SugarboxApp()
@@ -14,15 +14,21 @@ SugarboxApp::~SugarboxApp()
 
 int SugarboxApp::RunApp()
 {
-   // Create the main window
-   sf::RenderWindow window(sf::VideoMode(640, 480), "Sugarbox v2");
+   // Run debugger thread
 
+   // Create the main window
+   window_width_ = main_display_width + peripherals_width;
+   window_height_ = main_display_height + toolbar_height + status_height;
+   sf::RenderWindow window(sf::VideoMode(window_width_, window_height_), "Sugarbox v2");
    display.Init(&window);
    emulation.Init(&display);
    IKeyboard* keyboard_handler = emulation.GetKeyboardHandler();
 
    ImGui::SFML::Init(window);
 
+   ImGuiIO& io = ImGui::GetIO();
+
+   
    sf::Clock deltaClock;
 
    while (window.isOpen())
@@ -48,13 +54,19 @@ int SugarboxApp::RunApp()
          }
       }
       ImGui::SFML::Update(window, deltaClock.restart());
-      ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration| ImGuiWindowFlags_NoMove);
-      display.Display(); 
-      ImGui::Image(display.GetTexture());
-      
-      ImGui::End();
 
-      
+      // Toolbar window
+      DrawMenu();
+
+      // Main window
+      DrawMainWindow();
+
+      // Peripherals window
+      DrawPeripherals();
+
+      // Status window
+      DrawStatusBar();
+
       ImGui::SFML::Render(window);
       window.display();
    }
@@ -65,4 +77,69 @@ int SugarboxApp::RunApp()
    ImGui::SFML::Shutdown();
 
    return 0;
+}
+
+void SugarboxApp::DrawMainWindow()
+{
+   ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
+   ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
+   ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+   display.Display();
+   ImGui::Image(display.GetTexture());
+   ImGui::End();
+
+}
+
+void SugarboxApp::DrawMenu()
+{
+   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+   ImGui::SetNextWindowSize(ImVec2(window_width_, toolbar_height), ImGuiCond_Always);
+
+   ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+   if (ImGui::BeginMenuBar())
+   {
+      if (ImGui::BeginMenu("File"))
+      {
+         if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
+         if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
+         if (ImGui::MenuItem("Close", "Ctrl+W")) {}
+         ImGui::EndMenu();
+      }
+      ImGui::EndMenuBar();
+   }
+   ImGui::End();
+
+}
+
+void SugarboxApp::DrawPeripherals()
+{
+   ImGui::SetNextWindowPos(ImVec2(main_display_width, toolbar_height), ImGuiCond_Always);
+   ImGui::SetNextWindowSize(ImVec2(peripherals_width, main_display_height), ImGuiCond_Always);
+   ImGui::Begin("Peripherals", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+   // Disk drives
+   // Tape
+
+   ImGui::End();
+}
+
+void SugarboxApp::DrawStatusBar()
+{
+   ImGui::SetNextWindowPos(ImVec2(0, window_height_ - status_height), ImGuiCond_Always);
+   ImGui::SetNextWindowSize(ImVec2(window_width_, status_height), ImGuiCond_Always);
+   ImGui::Begin("Status bar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+
+   // Speed of emulation : only 1 every 50 frames
+   counter_++;
+
+   if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
+   {
+      // Update
+      
+      sprintf(str_speed_, "%i%%", emulation.GetSpeed());
+      counter_ = 0;
+   }
+   ImGui::Text(str_speed_);
+   // Sound control
+
+   ImGui::End();
 }

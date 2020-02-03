@@ -14,9 +14,12 @@
 
 const std::string std_shader = \
 "uniform sampler2D texture;"\
+"uniform vec2 origin;"\
+"uniform vec2 size_of_display;"\
+"uniform vec2 size_of_texture;"\
 "void main()"\
 "{"\
-"   vec2 coord = vec2((gl_TexCoord[0].x * 768.0 + 143.0) / 1024.0, (gl_TexCoord[0].y * 500.0 + 23.0) / 1024.0);"\
+"   vec2 coord = vec2((gl_TexCoord[0].x * size_of_display.x + origin.x) / size_of_texture.x, ((1.0-gl_TexCoord[0].y) * size_of_display.y + origin.y) / size_of_texture.y);"\
 "   vec4 pixel = texture2D(texture, coord);"\
 "   gl_FragColor = gl_Color * pixel;"\
 "}";
@@ -88,7 +91,8 @@ void CDisplay::Init (sf::RenderWindow* window)
    }
 
    sprite_->setTexture(*framebuffer_);
-   sprite_->setTextureRect(sf::IntRect(0, 0, 1024, 1024));
+   sprite_->setTextureRect(sf::IntRect(0, 0, REAL_DISP_X, REAL_DISP_Y));
+   sprite_->setPosition(0, 0);
 
    for (int i = 0; i < NB_FRAMES; i++)
    {
@@ -101,6 +105,9 @@ void CDisplay::Init (sf::RenderWindow* window)
       if (standard_display_shader_.isAvailable())
       {
          standard_display_shader_.setUniform("texture", sf::Shader::CurrentTexture);
+         standard_display_shader_.setParameter("origin", 143.f, 23.f);
+         standard_display_shader_.setParameter("size_of_display", 768.f , 576.f / 2);
+         standard_display_shader_.setParameter("size_of_texture", REAL_DISP_X, REAL_DISP_Y);
       }
    }
 

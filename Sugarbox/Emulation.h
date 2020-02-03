@@ -16,7 +16,7 @@ public :
    virtual void EmulationLoop();
 
    IKeyboard* GetKeyboardHandler();
-
+   unsigned int GetSpeed();
 
 protected:
    Motherboard* motherboard_;

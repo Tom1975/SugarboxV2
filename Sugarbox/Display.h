@@ -62,6 +62,7 @@ public :
    virtual int GetDnDPart () { return 0;};
 
    sf::Sprite* GetSprite() { return sprite_; }
+
    const sf::Texture& GetTexture() {
       return frame_->getTexture();
    };

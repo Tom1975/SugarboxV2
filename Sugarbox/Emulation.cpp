@@ -23,6 +23,11 @@ void RunLoop(Emulation* emulator)
    emulator->EmulationLoop();
 }
 
+unsigned int Emulation::GetSpeed()
+{
+   return emulator_engine_->GetSpeed();
+}
+
 void Emulation::Init( IDisplay* display)
 {
    emulator_settings_.Init(&config_manager_, nullptr);
