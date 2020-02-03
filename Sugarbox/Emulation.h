@@ -11,7 +11,7 @@ public :
    Emulation();
    virtual ~Emulation();
 
-   virtual void Init(IDisplay* display);
+   virtual void Init(IDisplay* display, ISound* sound);
    virtual void Stop();
    virtual void EmulationLoop();
 
@@ -19,6 +19,7 @@ public :
    unsigned int GetSpeed();
 
 protected:
+
    Motherboard* motherboard_;
 
    EmulatorEngine* emulator_engine_;

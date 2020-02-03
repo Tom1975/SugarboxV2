@@ -28,7 +28,7 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeed();
 }
 
-void Emulation::Init( IDisplay* display)
+void Emulation::Init( IDisplay* display, ISound* sound)
 {
    emulator_settings_.Init(&config_manager_, nullptr);
    emulator_settings_.Load("Sugarbox.ini");
@@ -36,6 +36,7 @@ void Emulation::Init( IDisplay* display)
    emulator_engine_ = new EmulatorEngine();
    emulator_engine_->SetConfigurationManager(&config_manager_);
    emulator_engine_->Init(display, nullptr);
+   emulator_engine_->InitSound(sound);
 
    emulator_engine_->SetDefaultConfiguration();
    emulator_engine_->SetSettings(emulator_settings_);

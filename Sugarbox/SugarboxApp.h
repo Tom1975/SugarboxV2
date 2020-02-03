@@ -2,6 +2,7 @@
 
 #include "Emulation.h"
 #include "Display.h"
+#include "SFMLSoundMixer.h"
 #include "SFML/Graphics.hpp"
 
 #include "Machine.h"
@@ -19,10 +20,15 @@ public:
    
 protected:
    // 
+   void RunMainLoop();
    void DrawMainWindow();
    void DrawMenu();
    void DrawPeripherals();
    void DrawStatusBar();
+
+   // Display gui
+   sf::RenderWindow* window_;
+   IKeyboard* keyboard_handler_;
 
    // Screen position
    const float main_display_width = 800;
@@ -34,8 +40,9 @@ protected:
    float window_width_;
    float window_height_;
 
-   Emulation emulation;
-   CDisplay display;
+   Emulation emulation_;
+   CDisplay display_;
+   SFMLSoundMixer sound_mixer_;
 
    // counters
    char str_speed_[16];
