@@ -68,4 +68,6 @@ void Emulation::EmulationLoop()
    {
       emulator_engine_->RunTimeSlice(true);
    }
+   emulator_engine_->Stop();
+
 }

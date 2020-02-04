@@ -108,9 +108,9 @@ void SugarboxApp::RunMainLoop()
       ImGui::SFML::Render(*window_);
       window_->display();
    }
-
+   
    emulation_.Stop();
-
+   sound_mixer_.stop();
    window_->close();
    ImGui::SFML::Shutdown();
 }
