@@ -39,10 +39,9 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window ${LIBZA} ImGui-SFML::ImGui-SFML)
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window sfml-audio ${LIBZA} ImGui-SFML::ImGui-SFML)
 
 # CPACK
-set(CPACK_GENERATOR WIX)
 set(CPACK_PACKAGE_NAME "Sugarbox")
 set(CPACK_PACKAGE_VENDOR "Thomas GUILLEMIN")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An amstrad CPC Emulator")

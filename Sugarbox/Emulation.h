@@ -4,19 +4,22 @@
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
+#include "ISound.h"
 
-class Emulation
+class Emulation 
 {
 public :
    Emulation();
    virtual ~Emulation();
 
-   virtual void Init(IDisplay* display, ISound* sound);
+   virtual void Init(IDisplay* display, ISoundFactory* sound);
    virtual void Stop();
    virtual void EmulationLoop();
 
    IKeyboard* GetKeyboardHandler();
    unsigned int GetSpeed();
+
+
 
 protected:
 

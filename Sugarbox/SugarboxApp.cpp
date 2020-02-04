@@ -13,6 +13,29 @@ SugarboxApp::~SugarboxApp()
    delete keyboard_handler_;
 }
 
+
+//////////////////////////////////////////////
+/// ISoundFactory interface
+ISound* SugarboxApp::GetSound(const char* name)
+{
+   return &sound_mixer_;
+}
+
+const char* SugarboxApp::GetSoundName(ISound*)
+{
+   return "SFML sound mixer";
+}
+
+const char* SugarboxApp::GetFirstSoundName()
+{
+   return "SFML sound mixer";
+}
+
+const char* SugarboxApp::GetNextSoundName()
+{
+   return nullptr;
+}
+
 int SugarboxApp::RunApp()
 {
    // Create the main window
@@ -23,7 +46,7 @@ int SugarboxApp::RunApp()
 
    // Init display
    display_.Init(window_);
-   emulation_.Init(&display_, &sound_mixer_);
+   emulation_.Init(&display_, this);
    keyboard_handler_ = emulation_.GetKeyboardHandler();
 
    // Init sound

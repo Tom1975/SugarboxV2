@@ -5,18 +5,27 @@
 #include "SFMLSoundMixer.h"
 #include "SFML/Graphics.hpp"
 
+#include "ISound.h"
 #include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
 
-class SugarboxApp
+class SugarboxApp : public ISoundFactory
 {
 public:
    SugarboxApp();
    virtual ~SugarboxApp();
 
    int RunApp();
+
+
+   // ISoundFactory interface
+   virtual ISound* GetSound(const char* name);
+   virtual const char* GetSoundName(ISound*);
+
+   virtual const char* GetFirstSoundName();
+   virtual const char* GetNextSoundName();
    
 protected:
    // 
