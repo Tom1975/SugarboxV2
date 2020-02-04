@@ -1,6 +1,6 @@
 #include "SFMLSoundMixer.h"
 
-SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(0), play_(false)
+SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(0), play_(false), last_used_buffer_(nullptr)
 {
    for (unsigned int i = 0; i < NB_BUFFERS_; i++)
    {
@@ -20,10 +20,21 @@ SFMLSoundMixer::~SFMLSoundMixer()
 
 }
 
+///////////////////////////////////////////////////
 // interface SoundStream
 bool SFMLSoundMixer::onGetData(Chunk& data)
 {
-   return false;
+   data.samples = (sf::Int16*)(list_to_play_[0]->data_);
+   data.sampleCount = list_to_play_[0]->buffer_length_ / 2;
+   list_to_play_[0]->status_ = IWaveHDR::USED;
+
+   if (last_used_buffer_ != nullptr)
+   {
+      last_used_buffer_->status_ = IWaveHDR::UNUSED;
+   }
+   
+   last_used_buffer_ = list_to_play_[0];
+   return true;
 }
 
 void SFMLSoundMixer::onSeek(sf::Time timeOffset)
@@ -31,7 +42,7 @@ void SFMLSoundMixer::onSeek(sf::Time timeOffset)
    
 }
 
-
+///////////////////////////////////////////////////
 // Interface ISound
 bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
 {
@@ -98,9 +109,12 @@ IWaveHDR* SFMLSoundMixer::GetFreeBuffer()
    return nullptr;
 }
 
-void SFMLSoundMixer::AddBufferToPlay(IWaveHDR*)
+void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 {
    // Add to current queue.
+   new_buffer->status_ = IWaveHDR::INQUEUE;
+   list_to_play_.push_back(new_buffer);
+
    // If not launch, play the music !
    if (!play_)
    {
