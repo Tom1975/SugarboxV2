@@ -10,7 +10,6 @@ SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), window_(nullptr), ke
 SugarboxApp::~SugarboxApp()
 {
    delete window_;
-   delete keyboard_handler_;
 }
 
 

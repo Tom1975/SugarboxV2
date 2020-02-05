@@ -25,7 +25,7 @@ SFMLSoundMixer::~SFMLSoundMixer()
 bool SFMLSoundMixer::onGetData(Chunk& data)
 {
    data.samples = (sf::Int16*)(list_to_play_[0]->data_);
-   data.sampleCount = list_to_play_[0]->buffer_length_ / 2;
+   data.sampleCount = list_to_play_[0]->buffer_length_ / sizeof (sf::Int16);
    list_to_play_[0]->status_ = IWaveHDR::USED;
 
    if (last_used_buffer_ != nullptr)
