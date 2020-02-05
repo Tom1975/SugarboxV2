@@ -1,5 +1,8 @@
 #pragma once
 
+#include <GLFW/glfw3.h>
+
+
 #include "Emulation.h"
 #include "Display.h"
 #include "SFMLSoundMixer.h"
@@ -50,6 +53,7 @@ protected:
    Emulation emulation_;
    CDisplay display_;
    SFMLSoundMixer sound_mixer_;
+   GLFWwindow* window_;
 
    // counters
    char str_speed_[16];

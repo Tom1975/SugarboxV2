@@ -1,5 +1,7 @@
 #include "SugarboxApp.h"
 #include "imgui.h"
+#include "imgui_impl_glfw.h"
+
 
 SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
 {
@@ -10,6 +12,10 @@ SugarboxApp::~SugarboxApp()
 {
 }
 
+void error_callback(int error, const char* description)
+{
+   fprintf(stderr, "Error: %s\n", description);
+}
 
 //////////////////////////////////////////////
 /// ISoundFactory interface
@@ -35,10 +41,24 @@ const char* SugarboxApp::GetNextSoundName()
 
 int SugarboxApp::RunApp()
 {
+   if (!glfwInit())
+   {
+      // Initialization failed
+      return -1;
+   }
+   glfwSetErrorCallback(error_callback);
+
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
    window_height_ = main_display_height + toolbar_height + status_height;
 
+   // Window creation
+   window_ = glfwCreateWindow(640, 480, "Sugarbox", NULL, NULL);
+   if (!window_)
+   {
+      // Window or OpenGL context creation failed
+      return -1;
+   }
 
    // Init display
    display_.Init();
@@ -54,11 +74,21 @@ int SugarboxApp::RunApp()
    // Run main loop
    RunMainLoop();
 
+   glfwDestroyWindow(window_);
+   glfwTerminate();
+
    return 0;
 }
 
 void SugarboxApp::RunMainLoop()
 {
+   while (!glfwWindowShouldClose(window_))
+   {
+      // Keep running
+      glfwSwapBuffers(window_);
+      glfwPollEvents();
+   }
+
 /*   // Run debugger thread
    while (window_->isOpen())
    {

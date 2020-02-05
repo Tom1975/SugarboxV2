@@ -18,7 +18,8 @@ MESSAGE ("IMGUI_SFML_FIND_SFML  : ${IMGUI_SFML_FIND_SFML}")
 MESSAGE ("SFML_DIR  : ${SFML_DIR}")
 MESSAGE ("IMGUI_DIR  : ${IMGUI_DIR}")
 
-add_subdirectory(imgui-sfml)
+add_subdirectory(glfw)
+#add_subdirectory(openal-soft)
 add_subdirectory(Sugarbox)
 
 

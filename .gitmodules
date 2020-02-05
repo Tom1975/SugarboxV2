@@ -4,3 +4,9 @@
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui
+[submodule "glfw"]
+	path = glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "openal-soft"]
+	path = openal-soft
+	url = https://github.com/kcat/openal-soft.git
