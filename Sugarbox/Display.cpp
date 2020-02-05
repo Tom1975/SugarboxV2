@@ -21,6 +21,14 @@ const std::string std_shader = \
 "   vec4 pixel = texture2D(texture, coord);"\
 "   gl_FragColor = gl_Color * pixel;"\
 "}";
+/*
+static const vec2 vertices[4] =
+{
+    { 0.f, 0.f },
+    { 1.f, 0.f },
+    { 1.f, 1.f },
+    { 0.f, 1.f }
+};*/
 
 CDisplay::CDisplay() : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
@@ -67,10 +75,17 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init ()
 {
+   
+
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024*1024];
    }
+
+   glGenTextures(NB_FRAMES, texture_);
+   glBindTexture(GL_TEXTURE_2D, texture_[0]);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, framebufferArray_[number_of_frame_to_display_]);
+   
 
    Reset();
 }
@@ -99,6 +114,8 @@ void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
+      //glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, framebufferArray_[number_of_frame_to_display_]);
+
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
    }

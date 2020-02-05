@@ -48,6 +48,9 @@ int SugarboxApp::RunApp()
    }
    glfwSetErrorCallback(error_callback);
 
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
    window_height_ = main_display_height + toolbar_height + status_height;
@@ -59,6 +62,9 @@ int SugarboxApp::RunApp()
       // Window or OpenGL context creation failed
       return -1;
    }
+
+   glfwMakeContextCurrent(window_);
+   gladLoadGL(glfwGetProcAddress);
 
    // Init display
    display_.Init();
@@ -84,6 +90,8 @@ void SugarboxApp::RunMainLoop()
 {
    while (!glfwWindowShouldClose(window_))
    {
+      
+      display_.Display();
       // Keep running
       glfwSwapBuffers(window_);
       glfwPollEvents();

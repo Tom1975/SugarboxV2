@@ -1,7 +1,5 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-
 
 #include "Emulation.h"
 #include "Display.h"

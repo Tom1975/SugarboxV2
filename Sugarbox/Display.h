@@ -5,6 +5,11 @@
 #include <string>
 #include <malloc.h>
 #include <memory.h>
+
+#include <glad/gl.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 #include "Screen.h"
 
 #define NB_FRAMES 3
@@ -75,5 +80,8 @@ protected:
 
    // Texture Indexes
    int current_texture_;
+
+   // Open gl stuff
+   GLuint texture_[NB_FRAMES];
 
 };
