@@ -1,12 +1,6 @@
 [submodule "CPCCore"]
 	path = CPCCore
 	url = https://github.com/Tom1975/CPCCore.git
-[submodule "wxWidgets"]
-	path = wxWidgets
-	url = https://github.com/wxWidgets/wxWidgets.git
-[submodule "imgui-sfml"]
-	path = imgui-sfml
-	url = https://github.com/eliasdaler/imgui-sfml
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui
