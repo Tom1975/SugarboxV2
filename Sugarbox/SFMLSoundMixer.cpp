@@ -21,28 +21,6 @@ SFMLSoundMixer::~SFMLSoundMixer()
 }
 
 ///////////////////////////////////////////////////
-// interface SoundStream
-bool SFMLSoundMixer::onGetData(Chunk& data)
-{
-   data.samples = (sf::Int16*)(list_to_play_[0]->data_);
-   data.sampleCount = list_to_play_[0]->buffer_length_ / sizeof (sf::Int16);
-   list_to_play_[0]->status_ = IWaveHDR::USED;
-
-   if (last_used_buffer_ != nullptr)
-   {
-      last_used_buffer_->status_ = IWaveHDR::UNUSED;
-   }
-   
-   last_used_buffer_ = list_to_play_[0];
-   return true;
-}
-
-void SFMLSoundMixer::onSeek(sf::Time timeOffset)
-{
-   
-}
-
-///////////////////////////////////////////////////
 // Interface ISound
 bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
 {
@@ -57,7 +35,6 @@ bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
       wav_buffers_list_[i].buffer_length_ = NB_SAMPLES_ * nb_channels * (sample_bits >> 3);
       wav_buffers_list_[i].data_ = new char[wav_buffers_list_[i].buffer_length_];
    }
-   initialize(nb_channels_, sample_rate_);
    return true;
 }
 
@@ -119,7 +96,6 @@ void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
    if (!play_)
    {
       play_ = true;
-      play();
    }
    
 }

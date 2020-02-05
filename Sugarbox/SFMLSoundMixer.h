@@ -1,18 +1,13 @@
 #pragma once
 
 #include "ISound.h"
-#include "SFML/Audio/SoundStream.hpp"
-#include "SFML/Audio/Music.hpp"
+#include <vector>
 
-class SFMLSoundMixer : public ISound, public sf::SoundStream
+class SFMLSoundMixer : public ISound
 {
 public:
    SFMLSoundMixer();
    virtual ~SFMLSoundMixer();
-
-   // interface SoundStream
-   virtual bool onGetData(Chunk& data);
-   virtual void onSeek(sf::Time timeOffset);
 
    // Interface ICfg
    virtual void SetDefaultConfiguration();

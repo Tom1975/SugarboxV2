@@ -3,7 +3,6 @@
 #include "Emulation.h"
 #include "Display.h"
 #include "SFMLSoundMixer.h"
-#include "SFML/Graphics.hpp"
 
 #include "ISound.h"
 #include "Machine.h"
@@ -36,7 +35,6 @@ protected:
    void DrawStatusBar();
 
    // Display gui
-   sf::RenderWindow* window_;
    IKeyboard* keyboard_handler_;
 
    // Screen position

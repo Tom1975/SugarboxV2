@@ -20,6 +20,18 @@ file(GLOB SRCS
     *.cpp
 )
 
+set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
+include_directories(${IMGUI_DIR})
+
+set (SRCS 
+      ${SRCS}
+      ${IMGUI_DIR}/imgui.cpp
+      ${IMGUI_DIR}/imgui_draw.cpp
+      ${IMGUI_DIR}/imgui_widgets.cpp
+   )
+
+
+
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
    if (USE_SHARED_CRT)
@@ -39,7 +51,7 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window sfml-audio ${LIBZA} ImGui-SFML::ImGui-SFML)
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} )
 
 # CPACK
 set(CPACK_PACKAGE_NAME "Sugarbox")

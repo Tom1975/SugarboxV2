@@ -1,8 +1,6 @@
 
 #include "Display.h"
 
-#include <SFML/Window.hpp>
-
 #define REAL_DISP_X  1024 //832 //1024 // 768
 #define REAL_DISP_Y  624 //-16 //624 //576
 
@@ -24,17 +22,13 @@ const std::string std_shader = \
 "   gl_FragColor = gl_Color * pixel;"\
 "}";
 
-CDisplay::CDisplay() : window_(nullptr), frame_(nullptr), framebuffer_(nullptr), current_texture_(0), sprite_(nullptr), 
-current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
+CDisplay::CDisplay() : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
    memset(index_to_display_, 0, sizeof index_to_display_);
 }
 
 CDisplay::~CDisplay()
 {
-   delete sprite_;
-   delete framebuffer_;
-   delete frame_;
    for (int i = 0; i < NB_FRAMES; i++)
    {
       delete[]framebufferArray_[i];
@@ -69,52 +63,16 @@ void CDisplay::Reset ()
 
 void CDisplay::Show ( bool bShow )
 {
-   if (window_)
-      window_->setVisible(bShow);
 }
 
-void CDisplay::Init (sf::RenderWindow* window)
+void CDisplay::Init ()
 {
-   window_ = window;
-
-   framebuffer_ = new sf::Texture();
-   frame_ = new sf::RenderTexture();
-   sprite_ = new sf::Sprite();
-   if (!framebuffer_->create(REAL_DISP_X, REAL_DISP_Y))
-   {
-      // error...
-   }
-
-   if (!frame_->create(REAL_DISP_X, REAL_DISP_Y))
-   {
-      // error...
-   }
-
-   sprite_->setTexture(*framebuffer_);
-   sprite_->setTextureRect(sf::IntRect(0, 0, REAL_DISP_X, REAL_DISP_Y));
-   sprite_->setPosition(0, 0);
-
    for (int i = 0; i < NB_FRAMES; i++)
    {
-      framebufferArray_[i] = new int[REAL_DISP_X * REAL_DISP_Y];
+      framebufferArray_[i] = new int[1024*1024];
    }
-
-   // Create shaders
-   if (standard_display_shader_.loadFromMemory(std_shader, sf::Shader::Fragment))
-   {
-      if (standard_display_shader_.isAvailable())
-      {
-         standard_display_shader_.setUniform("texture", sf::Shader::CurrentTexture);
-         standard_display_shader_.setParameter("origin", 143.f, 23.f);
-         standard_display_shader_.setParameter("size_of_display", 768.f , 576.f / 2);
-         standard_display_shader_.setParameter("size_of_texture", REAL_DISP_X, REAL_DISP_Y);
-      }
-   }
-
-
 
    Reset();
-
 }
 
 void CDisplay::HSync ()
@@ -141,12 +99,6 @@ void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
-      // Get next available texture
-      framebuffer_->update((const sf::Uint8*)framebufferArray_[index_to_display_[current_index_of_index_to_display_]]);
-
-      frame_->draw(*sprite_, &standard_display_shader_);
-      frame_->display();
-      
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
    }

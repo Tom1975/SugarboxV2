@@ -1,15 +1,13 @@
 #include "SugarboxApp.h"
 #include "imgui.h"
-#include "imgui-SFML.h"
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), window_(nullptr), keyboard_handler_(nullptr)
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
 {
    
 }
 
 SugarboxApp::~SugarboxApp()
 {
-   delete window_;
 }
 
 
@@ -40,11 +38,10 @@ int SugarboxApp::RunApp()
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
    window_height_ = main_display_height + toolbar_height + status_height;
-   window_ = new sf::RenderWindow(sf::VideoMode(window_width_, window_height_), "Sugarbox v2");
 
 
    // Init display
-   display_.Init(window_);
+   display_.Init();
    emulation_.Init(&display_, this);
    keyboard_handler_ = emulation_.GetKeyboardHandler();
 
@@ -52,8 +49,7 @@ int SugarboxApp::RunApp()
 
    
    // Init Gui
-   ImGui::SFML::Init(*window_);
-   ImGuiIO& io = ImGui::GetIO();
+
 
    // Run main loop
    RunMainLoop();
@@ -63,11 +59,7 @@ int SugarboxApp::RunApp()
 
 void SugarboxApp::RunMainLoop()
 {
-   // Run debugger thread
-
-   
-   sf::Clock deltaClock;
-
+/*   // Run debugger thread
    while (window_->isOpen())
    {
       // Process events
@@ -107,11 +99,10 @@ void SugarboxApp::RunMainLoop()
       ImGui::SFML::Render(*window_);
       window_->display();
    }
-   
+   */
    emulation_.Stop();
-   sound_mixer_.stop();
-   window_->close();
-   ImGui::SFML::Shutdown();
+   /*window_->close();
+   ImGui::SFML::Shutdown();*/
 }
 
 void SugarboxApp::DrawMainWindow()
@@ -120,7 +111,7 @@ void SugarboxApp::DrawMainWindow()
    ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
    ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
    display_.Display();
-   ImGui::Image(display_.GetTexture());
+   //ImGui::Image(display_.GetTexture());
    ImGui::End();
 
 }
