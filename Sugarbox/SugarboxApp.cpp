@@ -19,6 +19,36 @@ SugarboxApp::~SugarboxApp()
 {
 }
 
+void joystick_callback(int jid, int event)
+{
+   if (event == GLFW_CONNECTED)
+   {
+      // The joystick was connected
+   }
+   else if (event == GLFW_DISCONNECTED)
+   {
+      // The joystick was disconnected
+   }
+}
+
+void DropCallback(GLFWwindow* window, int count, const char** paths)
+{
+   int i;
+   for (i = 0; i < count; i++)
+   {
+
+   }
+}
+
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+   if (key == GLFW_KEY_E && action == GLFW_PRESS)
+   {
+
+
+   }
+}
+
 void error_callback(int error, const char* description)
 {
    fprintf(stderr, "Error: %s\n", description);
@@ -28,7 +58,7 @@ void error_callback(int error, const char* description)
 /// ISoundFactory interface
 ISound* SugarboxApp::GetSound(const char* name)
 {
-   return &sound_mixer_;
+   return (ISound * )&sound_mixer_;
 }
 
 const char* SugarboxApp::GetSoundName(ISound*)
@@ -71,6 +101,10 @@ int SugarboxApp::RunApp()
    }
 
    glfwMakeContextCurrent(window_);
+   glfwSetKeyCallback(window_, KeyCallback);
+   glfwSetDropCallback(window_, DropCallback);
+   glfwSetJoystickCallback(joystick_callback);
+
    bool err = gl3wInit() != 0;
 
    // Init sound
@@ -104,24 +138,20 @@ void SugarboxApp::RunMainLoop()
    {
       glfwPollEvents();
 
-
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplGlfw_NewFrame();
       ImGui::NewFrame();
 
       DrawMainWindow();
-      //DrawMenu();
-      //DrawPeripherals();
-      //DrawStatusBar();
+      DrawMenu();
+      DrawPeripherals();
+      DrawStatusBar();
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
-
       // Keep running
       glfwSwapBuffers(window_);
-      
    }
 
    emulation_.Stop();
@@ -132,8 +162,8 @@ void SugarboxApp::DrawMainWindow()
    ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
    ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
    ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
-   //display_.Display();
-   ImGui::Image((ImTextureID)display_.GetTexture(), ImVec2(1024, 1024) );
+   display_.Display();
+   ImGui::Image((void*)(intptr_t)display_.GetTexture(), ImVec2(1024, 1024) );
    ImGui::End();
 
 }
