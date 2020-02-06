@@ -23,20 +23,21 @@ file(GLOB SRCS
 set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
 set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
             
-include_directories(${IMGUI_DIR} ${IMGUI_DIR}/examples ${GLAD_GL_DIR}/deps )
+include_directories(${IMGUI_DIR} ${IMGUI_DIR}/examples ${GLAD_GL_DIR}/deps ${IMGUI_DIR}/examples/libs/gl3w)
 
 set (HEADERS 
    ${HEADERS}
    ${IMGUI_DIR}/examples/imgui_impl_glfw.h
    ${IMGUI_DIR}/examples/imgui_impl_opengl3.h
-   ${GLAD_GL_DIR}/deps/glad/gl.h
 )
 set (SRCS 
       ${SRCS}
       ${IMGUI_DIR}/imgui.cpp
       ${IMGUI_DIR}/imgui_draw.cpp
       ${IMGUI_DIR}/imgui_widgets.cpp
-      ${GLAD_GL_DIR}/deps/glad_gl.c
+      ${IMGUI_DIR}/examples/imgui_impl_glfw.cpp
+      ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
+      ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
    )
 
 
@@ -57,10 +58,13 @@ if(CMAKE_COMPILER_IS_GNUCC)
    set ( LIBZA libz.a stdc++fs )
 endif()
 
+set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
+
+
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw )
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw opengl32)
 
 # CPACK
 set(CPACK_PACKAGE_NAME "Sugarbox")

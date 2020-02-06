@@ -6,7 +6,8 @@
 #include <malloc.h>
 #include <memory.h>
 
-#include <glad/gl.h>
+//#include <glad/gl.h>
+#include <GL/gl3w.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -63,6 +64,7 @@ public :
    virtual void SetCurrentPart (int x, int y ){};
    virtual int GetDnDPart () { return 0;};
 
+   virtual GLuint GetTexture();
 protected:
 
    // Displayed window : 

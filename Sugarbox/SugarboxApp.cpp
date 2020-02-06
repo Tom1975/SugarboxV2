@@ -1,6 +1,13 @@
 #include "SugarboxApp.h"
+
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+#include <GL/gl3w.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
 
 SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
@@ -48,7 +55,7 @@ int SugarboxApp::RunApp()
    }
    glfwSetErrorCallback(error_callback);
 
-   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
    // Create the main window
@@ -64,18 +71,21 @@ int SugarboxApp::RunApp()
    }
 
    glfwMakeContextCurrent(window_);
-   gladLoadGL(glfwGetProcAddress);
-
-   // Init display
-   display_.Init();
-   emulation_.Init(&display_, this);
-   keyboard_handler_ = emulation_.GetKeyboardHandler();
+   bool err = gl3wInit() != 0;
 
    // Init sound
 
    
    // Init Gui
+   ImGui::CreateContext();
+   ImGui_ImplGlfw_InitForOpenGL(window_, true);
+   const char* glsl_version = "#version 130";
+   ImGui_ImplOpenGL3_Init(glsl_version);
 
+   // Init display
+   display_.Init();
+   emulation_.Init(&display_, this);
+   keyboard_handler_ = emulation_.GetKeyboardHandler();
 
    // Run main loop
    RunMainLoop();
@@ -86,61 +96,35 @@ int SugarboxApp::RunApp()
    return 0;
 }
 
+
+
 void SugarboxApp::RunMainLoop()
 {
    while (!glfwWindowShouldClose(window_))
    {
-      
-      display_.Display();
+      glfwPollEvents();
+
+
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
+
+      DrawMainWindow();
+      //DrawMenu();
+      //DrawPeripherals();
+      //DrawStatusBar();
+
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+
       // Keep running
       glfwSwapBuffers(window_);
-      glfwPollEvents();
+      
    }
 
-/*   // Run debugger thread
-   while (window_->isOpen())
-   {
-      // Process events
-      sf::Event event;
-      while (window_->pollEvent(event))
-      {
-         ImGui::SFML::ProcessEvent(event);
-
-         // Close window: exit
-         if (event.type == sf::Event::Closed)
-            window_->close();
-
-         //Respond to key pressed events
-         if (event.type == sf::Event::EventType::KeyPressed) 
-         {
-            keyboard_handler_->SendScanCode(event.key.code, true);
-         }
-         if (event.type == sf::Event::EventType::KeyReleased)
-         {
-            keyboard_handler_->SendScanCode(event.key.code, false);
-         }
-      }
-      ImGui::SFML::Update(*window_, deltaClock.restart());
-
-      // Toolbar window
-      DrawMenu();
-
-      // Main window
-      DrawMainWindow();
-
-      // Peripherals window
-      DrawPeripherals();
-
-      // Status window
-      DrawStatusBar();
-
-      ImGui::SFML::Render(*window_);
-      window_->display();
-   }
-   */
    emulation_.Stop();
-   /*window_->close();
-   ImGui::SFML::Shutdown();*/
 }
 
 void SugarboxApp::DrawMainWindow()
@@ -148,8 +132,8 @@ void SugarboxApp::DrawMainWindow()
    ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
    ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
    ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
-   display_.Display();
-   //ImGui::Image(display_.GetTexture());
+   //display_.Display();
+   ImGui::Image((ImTextureID)display_.GetTexture(), ImVec2(1024, 1024) );
    ImGui::End();
 
 }

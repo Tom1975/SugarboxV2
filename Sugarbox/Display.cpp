@@ -75,8 +75,6 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init ()
 {
-   
-
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024*1024];
@@ -84,10 +82,22 @@ void CDisplay::Init ()
 
    glGenTextures(NB_FRAMES, texture_);
    glBindTexture(GL_TEXTURE_2D, texture_[0]);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, framebufferArray_[number_of_frame_to_display_]);
-   
 
-   Reset();
+   // Setup filtering parameters for display
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   //glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, framebufferArray_[number_of_frame_to_display_]);
+   
+   for (int i = 0; i < 1024 * 1024; i++)
+   {
+      (framebufferArray_[0])[i] = (rand() & 0xFF) + ((rand() & 0xFF) << 8) + ((rand() & 0xFF) << 16) + ((rand() & 0xFF) << 24);
+   }
+
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, framebufferArray_[0]);
+
+
+   //Reset();
 }
 
 void CDisplay::HSync ()
@@ -101,23 +111,33 @@ void CDisplay::StartSync()
 
 void CDisplay::VSync (bool bDbg)
 {
+   return;
    // Add a frame to display, if display buffer is not full !
    if (number_of_frame_to_display_ < NB_FRAMES)
    {
       index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
-      current_texture_ = (current_texture_ + 1) % NB_FRAMES;
+      //current_texture_ = (current_texture_ + 1) % NB_FRAMES;
       number_of_frame_to_display_++;
    }
 }
 
+GLuint CDisplay::GetTexture()
+{
+   return texture_[0/* current_index_of_index_to_display_*/];
+}
+
 void CDisplay::Display()
 {
-   if (number_of_frame_to_display_ > 0)
+   //if (number_of_frame_to_display_ > 0)
    {
-      //glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, framebufferArray_[number_of_frame_to_display_]);
+     /* current_index_of_index_to_display_ = 1;
+
+      glBindTexture(GL_TEXTURE_2D, texture_[current_index_of_index_to_display_]);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, framebufferArray_[current_index_of_index_to_display_]);
 
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
+      */
    }
 
 }
