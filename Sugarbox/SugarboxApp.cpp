@@ -93,7 +93,7 @@ int SugarboxApp::RunApp()
    window_height_ = main_display_height + toolbar_height + status_height;
 
    // Window creation
-   window_ = glfwCreateWindow(640, 480, "Sugarbox", NULL, NULL);
+   window_ = glfwCreateWindow(window_width_, window_height_, "Sugarbox", NULL, NULL);
    if (!window_)
    {
       // Window or OpenGL context creation failed
@@ -159,13 +159,18 @@ void SugarboxApp::RunMainLoop()
 
 void SugarboxApp::DrawMainWindow()
 {
+   // Draw texture
+   /*display_.Display();
+   glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+   glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
+   */
    ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
    ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
    ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
    display_.Display();
    ImGui::Image((void*)(intptr_t)display_.GetTexture(), ImVec2(1024, 1024) );
    ImGui::End();
-
+   
 }
 
 void SugarboxApp::DrawMenu()

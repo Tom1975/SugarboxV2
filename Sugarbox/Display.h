@@ -85,5 +85,11 @@ protected:
 
    // Open gl stuff
    GLuint texture_ [NB_FRAMES] ;
+   GLuint fragment_shader_;
+   GLuint program_;
 
+   GLint sh_texture_;
+   GLint sh_origin_;
+   GLint sh_size_of_display_;
+   GLint sh_size_of_texture_;
 };

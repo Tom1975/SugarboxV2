@@ -10,7 +10,7 @@
 #define DISP_WINDOW_X   800
 #define DISP_WINDOW_Y   600
 
-const std::string std_shader = \
+static const char* std_shader = \
 "uniform sampler2D texture;"\
 "uniform vec2 origin;"\
 "uniform vec2 size_of_display;"\
@@ -30,7 +30,7 @@ static const vec2 vertices[4] =
     { 0.f, 1.f }
 };*/
 
-CDisplay::CDisplay() : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
+CDisplay::CDisplay() : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0), fragment_shader_(0), program_(0)
 {
    memset(index_to_display_, 0, sizeof index_to_display_);
 }
@@ -76,6 +76,31 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init ()
 {
+   // Init fragment shader
+   fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
+   glShaderSource(fragment_shader_, 1, &std_shader, NULL);
+   glCompileShader(fragment_shader_);
+   char log[256];
+   GLsizei sizelog;
+   glGetShaderInfoLog(fragment_shader_, 256, &sizelog, log);
+   program_ = glCreateProgram();
+   glAttachShader(program_, fragment_shader_);
+   glLinkProgram(program_);
+   GLint status;
+   glGetProgramiv(program_, GL_LINK_STATUS, &status);
+   glGetProgramInfoLog(program_, 256, &sizelog, log);
+
+   sh_texture_ = glGetUniformLocation(program_, "texture");
+   sh_origin_ = glGetUniformLocation(program_, "origin");
+   sh_size_of_display_ = glGetUniformLocation(program_, "size_of_display");
+   sh_size_of_texture_ = glGetUniformLocation(program_, "size_of_texture");
+
+   glUniform2f(sh_origin_, 143.f, 23.f);
+   glUniform2f(sh_size_of_display_, 768.f, 576.f / 2);
+   glUniform2f(sh_size_of_texture_, REAL_DISP_X, REAL_DISP_Y);
+   glUseProgram(program_);
+   glGetProgramInfoLog(program_, 256, &sizelog, log);
+
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024*1024];
@@ -130,11 +155,15 @@ void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
+      glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, texture_[0]);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_BGRA, GL_UNSIGNED_BYTE, framebufferArray_[current_index_of_index_to_display_]);
 
+      glUniform1i(sh_texture_, 0);
+
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
+
    }
 
 }
