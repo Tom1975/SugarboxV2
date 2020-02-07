@@ -84,6 +84,6 @@ protected:
    int current_texture_;
 
    // Open gl stuff
-   GLuint texture_;// [NB_FRAMES] ;
+   GLuint texture_ [NB_FRAMES] ;
 
 };

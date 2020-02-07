@@ -46,7 +46,8 @@ CDisplay::~CDisplay()
 
 unsigned int CDisplay::ConvertRGB(unsigned int rgb)
 {
-   return  (0xFF000000 | ((rgb & 0xFF)<<16) | ((rgb & 0xFF00) ) | ((rgb & 0xFF0000)>>16));
+   //return  (0xFF000000 | ((rgb & 0xFF)<<16) | ((rgb & 0xFF00) ) | ((rgb & 0xFF0000)>>16));
+   return  (0xFF000000 | ((rgb & 0xFF) ) | ((rgb & 0xFF00) ) | ((rgb & 0xFF0000) ));
 }
 
 int CDisplay::GetWidth ()
@@ -80,8 +81,8 @@ void CDisplay::Init ()
       framebufferArray_[i] = new int[1024*1024];
    }
 
-   glGenTextures(1, &texture_);
-   glBindTexture(GL_TEXTURE_2D, texture_);
+   glGenTextures(NB_FRAMES, texture_);
+   glBindTexture(GL_TEXTURE_2D, texture_[0]);
 
    // Setup filtering parameters for display
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -122,15 +123,15 @@ void CDisplay::VSync (bool bDbg)
 
 GLuint CDisplay::GetTexture()
 {
-   return texture_/* current_index_of_index_to_display_*/   ;
+   return texture_[0];/* current_index_of_index_to_display_*/;
 }
 
 void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
-      glBindTexture(GL_TEXTURE_2D, texture_);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_BGR, GL_UNSIGNED_BYTE, framebufferArray_[current_index_of_index_to_display_]);
+      glBindTexture(GL_TEXTURE_2D, texture_[0]);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_BGRA, GL_UNSIGNED_BYTE, framebufferArray_[current_index_of_index_to_display_]);
 
       current_index_of_index_to_display_ = (current_index_of_index_to_display_ + 1) % NB_FRAMES;
       number_of_frame_to_display_--;
