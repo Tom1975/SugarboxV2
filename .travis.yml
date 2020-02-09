@@ -22,7 +22,6 @@ before_install:
 - sudo apt-get install gstreamer1.0*
 
 script:
-# SugarConvDsk
 - echo 'Generating makefile'
 - cmake . 
 - make all

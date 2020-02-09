@@ -26,9 +26,9 @@ static const char* vertex_quad_shader_2 = \
 "in vec2 in_Vertex;"
 "out vec2 texcoords;"
 "void main() {"
-"/*   float x = float(((uint(gl_VertexID) + 2u) / 3u) % 2u);\n"
+/*"   float x = float(((uint(gl_VertexID) + 2u) / 3u) % 2u);\n"
 "   float y = float(((uint(gl_VertexID) + 1u) / 3u) % 2u);\n"
-"   gl_Position = vec4(-1.0f + x * 2.0f, -2.0f + y * 1.0f, 0.0f, 1.0f);*/\n"
+"   gl_Position = vec4(-1.0f + x * 2.0f, -2.0f + y * 1.0f, 0.0f, 1.0f);\n"*/
 "   gl_Position = vec4(in_Vertex, 0.0f, 1.0f);\n"
 "   texcoords = in_Vertex;\n"
 "}";
@@ -44,9 +44,9 @@ static const char* std_shader = \
 "out vec4 frag_colour;\n"
 "void main()\n"
 "{\n"
+"   frag_colour = texture(texture_in, texcoords);\n"
 /*"   vec2 coord = vec2((texcoords.x * size_of_display.x + origin.x) / size_of_texture.x, ((1.0-texcoords.y)/2 * size_of_display.y + origin.y) / size_of_texture.y);\n"*/
 /*"   vec2 coord = vec2((texcoords.x ) , ((1.0-texcoords.y)/2 ) );\n"*/
-"   frag_colour = texture(texture_in, texcoords);\n"
 //"   frag_colour = vec4(texcoords.x, texcoords.y, 1.0f, 1.0f);\n"
 //"     frag_colour = vec4(0.5f, 1.0f , 1.0f, 1.0f); \n"
 "}\n";
@@ -149,8 +149,8 @@ void CDisplay::Init()
    GLint status;
 
 
-   static float vertices[] = { -0.5, -0.5,   0.5, -0.5,   0.5, 0.5,    // Triangle 1
-                           -0.5, -0.5,   -0.5, 0.5,   0.5, 0.5 };   // Triangle 2
+   static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 1
+                           -1.0, -1.0,   -1.0, 1.0,   1.0, 1.0 };   // Triangle 2
 
    int tailleVerticesBytes = 12 * sizeof(float);
    // Génération du 
