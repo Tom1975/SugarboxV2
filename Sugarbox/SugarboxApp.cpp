@@ -85,8 +85,11 @@ int SugarboxApp::RunApp()
    }
    glfwSetErrorCallback(error_callback);
 
-   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
 
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
@@ -99,7 +102,6 @@ int SugarboxApp::RunApp()
       // Window or OpenGL context creation failed
       return -1;
    }
-
    glfwMakeContextCurrent(window_);
    glfwSetKeyCallback(window_, KeyCallback);
    glfwSetDropCallback(window_, DropCallback);
@@ -115,7 +117,7 @@ int SugarboxApp::RunApp()
    ImGui_ImplGlfw_InitForOpenGL(window_, true);
    const char* glsl_version = "#version 130";
    ImGui_ImplOpenGL3_Init(glsl_version);
-
+   
    // Init display
    display_.Init();
    emulation_.Init(&display_, this);
@@ -134,22 +136,28 @@ int SugarboxApp::RunApp()
 
 void SugarboxApp::RunMainLoop()
 {
+   glViewport(0, 0, 800, 600);
+
    while (!glfwWindowShouldClose(window_))
    {
       glfwPollEvents();
 
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplGlfw_NewFrame();
-      ImGui::NewFrame();
+
+      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
 
       DrawMainWindow();
+
+      ImGui::NewFrame();
       DrawMenu();
       DrawPeripherals();
       DrawStatusBar();
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+      
       // Keep running
       glfwSwapBuffers(window_);
    }
@@ -160,17 +168,16 @@ void SugarboxApp::RunMainLoop()
 void SugarboxApp::DrawMainWindow()
 {
    // Draw texture
-   /*display_.Display();
-   glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-   glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
-   */
+   display_.Display();
+   
+   /*
    ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
    ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
    ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
    display_.Display();
    ImGui::Image((void*)(intptr_t)display_.GetTexture(), ImVec2(1024, 1024) );
    ImGui::End();
-   
+   */
 }
 
 void SugarboxApp::DrawMenu()

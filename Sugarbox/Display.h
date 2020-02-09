@@ -22,6 +22,7 @@ public :
    virtual ~CDisplay ();
 
    void Init();
+   void Init40();
    void Show(bool bShow);
    void Display();
 
@@ -86,10 +87,19 @@ protected:
    // Open gl stuff
    GLuint texture_ [NB_FRAMES] ;
    GLuint fragment_shader_;
+   GLuint vertex_shader_;
    GLuint program_;
 
    GLint sh_texture_;
    GLint sh_origin_;
    GLint sh_size_of_display_;
    GLint sh_size_of_texture_;
+
+   GLuint readFboId_;
+   GLuint VertexArrayID_;
+   GLuint vertexbuffer_;
+
+   GLuint vbo;
+   GLuint vao;
+
 };

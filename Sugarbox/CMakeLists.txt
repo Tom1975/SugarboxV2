@@ -55,16 +55,19 @@ ENDIF(MSVC)
 
 if(CMAKE_COMPILER_IS_GNUCC)
 	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a stdc++fs )
+   set ( LIBZA libz.a stdc++fs GLEW GL )
 endif()
 
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
 
+IF(WIN32)
+   set (OPENGL_LINK opengl32)
+endif()
 
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw opengl32)
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} )
 
 # CPACK
 set(CPACK_PACKAGE_NAME "Sugarbox")
