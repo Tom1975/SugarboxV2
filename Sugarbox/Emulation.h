@@ -19,7 +19,10 @@ public :
    IKeyboard* GetKeyboardHandler();
    unsigned int GetSpeed();
 
-
+   EmulatorEngine* GetEngine() 
+   {
+      return emulator_engine_;
+   };
 
 protected:
 

@@ -9,14 +9,12 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
+/////////////////////////////////////
+// Generic callbacks
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-   
-}
-
-SugarboxApp::~SugarboxApp()
-{
+   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
+   app->SizeChanged(width, height);
 }
 
 void joystick_callback(int jid, int event)
@@ -33,20 +31,26 @@ void joystick_callback(int jid, int event)
 
 void DropCallback(GLFWwindow* window, int count, const char** paths)
 {
-   int i;
-   for (i = 0; i < count; i++)
-   {
-
-   }
+   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
+   app->Drop(count, paths);
 }
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-   if (key == GLFW_KEY_E && action == GLFW_PRESS)
-   {
+   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
+   app->KeyboardHandler(key, scancode, action, mods);
+}
 
+/////////////////////////////////////
+// SugarbonApp
 
-   }
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
+{
+   
+}
+
+SugarboxApp::~SugarboxApp()
+{
 }
 
 void error_callback(int error, const char* description)
@@ -103,10 +107,12 @@ int SugarboxApp::RunApp()
       // Window or OpenGL context creation failed
       return -1;
    }
+   glfwSetWindowUserPointer(window_, (void*)this);
    glfwMakeContextCurrent(window_);
    glfwSetKeyCallback(window_, KeyCallback);
    glfwSetDropCallback(window_, DropCallback);
    glfwSetJoystickCallback(joystick_callback);
+   glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
 
    bool err = gl3wInit() != 0;
 
@@ -120,7 +126,7 @@ int SugarboxApp::RunApp()
    ImGui_ImplOpenGL3_Init(glsl_version);
    
    // Init display
-   glViewport(0, status_height, main_display_width, main_display_height);
+   SizeChanged(window_width_, window_height_);
 
    display_.Init();
    emulation_.Init(&display_, this);
@@ -233,4 +239,86 @@ void SugarboxApp::DrawStatusBar()
    // Sound control
 
    ImGui::End();
+}
+
+void SugarboxApp::SizeChanged(int width, int height)
+{
+   glViewport(0, height - toolbar_height - main_display_height, main_display_width, main_display_height);
+}
+
+void SugarboxApp::Drop(int count, const char** paths)
+{
+   // TODO : Add Mutex (Emulation should stop here)
+
+   // Check for headers :
+   for (int i = 0; i < 4 && i < count; i++)
+   {
+      DataContainer* dnd_container = emulation_.GetEngine()->CanLoad(paths[i]);
+
+      MediaManager mediaMgr(dnd_container);
+      std::vector<MediaManager::MediaType> list_of_types;
+      list_of_types.push_back(MediaManager::MEDIA_DISK);
+      list_of_types.push_back(MediaManager::MEDIA_SNA);
+      list_of_types.push_back(MediaManager::MEDIA_SNR);
+      list_of_types.push_back(MediaManager::MEDIA_TAPE);
+      list_of_types.push_back(MediaManager::MEDIA_BIN);
+      list_of_types.push_back(MediaManager::MEDIA_CPR);
+
+      int media_type = mediaMgr.GetType(list_of_types);
+
+      switch (media_type)
+      {
+         // Test : Is it SNA?
+      case 1:
+         emulation_.GetEngine()->LoadSnapshot(paths[0]);
+         break;
+      case 2:
+         // Set ROM : TODO
+         break;
+      case 3:
+         //AskForSaving(part);
+         //m_SkipNextAutorun = false;
+         //m_pMachine->LoadDisk (m_DragFiles[0], part);
+         emulation_.GetEngine()->LoadDisk(dnd_container, 0);
+
+         break;
+         // Tape - TODO
+      case 4:
+         // TODO : Ask for tape saving ?
+
+         // Load first element of the container
+         //m_pMachine->LoadTape(m_DragFiles[0]);
+      {
+         MediaManager mediaMgr(dnd_container);
+         std::vector<MediaManager::MediaType> list_of_types;
+         list_of_types.push_back(MediaManager::MEDIA_TAPE);
+         auto list = dnd_container->GetFileList();
+
+
+         emulation_.GetEngine()->LoadTape(list[0]);
+         //UpdateStatusBar();
+         break;
+      }
+      case 5:
+         emulation_.GetEngine()->LoadSnr(paths[0]);
+         break;
+      case 6:
+         emulation_.GetEngine()->LoadBin(paths[0]);
+         break;
+      case 8:
+         emulation_.GetEngine()->LoadCpr(paths[0]);
+         break;
+      }
+   }
+   
+}
+
+void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
+{
+   if (key == GLFW_KEY_E && action == GLFW_PRESS)
+   {
+
+
+   }
+
 }

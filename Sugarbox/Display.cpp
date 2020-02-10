@@ -5,13 +5,13 @@
 #define REAL_DISP_Y  624 //-16 //624 //576
 
 #define ORIGIN_X     143.f
-#define ORIGIN_Y     46.f
+#define ORIGIN_Y     47.f
 
 #define DISP_WIDTH    1024
 #define DISP_HEIGHT   624
 
-#define DISP_WINDOW_X   800
-#define DISP_WINDOW_Y   600
+#define DISP_WINDOW_X   768
+#define DISP_WINDOW_Y   544
 
 static const char* vertex_quad_shader_2 = \
 "#version 130\n"
@@ -53,7 +53,6 @@ CDisplay::~CDisplay()
 
 unsigned int CDisplay::ConvertRGB(unsigned int rgb)
 {
-   //return  (0xFF000000 | ((rgb & 0xFF)<<16) | ((rgb & 0xFF00) ) | ((rgb & 0xFF0000)>>16));
    return  (0xFF000000 | ((rgb & 0xFF) ) | ((rgb & 0xFF00) ) | ((rgb & 0xFF0000) ));
 }
 

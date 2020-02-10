@@ -27,6 +27,11 @@ public:
    virtual const char* GetFirstSoundName();
    virtual const char* GetNextSoundName();
    
+   // Events
+   void SizeChanged(int width, int height);
+   void Drop( int count, const char** paths);
+   void KeyboardHandler( int key, int scancode, int action, int mods);
+
 protected:
    // 
    void RunMainLoop();
@@ -39,8 +44,8 @@ protected:
    IKeyboard* keyboard_handler_;
 
    // Screen position
-   const float main_display_width = 800;
-   const float main_display_height = 600;
+   const float main_display_width = 768;
+   const float main_display_height = 544;
    const float toolbar_height = 50;
    const float status_height = 50;
    const float peripherals_width = 100;
