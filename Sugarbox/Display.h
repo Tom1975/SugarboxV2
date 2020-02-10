@@ -22,7 +22,6 @@ public :
    virtual ~CDisplay ();
 
    void Init();
-   void Init40();
    void Show(bool bShow);
    void Display();
 
@@ -92,6 +91,7 @@ protected:
 
    GLint sh_texture_;
    GLint sh_origin_;
+   GLint sh_ratio_;
    GLint sh_size_of_display_;
    GLint sh_size_of_texture_;
 
