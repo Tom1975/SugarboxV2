@@ -97,6 +97,7 @@ int SugarboxApp::RunApp()
 
    // Window creation
    window_ = glfwCreateWindow(window_width_, window_height_, "Sugarbox", NULL, NULL);
+
    if (!window_)
    {
       // Window or OpenGL context creation failed
@@ -110,7 +111,7 @@ int SugarboxApp::RunApp()
    bool err = gl3wInit() != 0;
 
    // Init sound
-
+   // TODO
    
    // Init Gui
    ImGui::CreateContext();
@@ -119,6 +120,8 @@ int SugarboxApp::RunApp()
    ImGui_ImplOpenGL3_Init(glsl_version);
    
    // Init display
+   glViewport(0, status_height, main_display_width, main_display_height);
+
    display_.Init();
    emulation_.Init(&display_, this);
    keyboard_handler_ = emulation_.GetKeyboardHandler();
@@ -136,8 +139,6 @@ int SugarboxApp::RunApp()
 
 void SugarboxApp::RunMainLoop()
 {
-   glViewport(0, 0, 800, 600);
-
    while (!glfwWindowShouldClose(window_))
    {
       glfwPollEvents();
