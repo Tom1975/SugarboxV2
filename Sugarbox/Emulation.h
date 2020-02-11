@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
@@ -46,4 +48,8 @@ protected:
 
    std::thread* worker_thread_;
    bool running_thread_;
+
+   // Thread synchronisation
+   bool command_waiting_;
+   std::mutex command_mutex_;
 };

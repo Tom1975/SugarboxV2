@@ -1,4 +1,9 @@
+
+#include <chrono>
+#include <thread>
+
 #include "Emulation.h"
+
 
 //////////////////////////////////////////////
 /// ctor/dtor
@@ -6,7 +11,8 @@ Emulation::Emulation() :
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
-   worker_thread_(nullptr)
+   worker_thread_(nullptr),
+   command_waiting_(false)
 {
 }
 
@@ -64,9 +70,24 @@ void Emulation::Stop()
 
 void Emulation::EmulationLoop()
 {
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+
    while (running_thread_)
    {
       emulator_engine_->RunTimeSlice(true);
+
+      // Command waiting ? 
+      if (command_waiting_)
+      {
+         command_mutex_.unlock();
+         
+         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+         command_waiting_ = false;
+         command_mutex_.lock();
+         
+
+      }
+
    }
    emulator_engine_->Stop();
 
@@ -79,35 +100,49 @@ DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::Me
 
 bool Emulation::LoadSnr(const char* path_file)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadSnr(path_file);
 }
 
 bool Emulation::LoadBin(const char* path_file)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadBin(path_file);
 }
 
 bool Emulation::LoadSnapshot(const char* path_file)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadSnapshot(path_file);
 }
 
 int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bool differential_load )
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
 int Emulation::LoadTape(const char* file_path)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadTape(file_path);
 }
 
 int Emulation::LoadTape(IContainedElement* container)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadTape(container);
 }
 
 int Emulation::LoadCpr(const char* file_path)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadCpr(file_path);
 }
