@@ -17,6 +17,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
    app->SizeChanged(width, height);
 }
 
+void cursor_enter_callback(GLFWwindow* window, int entered)
+{
+   // Enter ?
+   const char* content_of_clipboard = glfwGetClipboardString(window);
+}
+
 void joystick_callback(int jid, int event)
 {
    if (event == GLFW_CONNECTED)
@@ -109,10 +115,12 @@ int SugarboxApp::RunApp()
    }
    glfwSetWindowUserPointer(window_, (void*)this);
    glfwMakeContextCurrent(window_);
+
    glfwSetKeyCallback(window_, KeyCallback);
    glfwSetDropCallback(window_, DropCallback);
    glfwSetJoystickCallback(joystick_callback);
    glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
+   glfwSetCursorEnterCallback(window_, cursor_enter_callback);
 
    bool err = gl3wInit() != 0;
 
@@ -176,15 +184,6 @@ void SugarboxApp::DrawMainWindow()
 {
    // Draw texture
    display_.Display();
-   
-   /*
-   ImGui::SetNextWindowPos(ImVec2(0, toolbar_height), ImGuiCond_Always);
-   ImGui::SetNextWindowSize(ImVec2(main_display_width, main_display_height), ImGuiCond_Always);
-   ImGui::Begin("Sugarbox", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
-   display_.Display();
-   ImGui::Image((void*)(intptr_t)display_.GetTexture(), ImVec2(1024, 1024) );
-   ImGui::End();
-   */
 }
 
 void SugarboxApp::DrawMenu()
@@ -313,10 +312,13 @@ void SugarboxApp::Drop(int count, const char** paths)
 
 void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
 {
-   if (key == GLFW_KEY_E && action == GLFW_PRESS)
+   if (action == GLFW_PRESS)
    {
-
-
+      emulation_.GetKeyboardHandler()->SendScanCode(scancode, true);
    }
 
+   if (action == GLFW_RELEASE)
+   {
+      emulation_.GetKeyboardHandler()->SendScanCode(scancode, false);
+   }
 }
