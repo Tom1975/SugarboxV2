@@ -248,12 +248,10 @@ void SugarboxApp::SizeChanged(int width, int height)
 
 void SugarboxApp::Drop(int count, const char** paths)
 {
-   // TODO : Add Mutex (Emulation should stop here)
-
    // Check for headers :
    for (int i = 0; i < 4 && i < count; i++)
    {
-      DataContainer* dnd_container = emulation_.GetEngine()->CanLoad(paths[i]);
+      DataContainer* dnd_container = emulation_.CanLoad(paths[i]);
 
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
@@ -270,7 +268,7 @@ void SugarboxApp::Drop(int count, const char** paths)
       {
          // Test : Is it SNA?
       case 1:
-         emulation_.GetEngine()->LoadSnapshot(paths[0]);
+         emulation_.LoadSnapshot(paths[0]);
          break;
       case 2:
          // Set ROM : TODO
@@ -279,7 +277,7 @@ void SugarboxApp::Drop(int count, const char** paths)
          //AskForSaving(part);
          //m_SkipNextAutorun = false;
          //m_pMachine->LoadDisk (m_DragFiles[0], part);
-         emulation_.GetEngine()->LoadDisk(dnd_container, 0);
+         emulation_.LoadDisk(dnd_container, 0);
 
          break;
          // Tape - TODO
@@ -295,18 +293,18 @@ void SugarboxApp::Drop(int count, const char** paths)
          auto list = dnd_container->GetFileList();
 
 
-         emulation_.GetEngine()->LoadTape(list[0]);
+         emulation_.LoadTape(list[0]);
          //UpdateStatusBar();
          break;
       }
       case 5:
-         emulation_.GetEngine()->LoadSnr(paths[0]);
+         emulation_.LoadSnr(paths[0]);
          break;
       case 6:
-         emulation_.GetEngine()->LoadBin(paths[0]);
+         emulation_.LoadBin(paths[0]);
          break;
       case 8:
-         emulation_.GetEngine()->LoadCpr(paths[0]);
+         emulation_.LoadCpr(paths[0]);
          break;
       }
    }

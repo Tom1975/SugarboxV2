@@ -71,3 +71,43 @@ void Emulation::EmulationLoop()
    emulator_engine_->Stop();
 
 }
+
+DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
+{
+   return emulator_engine_->CanLoad(file, list_of_types);
+}
+
+bool Emulation::LoadSnr(const char* path_file)
+{
+   return emulator_engine_->LoadSnr(path_file);
+}
+
+bool Emulation::LoadBin(const char* path_file)
+{
+   return emulator_engine_->LoadBin(path_file);
+}
+
+bool Emulation::LoadSnapshot(const char* path_file)
+{
+   return emulator_engine_->LoadSnapshot(path_file);
+}
+
+int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bool differential_load )
+{
+   return emulator_engine_->LoadDisk(container, drive_number, differential_load);
+}
+
+int Emulation::LoadTape(const char* file_path)
+{
+   return emulator_engine_->LoadTape(file_path);
+}
+
+int Emulation::LoadTape(IContainedElement* container)
+{
+   return emulator_engine_->LoadTape(container);
+}
+
+int Emulation::LoadCpr(const char* file_path)
+{
+   return emulator_engine_->LoadCpr(file_path);
+}
