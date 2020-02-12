@@ -3,6 +3,14 @@
 #include "ISound.h"
 #include <vector>
 #include "AL/alc.h"
+#include "AL/al.h"
+
+class OAWaveHDR : public IWaveHDR
+{
+public:
+   ALuint buffer;
+};
+
 
 class SFMLSoundMixer : public ISound
 {
@@ -41,13 +49,16 @@ protected:
    // Buffer size : 1000 sample ( 1 / 44,1 of a second)
    static const unsigned int NB_SAMPLES_ = 882;
 
-   IWaveHDR wav_buffers_list_[NB_BUFFERS_];
-   std::vector<IWaveHDR*> list_to_play_;
+   OAWaveHDR wav_buffers_list_[NB_BUFFERS_];
+   //std::vector<IWaveHDR*> list_to_play_;
    IWaveHDR* last_used_buffer_;
    bool play_;
 
    // Open AL related
    ALCdevice*     device_;
    ALCcontext*    context_;
+
+   ALuint         buffers_[NB_BUFFERS_];
+   ALuint         source_;
 };
 
