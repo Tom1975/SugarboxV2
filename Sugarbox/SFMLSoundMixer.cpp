@@ -1,7 +1,14 @@
 #include "SFMLSoundMixer.h"
 
-SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(0), play_(false), last_used_buffer_(nullptr)
+SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(0), play_(false), last_used_buffer_(nullptr), device_(nullptr), context_(nullptr)
 {
+   device_ = alcOpenDevice(NULL); // select the "preferred device"
+   if (device_) 
+   {
+      context_ = alcCreateContext(device_, NULL);
+      alcMakeContextCurrent(context_);
+   }
+
    for (unsigned int i = 0; i < NB_BUFFERS_; i++)
    {
       wav_buffers_list_[i].data_ = nullptr;
@@ -13,6 +20,13 @@ SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(
 
 SFMLSoundMixer::~SFMLSoundMixer()
 {
+   alcMakeContextCurrent(NULL);
+   alcDestroyContext(context_);
+   if (device_ != nullptr)
+   {
+      alcCloseDevice(device_);
+   }
+
    for (unsigned int i = 0; i < NB_BUFFERS_; i++)
    {
       delete []wav_buffers_list_[i].data_ ;

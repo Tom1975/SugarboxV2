@@ -2,6 +2,7 @@
 
 #include "ISound.h"
 #include <vector>
+#include "AL/alc.h"
 
 class SFMLSoundMixer : public ISound
 {
@@ -43,9 +44,10 @@ protected:
    IWaveHDR wav_buffers_list_[NB_BUFFERS_];
    std::vector<IWaveHDR*> list_to_play_;
    IWaveHDR* last_used_buffer_;
-   // SFML specific stuff
    bool play_;
-   
 
+   // Open AL related
+   ALCdevice*     device_;
+   ALCcontext*    context_;
 };
 

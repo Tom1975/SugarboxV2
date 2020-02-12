@@ -23,7 +23,7 @@ file(GLOB SRCS
 set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
 set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
             
-include_directories(${IMGUI_DIR} ${IMGUI_DIR}/examples ${GLAD_GL_DIR}/deps ${IMGUI_DIR}/examples/libs/gl3w)
+include_directories(${IMGUI_DIR} ${IMGUI_DIR}/examples ${GLAD_GL_DIR}/deps ${IMGUI_DIR}/examples/libs/gl3w )
 
 set (HEADERS 
    ${HEADERS}
@@ -39,8 +39,6 @@ set (SRCS
       ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
       ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
    )
-
-
 
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
@@ -67,7 +65,7 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} )
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} OpenAL)
 
 # CPACK
 set(CPACK_PACKAGE_NAME "Sugarbox")
