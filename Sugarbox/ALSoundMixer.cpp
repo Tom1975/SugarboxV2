@@ -162,13 +162,11 @@ void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
    alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
    if ((error = alGetError()) != AL_NO_ERROR)
    {
-      printf("Error : %i\n", error);
    }
 
    alSourceQueueBuffers(source_, 1, &((OAWaveHDR*)new_buffer)->buffer);
    if ((error = alGetError()) != AL_NO_ERROR)
    {
-      printf("Error : %i\n", error);
    }
    // If not launch, play the music !
    ALint source_state;
@@ -181,7 +179,6 @@ void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
       alSourcePlay(source_);
       if ((error = alGetError()) != AL_NO_ERROR)
       {
-         printf("Error : %i\n", error);
       }
 
       play_ = true;
