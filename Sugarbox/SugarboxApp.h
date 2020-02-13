@@ -3,7 +3,7 @@
 
 #include "Emulation.h"
 #include "Display.h"
-#include "SFMLSoundMixer.h"
+#include "ALSoundMixer.h"
 
 #include "ISound.h"
 #include "Machine.h"
@@ -55,7 +55,7 @@ protected:
 
    Emulation emulation_;
    CDisplay display_;
-   SFMLSoundMixer sound_mixer_;
+   ALSoundMixer sound_mixer_;
    GLFWwindow* window_;
 
    // counters

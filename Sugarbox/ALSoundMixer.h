@@ -12,11 +12,11 @@ public:
 };
 
 
-class SFMLSoundMixer : public ISound
+class ALSoundMixer : public ISound
 {
 public:
-   SFMLSoundMixer();
-   virtual ~SFMLSoundMixer();
+   ALSoundMixer();
+   virtual ~ALSoundMixer();
 
    // Interface ICfg
    virtual void SetDefaultConfiguration();

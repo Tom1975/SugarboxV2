@@ -1,6 +1,6 @@
-#include "SFMLSoundMixer.h"
+#include "ALSoundMixer.h"
 
-SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), 
+ALSoundMixer::ALSoundMixer():sample_rate_(0), 
    sample_bits_(0), 
    nb_channels_(0), 
    play_(false), 
@@ -25,7 +25,7 @@ SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0),
    Init(44100, 16, 2);
 }
 
-SFMLSoundMixer::~SFMLSoundMixer()
+ALSoundMixer::~ALSoundMixer()
 {
    alcMakeContextCurrent(NULL);
    alcDestroyContext(context_);
@@ -43,7 +43,7 @@ SFMLSoundMixer::~SFMLSoundMixer()
 
 ///////////////////////////////////////////////////
 // Interface ISound
-bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
+bool ALSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
 {
    // Generate Buffers
    alcGetError(device_); // clear error code
@@ -76,42 +76,42 @@ bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
    return true;
 }
 
-void SFMLSoundMixer::Reinit()
+void ALSoundMixer::Reinit()
 {
 
 }
 
-unsigned int SFMLSoundMixer::GetMaxValue()
+unsigned int ALSoundMixer::GetMaxValue()
 {
    return (1 << (GetBitDepth())) - 1;
 }
 
-unsigned int SFMLSoundMixer::GetMinValue()
+unsigned int ALSoundMixer::GetMinValue()
 {
    return 0;
 }
 
-unsigned int SFMLSoundMixer::GetSampleRate()
+unsigned int ALSoundMixer::GetSampleRate()
 {
    return sample_rate_;
 }
 
-unsigned int SFMLSoundMixer::GetBitDepth()
+unsigned int ALSoundMixer::GetBitDepth()
 {
    return sample_bits_;
 }
 
-unsigned int SFMLSoundMixer::GetNbChannels()
+unsigned int ALSoundMixer::GetNbChannels()
 {
    return nb_channels_;
 }
 
-void SFMLSoundMixer::CheckBuffersStatus()
+void ALSoundMixer::CheckBuffersStatus()
 {
 
 }
 
-IWaveHDR* SFMLSoundMixer::GetFreeBuffer()
+IWaveHDR* ALSoundMixer::GetFreeBuffer()
 {
    IWaveHDR* next_buffer = nullptr;
 
@@ -155,7 +155,7 @@ IWaveHDR* SFMLSoundMixer::GetFreeBuffer()
    return next_buffer;
 }
 
-void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
+void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 {
    ALenum error;
    OAWaveHDR* oal_wav = (OAWaveHDR*)new_buffer;
@@ -190,21 +190,21 @@ void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 
 }
 
-void SFMLSoundMixer::SyncWithSound()
+void ALSoundMixer::SyncWithSound()
 {
    // Wait until there's only xx buffer
 }
 
-void SFMLSoundMixer::SetDefaultConfiguration()
+void ALSoundMixer::SetDefaultConfiguration()
 {
 }
 
-void SFMLSoundMixer::SaveConfiguration(const char* config_name, const char* ini_file)
+void ALSoundMixer::SaveConfiguration(const char* config_name, const char* ini_file)
 {
 
 }
 
-bool SFMLSoundMixer::LoadConfiguration(const char* config_name, const char* ini_file)
+bool ALSoundMixer::LoadConfiguration(const char* config_name, const char* ini_file)
 {
    return true;
 }
