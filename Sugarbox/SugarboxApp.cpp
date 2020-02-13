@@ -149,8 +149,6 @@ int SugarboxApp::RunApp()
    return 0;
 }
 
-
-
 void SugarboxApp::RunMainLoop()
 {
    while (!glfwWindowShouldClose(window_))
@@ -312,6 +310,9 @@ void SugarboxApp::Drop(int count, const char** paths)
 
 void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
 {
+   // Handle shortcuts
+
+   // Send scancode to emulation
    if (action == GLFW_PRESS)
    {
       emulation_.GetKeyboardHandler()->SendScanCode(scancode, true);
