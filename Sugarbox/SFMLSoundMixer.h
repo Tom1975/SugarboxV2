@@ -60,5 +60,7 @@ protected:
 
    ALuint         buffers_[NB_BUFFERS_];
    ALuint         source_;
+
+   ALenum         format_;
 };
 

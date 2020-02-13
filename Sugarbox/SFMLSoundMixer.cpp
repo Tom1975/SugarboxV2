@@ -1,8 +1,15 @@
 #include "SFMLSoundMixer.h"
 
-SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), sample_bits_(0), nb_channels_(0), play_(false), last_used_buffer_(nullptr), device_(nullptr), context_(nullptr)
+SFMLSoundMixer::SFMLSoundMixer():sample_rate_(0), 
+   sample_bits_(0), 
+   nb_channels_(0), 
+   play_(false), 
+   last_used_buffer_(nullptr), 
+   device_(nullptr), 
+   context_(nullptr),
+   format_(AL_FORMAT_STEREO16)
 {
-   device_ = alcOpenDevice(NULL); // select the "preferred device"
+   device_ = alcOpenDevice(NULL);
    if (device_) 
    {
       context_ = alcCreateContext(device_, NULL);
@@ -45,6 +52,15 @@ bool SFMLSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
    sample_rate_ = sample_rate;
    sample_bits_ = sample_bits;
    nb_channels_ = nb_channels;
+
+   if (nb_channels_ == 2 && sample_bits_ == 16)
+      format_ = AL_FORMAT_STEREO16;
+   else if (nb_channels_ == 2 && sample_bits_ == 8)
+      format_ = AL_FORMAT_STEREO8;
+   else if (nb_channels_ == 1 && sample_bits_ == 16)
+      format_ = AL_FORMAT_MONO16;
+   else if (nb_channels_ == 1 && sample_bits_ == 8)
+      format_ = AL_FORMAT_MONO8;
 
    for (unsigned int i = 0; i < NB_BUFFERS_; i++)
    {
@@ -143,10 +159,6 @@ void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 {
    ALenum error;
    OAWaveHDR* oal_wav = (OAWaveHDR*)new_buffer;
-   // Add to current queue.
-   //list_to_play_.push_back(new_buffer);
-
-   //alSourcei(source_, AL_BUFFER, (ALint)((OAWaveHDR*)new_buffer)->buffer);
    alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
    if ((error = alGetError()) != AL_NO_ERROR)
    {
@@ -180,7 +192,7 @@ void SFMLSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 
 void SFMLSoundMixer::SyncWithSound()
 {
-
+   // Wait until there's only xx buffer
 }
 
 void SFMLSoundMixer::SetDefaultConfiguration()
