@@ -15,7 +15,7 @@ before_install:
 - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi
 - if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50
-- sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev  
+- sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev
 - sudo apt-get install libxinerama-dev libxcursor-dev
 - sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev
 - sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev
