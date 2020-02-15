@@ -9,10 +9,14 @@ add_subdirectory(CPCCore)
 add_subdirectory(glfw)
 
 #no config util
-set ( ALSOFT_NO_CONFIG_UTIL TRUE)
-set ( ALSOFT_EXAMPLES FALSE)
-set ( ALSOFT_TESTS FALSE)
-set ( ALSOFT_UTILS FALSE)
+set ( ALSOFT_NO_CONFIG_UTIL ON)
+set ( ALSOFT_EXAMPLES OFF)
+set ( ALSOFT_TESTS OFF)
+set ( ALSOFT_UTILS OFF)
+set ( ALSOFT_CONFIG OFF)
+set ( ALSOFT_INSTALL OFF)
+set ( ALSOFT_HRTF_DEFS OFF)
+set ( ALSOFT_AMBDEC_PRESETS OFF )
 
 add_subdirectory(openal-soft)
 
