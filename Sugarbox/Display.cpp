@@ -14,7 +14,7 @@
 #define DISP_WINDOW_Y   544
 
 static const char* vertex_quad_shader_2 = \
-"#version 130\n"
+"#version 150\n"
 "in vec2 in_Vertex;"
 "out vec2 texcoords;"
 "void main() {"
@@ -25,7 +25,7 @@ static const char* vertex_quad_shader_2 = \
 "}";
 
 static const char* std_shader = \
-"#version 130\n"
+"#version 150\n"
 "in vec2 texcoords;\n"
 "uniform sampler2D texture_in;\n"
 "uniform vec2 origin;\n"
