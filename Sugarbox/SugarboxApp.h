@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <map>
 
 #include "Emulation.h"
 #include "Display.h"
@@ -10,6 +12,19 @@
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
+#include "MultiLanguage.h"
+
+class Function
+{
+public:
+   Function();
+   virtual ~Function();
+
+   // Label (with language)
+   unsigned int id_;
+   std::map<unsigned int, std::string> label_;
+   std::function<void()> function_;
+};
 
 class SugarboxApp : public ISoundFactory
 {
@@ -33,14 +48,27 @@ public:
    void KeyboardHandler( int key, int scancode, int action, int mods);
 
 protected:
-   // 
+   // Menu init
+   void InitMenu();
+
+   // Display gui
    void RunMainLoop();
    void DrawMainWindow();
    void DrawMenu();
    void DrawPeripherals();
    void DrawStatusBar();
+   void HandlePopups();
 
-   // Display gui
+   void AskForSaving(int drive);
+
+   // Gui related
+   enum {
+      POPUP_NONE,
+      POPUP_ASK_SAVE
+   } PopupType;
+   unsigned int PopupArg;
+
+   // Keyboard handler
    IKeyboard* keyboard_handler_;
 
    // Screen position
@@ -53,6 +81,7 @@ protected:
    float window_width_;
    float window_height_;
 
+   // Emulation and so on 
    Emulation emulation_;
    CDisplay display_;
    ALSoundMixer sound_mixer_;
@@ -61,4 +90,9 @@ protected:
    // counters
    char str_speed_[16];
    int counter_;
+
+   // Functions
+   MultiLanguage language_;
+
 };
+

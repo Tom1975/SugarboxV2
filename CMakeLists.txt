@@ -19,6 +19,8 @@ set ( FORCE_STATIC_VCRT ON CACHE BOOL "" FORCE )
 set ( BUILD_SHARED_LIB_ OFF CACHE BOOL "" FORCE )
 set ( USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE )
 
+set ( GLFW_INSTALL OFF CACHE BOOL "" FORCE )
+
 add_subdirectory(CPCCore)
 add_subdirectory(glfw)
 add_subdirectory(openal-soft)

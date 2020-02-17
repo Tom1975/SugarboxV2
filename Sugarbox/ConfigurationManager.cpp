@@ -111,6 +111,10 @@ void ConfigurationManager::OpenFile(const char* config_file)
 void ConfigurationManager::SetConfiguration(const char* section, const char* cle, const char* valeur, const char* file)
 {
    OpenFile(file);
+   SetConfiguration(section, cle, valeur);
+}
+void ConfigurationManager::SetConfiguration(const char* section, const char* cle, const char* valeur)
+{
    // Add or update key
    // rewrite whole file
 }
@@ -118,6 +122,11 @@ void ConfigurationManager::SetConfiguration(const char* section, const char* cle
 unsigned int ConfigurationManager::GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size, const char* file)
 {
    OpenFile(file);
+   return GetConfiguration(section, cle, default_value, out_buffer, buffer_size);
+}
+
+unsigned int ConfigurationManager::GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size)
+{
    if (config_file_.count(section) > 0)
    {
       if (config_file_[section]->count(cle) > 0)
@@ -142,6 +151,11 @@ unsigned int ConfigurationManager::GetConfiguration(const char* section, const c
 unsigned int ConfigurationManager::GetConfigurationInt(const char* section, const char* cle, unsigned int default_value, const char* file)
 {
    OpenFile(file);
+   return GetConfigurationInt(section, cle, default_value);
+}
+
+unsigned int ConfigurationManager::GetConfigurationInt(const char* section, const char* cle, unsigned int default_value)
+{
    if (config_file_.count(section) > 0)
    {
       if (config_file_[section]->count(cle) > 0)
@@ -151,4 +165,25 @@ unsigned int ConfigurationManager::GetConfigurationInt(const char* section, cons
       }
    }
    return default_value;
+}
+
+int ConfigurationManager::GetSectionsSize()
+{
+   return config_file_.size();
+}
+
+const char* ConfigurationManager::GetSection(unsigned int index)
+{
+   return "";
+}
+
+// Key
+int ConfigurationManager::GetKeySize(const char* section)
+{
+   return config_file_.at(std::string(section))->size();
+}
+
+const char* ConfigurationManager::GetKey(const char* section, unsigned int index)
+{
+   return "";
 }

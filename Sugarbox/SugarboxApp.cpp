@@ -10,6 +10,18 @@
 #include <GLFW/glfw3.h>
 
 /////////////////////////////////////
+// Functions
+Function::Function()
+{
+
+}
+
+Function::~Function()
+{
+
+}
+
+/////////////////////////////////////
 // Generic callbacks
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -52,7 +64,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
 {
-   
+  
 }
 
 SugarboxApp::~SugarboxApp()
@@ -86,8 +98,17 @@ const char* SugarboxApp::GetNextSoundName()
    return nullptr;
 }
 
+void SugarboxApp::InitMenu()
+{
+   language_.Init("Resources/labels.ini");
+}
+
 int SugarboxApp::RunApp()
 {
+   // Generic init
+   InitMenu();
+
+   // GLFW iniut
    if (!glfwInit())
    {
       // Initialization failed
@@ -149,6 +170,8 @@ int SugarboxApp::RunApp()
    return 0;
 }
 
+static bool test = false;
+
 void SugarboxApp::RunMainLoop()
 {
    while (!glfwWindowShouldClose(window_))
@@ -167,6 +190,8 @@ void SugarboxApp::RunMainLoop()
       DrawMenu();
       DrawPeripherals();
       DrawStatusBar();
+
+      HandlePopups();
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -194,7 +219,7 @@ void SugarboxApp::DrawMenu()
    {
       if (ImGui::BeginMenu("File"))
       {
-         if (ImGui::MenuItem("Exit", "Ctrl+O")) { glfwSetWindowShouldClose(window_, true); }
+         if (ImGui::MenuItem(language_.GetString(MultiLanguage::Menu_Exit)/*"Exit"*/, "Ctrl+O")) { glfwSetWindowShouldClose(window_, true); }
          if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
          if (ImGui::MenuItem("Close", "Ctrl+W")) {}
          ImGui::EndMenu();
@@ -238,6 +263,35 @@ void SugarboxApp::DrawStatusBar()
    ImGui::End();
 }
 
+void SugarboxApp::HandlePopups()
+{
+   switch (PopupType)
+   {
+      case POPUP_ASK_SAVE:
+      {
+         char buffer[128];
+         sprintf(buffer, "Disk %c has changed ! Do you want to save it ?", (PopupArg == 0) ? 'A' : 'B');
+         ImGui::OpenPopup(buffer);
+         if (ImGui::BeginPopupModal(buffer, NULL)) {
+            if (ImGui::Button("Yes"))
+            {
+               emulation_.GetEngine()->SaveDisk(PopupArg);
+               PopupType = POPUP_NONE;
+            }
+            if (ImGui::Button("No"))
+            {
+               emulation_.GetEngine()->SaveDisk(PopupArg);
+               PopupType = POPUP_NONE;
+            }
+            ImGui::EndPopup();
+         }
+         break;
+      }
+   }
+
+}
+
+
 void SugarboxApp::SizeChanged(int width, int height)
 {
    glViewport(0, height - toolbar_height - main_display_height, main_display_width, main_display_height);
@@ -271,7 +325,8 @@ void SugarboxApp::Drop(int count, const char** paths)
          // Set ROM : TODO
          break;
       case 3:
-         //AskForSaving(part);
+         test = true;
+         AskForSaving(0);
          //m_SkipNextAutorun = false;
          //m_pMachine->LoadDisk (m_DragFiles[0], part);
          emulation_.LoadDisk(dnd_container, 0);
@@ -321,5 +376,14 @@ void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
    if (action == GLFW_RELEASE)
    {
       emulation_.GetKeyboardHandler()->SendScanCode(scancode, false);
+   }
+}
+
+void SugarboxApp::AskForSaving(int drive)
+{
+   if (emulation_.GetEngine()->IsDiskModified(drive))
+   {
+      PopupType = POPUP_ASK_SAVE;
+      PopupArg = drive;
    }
 }

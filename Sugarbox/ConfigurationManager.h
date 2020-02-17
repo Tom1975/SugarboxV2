@@ -15,9 +15,23 @@ public:
    virtual ~ConfigurationManager();
 
    virtual void OpenFile(const char* config_file);
+
    virtual void SetConfiguration(const char* section, const char* cle, const char* valeur, const char* file);
+   virtual void SetConfiguration(const char* section, const char* cle, const char* valeur);
+
    virtual unsigned int GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size, const char* file);
+   virtual unsigned int GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size);
+
    virtual unsigned int GetConfigurationInt(const char* section, const char* cle, unsigned int default_value, const char* file);
+   virtual unsigned int GetConfigurationInt(const char* section, const char* cle, unsigned int default_value);
+
+   // Section number
+   virtual int GetSectionsSize();
+   virtual const char * GetSection(unsigned int index);
+
+   // Key
+   virtual int GetKeySize(const char* section);
+   virtual const char* GetKey(const char* section, unsigned int index);
 
 protected:
    void Clear();
