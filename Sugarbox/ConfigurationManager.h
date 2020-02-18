@@ -26,12 +26,12 @@ public:
    virtual unsigned int GetConfigurationInt(const char* section, const char* cle, unsigned int default_value);
 
    // Section number
-   virtual int GetSectionsSize();
-   virtual const char * GetSection(unsigned int index);
+   virtual const char* GetFirstSection();
+   virtual const char* GetNextSection();
 
    // Key
-   virtual int GetKeySize(const char* section);
-   virtual const char* GetKey(const char* section, unsigned int index);
+   virtual const char* GetFirstKey(const char* section);
+   virtual const char* GetNextKey();
 
 protected:
    void Clear();
@@ -49,4 +49,9 @@ protected:
 
    ConfigFile config_file_;
    std::string current_config_file_;
+
+   // Internal Iterator
+   std::map <std::string, data* >::iterator it_section_;
+   std::map <std::string, std::string>::iterator it_key_;
+   data* current_key_section_it_;
 };

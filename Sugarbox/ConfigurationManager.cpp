@@ -167,23 +167,40 @@ unsigned int ConfigurationManager::GetConfigurationInt(const char* section, cons
    return default_value;
 }
 
-int ConfigurationManager::GetSectionsSize()
+const char* ConfigurationManager::GetFirstSection()
 {
-   return config_file_.size();
+   it_section_ = config_file_.begin();
+   return GetNextSection();
 }
 
-const char* ConfigurationManager::GetSection(unsigned int index)
+const char* ConfigurationManager::GetNextSection()
 {
-   return "";
+   if (it_section_ != config_file_.end())
+   {
+      const char* value = it_section_->first.c_str();
+      ++it_section_;
+      return value;
+   }
+   return nullptr;
 }
 
-// Key
-int ConfigurationManager::GetKeySize(const char* section)
+const char* ConfigurationManager::GetFirstKey(const char* section)
 {
-   return config_file_.at(std::string(section))->size();
+   current_key_section_it_ = config_file_[section];
+   if (current_key_section_it_ == nullptr )
+      return nullptr;
+   it_key_ = current_key_section_it_->begin();
+   return GetNextKey();
 }
 
-const char* ConfigurationManager::GetKey(const char* section, unsigned int index)
+const char* ConfigurationManager::GetNextKey()
 {
-   return "";
+   if (it_key_ != current_key_section_it_->end())
+   {
+      const char* value = it_key_->first.c_str();
+      ++it_key_;
+      return value;
+   }
+   return nullptr;
 }
+

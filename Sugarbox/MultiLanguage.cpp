@@ -47,11 +47,25 @@ void MultiLanguage::ChangeLanguage(unsigned int index)
 {
    // Load language
    current_language_.clear();
+   const char* section = language_list_[index].c_str();
+   // Get current section
+   const char* key = manager_.GetFirstKey(section);
 
+   char buffer[256];
+   while (key != nullptr)
+   {
+      // Key = ID
+      // Key value = string
+      manager_.GetConfiguration(section, key, "", buffer, 256);
+      //
+      current_language_.insert(std::pair<std::string, std::string>(std::string(key), std::string(buffer)));
+
+      key = manager_.GetNextKey();
+   }
 
 }
 
-const char* MultiLanguage::GetString(Id_String id)
+const char* MultiLanguage::GetString(const char* id)
 {
-   return "";
+   return current_language_[std::string(id)].c_str();
 }

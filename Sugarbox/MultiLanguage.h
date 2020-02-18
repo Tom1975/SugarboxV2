@@ -9,12 +9,6 @@ public:
    MultiLanguage();
    virtual ~MultiLanguage();
 
-   typedef enum
-   {
-      Menu_Exit,
-
-   }Id_String;
-
    void Init(const char* label_file);
 
    // Language list
@@ -22,7 +16,7 @@ public:
    const char* GetLanguage(unsigned int index);
    void ChangeLanguage(unsigned int index);
 
-   const char* GetString(Id_String id);
+   const char* GetString(const char* id);
 
 protected:
    ConfigurationManager manager_;
@@ -31,6 +25,6 @@ protected:
    std::vector<std::string> language_list_;
 
    // Language ids
-   std::map<Id_String, std::string> current_language_;
+   std::map<std::string, std::string> current_language_;
 };
 
