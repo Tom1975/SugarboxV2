@@ -19,10 +19,13 @@ void ConfigurationManager::Clear()
    for (auto const& ent1 : config_file_)
    {
       // ent1.first is the first key
-      for (auto const& ent2 : *ent1.second)
-      {
-         // ent2.first is the second key
-         // ent2.second is the data
+      if (ent1.second != nullptr)
+      { 
+         for (auto const& ent2 : *ent1.second)
+         {
+            // ent2.first is the second key
+            // ent2.second is the data
+         }
       }
    }
 }
@@ -186,7 +189,7 @@ const char* ConfigurationManager::GetNextSection()
 
 const char* ConfigurationManager::GetFirstKey(const char* section)
 {
-   current_key_section_it_ = config_file_[section];
+   current_key_section_it_ = config_file_[std::string(section)];
    if (current_key_section_it_ == nullptr )
       return nullptr;
    it_key_ = current_key_section_it_->begin();

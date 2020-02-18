@@ -219,9 +219,7 @@ void SugarboxApp::DrawMenu()
    {
       if (ImGui::BeginMenu("File"))
       {
-         if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT")/*"Exit"*/, "Ctrl+O")) { glfwSetWindowShouldClose(window_, true); }
-         if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
-         if (ImGui::MenuItem("Close", "Ctrl+W")) {}
+         if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
          ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
