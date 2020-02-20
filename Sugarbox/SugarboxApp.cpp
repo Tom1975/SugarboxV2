@@ -10,18 +10,6 @@
 #include <GLFW/glfw3.h>
 
 /////////////////////////////////////
-// Functions
-Function::Function()
-{
-
-}
-
-Function::~Function()
-{
-
-}
-
-/////////////////////////////////////
 // Generic callbacks
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {

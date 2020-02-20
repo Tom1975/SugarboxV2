@@ -13,18 +13,7 @@
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
-
-class Function
-{
-public:
-   Function();
-   virtual ~Function();
-
-   // Label (with language)
-   unsigned int id_;
-   std::map<unsigned int, std::string> label_;
-   std::function<void()> function_;
-};
+#include "Functions.h"
 
 class SugarboxApp : public ISoundFactory
 {
