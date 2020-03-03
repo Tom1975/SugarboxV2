@@ -2,10 +2,18 @@
 #include <functional>
 #include <map>
 
+class IFunctionInterface
+{
+public:
+   // Public 
+   virtual void Exit() = 0;
+};
+
+
 class Function
 {
 public:
-   Function(unsigned int id, std::function<void()> fn);
+   Function(std::function<void()> fn);
    virtual ~Function();
 
    // Functions Init
@@ -14,7 +22,6 @@ public:
    // Function access
 
 protected:
-   unsigned int id_;
    std::map<unsigned int, const std::string> label_;
    std::function<void()> function_;
 };
@@ -30,6 +37,8 @@ public:
    }FunctionType;
 
    // Function Initialization
+   void InitFunctions();
+
    // Function Organization (menus / toolbar)
 
    // Function Access
@@ -42,6 +51,10 @@ protected:
    std::map<FunctionType, Function> function_list_;
    // Menu access
    // Toolbar access
+   //
+   //
+   
+   IFunctionInterface* function_handler_;
 };
 
 
