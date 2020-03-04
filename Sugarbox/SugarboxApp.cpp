@@ -88,6 +88,7 @@ const char* SugarboxApp::GetNextSoundName()
 
 void SugarboxApp::InitMenu()
 {
+   functions_list_.InitFunctions(this);
    language_.Init("Resources/labels.ini");
 }
 
@@ -205,10 +206,17 @@ void SugarboxApp::DrawMenu()
    ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
    if (ImGui::BeginMenuBar())
    {
-      if (ImGui::BeginMenu("File"))
+      for (int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
       {
-         if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
-         ImGui::EndMenu();
+         if (ImGui::BeginMenu(functions_list_.MenuLabel(menu_index)))
+         {
+            for (int submenu_index = 0; submenu_index < functions_list_.NbSubMenu(menu_index); submenu_index++)
+            {
+               if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
+
+            }
+            ImGui::EndMenu();
+         }
       }
       ImGui::EndMenuBar();
    }
@@ -372,4 +380,10 @@ void SugarboxApp::AskForSaving(int drive)
       PopupType = POPUP_ASK_SAVE;
       PopupArg = drive;
    }
+}
+
+
+void SugarboxApp::Exit()
+{
+   glfwSetWindowShouldClose(window_, true);
 }

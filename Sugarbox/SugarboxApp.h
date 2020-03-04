@@ -15,7 +15,7 @@
 #include "MultiLanguage.h"
 #include "Functions.h"
 
-class SugarboxApp : public ISoundFactory
+class SugarboxApp : public ISoundFactory, public IFunctionInterface
 {
 public:
    SugarboxApp();
@@ -23,6 +23,8 @@ public:
 
    int RunApp();
 
+   // IFunctionInterface interface
+   virtual void Exit();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -82,6 +84,6 @@ protected:
 
    // Functions
    MultiLanguage language_;
-
+   FunctionList functions_list_;
 };
 

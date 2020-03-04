@@ -5,8 +5,14 @@
 class IFunctionInterface
 {
 public:
-   // Public 
+   typedef enum
+   {
+      FN_EXIT,
+
+   }FunctionType;
+
    virtual void Exit() = 0;
+
 };
 
 
@@ -30,26 +36,29 @@ protected:
 class FunctionList
 {
 public:
-   typedef enum
-   {
-      FN_EXIT,
-
-   }FunctionType;
 
    // Function Initialization
-   void InitFunctions();
+   void InitFunctions(IFunctionInterface* function_handler);
 
    // Function Organization (menus / toolbar)
 
    // Function Access
    // Direct access
-   // Menu access 
+   // Menu access
+   unsigned int NbMenu();
+   const char* MenuLabel(unsigned int index_menu);
+   unsigned int NbSubMenu(int index_menu);
+   const char* GetSubMenuLabel(unsigned int index_menu, int index_submenu);
+   const char* GetSubMenuShortcut(unsigned int index_menu, int index_submenu);
+
    // Toolbar access
 
 protected:
    // Direct function access
-   std::map<FunctionType, Function> function_list_;
+   std::map<IFunctionInterface::FunctionType, Function> function_list_;
    // Menu access
+   
+   
    // Toolbar access
    //
    //
