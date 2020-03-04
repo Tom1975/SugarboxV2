@@ -212,7 +212,11 @@ void SugarboxApp::DrawMenu()
          {
             for (int submenu_index = 0; submenu_index < functions_list_.NbSubMenu(menu_index); submenu_index++)
             {
-               if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
+               //if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
+               if (ImGui::MenuItem(functions_list_.GetSubMenuLabel(menu_index, submenu_index), functions_list_.GetSubMenuShortcut(menu_index, submenu_index))) 
+               {
+                  functions_list_.Call (menu_index, submenu_index); 
+               }
 
             }
             ImGui::EndMenu();
