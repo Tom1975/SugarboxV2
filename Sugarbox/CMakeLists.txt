@@ -20,6 +20,10 @@ file(GLOB SRCS
     *.cpp
 )
 
+file(GLOB RES
+   ${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*
+)
+
 set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
 set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
             
@@ -39,6 +43,8 @@ set (SRCS
       ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
       ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
    )
+
+source_group("Resources" FILES ${RES} )
 
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
@@ -62,10 +68,17 @@ IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
-add_executable(Sugarbox ${SRCS} ${HEADERS}  )
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
 
 # Link test executable against gtest & gtest_main
 target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} OpenAL)
+
+# Installation
+install ( FILES "./SugarBox.ini" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./ROM" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./CART" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./CONF" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./Resources" DESTINATION ${PROJECT_BINARY_DIR}) 
 
 # CPACK
 set(CPACK_PACKAGE_NAME "Sugarbox")
