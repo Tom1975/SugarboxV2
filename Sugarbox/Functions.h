@@ -8,7 +8,37 @@ class IFunctionInterface
 public:
    typedef enum
    {
+      // File
       FN_EXIT,
+      FN_LOAD_SNA,
+      FN_QUICK_LOAD_SNA,
+      FN_SAVE_SNA,
+      FN_QUICK_SAVE_SNA,
+      // Settings
+      FN_EMULATOR_SETTINGS,
+      FN_CONFIG_SETTINGS,
+      // Control
+      FN_CTRL_ONOFF,
+      FN_CTRL_SET_SPEED,
+      FN_CTRL_PAUSE,
+      // DISK
+      FN_DISK_1_EJECT,
+      FN_DISK_1_INSERT,
+      FN_DISK_1_FLIP,
+      FN_DISK_1_SAVE_AS,
+      FN_DISK_1_INSERT_BLANK,
+      FN_DISK_2_EJECT,
+      FN_DISK_2_INSERT,
+      FN_DISK_2_FLIP,
+      FN_DISK_2_SAVE_AS,
+      FN_DISK_2_INSERT_BLANK,
+      // Sound
+      FN_SND_RECORD,
+      FN_SND_MUTE
+      // DISPLAY
+      // DEBUGER
+      // TAPE
+
 
    }FunctionType;
 

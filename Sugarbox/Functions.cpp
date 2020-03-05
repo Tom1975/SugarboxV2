@@ -49,6 +49,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
+   //function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
 
    // Custom menu ?
    // Otherwise, default menu init
