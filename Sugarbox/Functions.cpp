@@ -2,9 +2,8 @@
 
 
 
-
-
-Function::Function( std::function<void()> fn) : function_(fn)
+Function::Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label) :
+id_label_(id_label), function_(fn), multilanguage_(multilanguage)
 {
    
 }
@@ -14,19 +13,14 @@ Function::~Function()
    
 }
 
-void Function::AddLabel(unsigned int language, const std::string label, const std::string shortcut)
+const char* Function::GetLabel()
 {
-   label_.insert(std::pair<unsigned int, Label>(language, { label, shortcut }));
+   return multilanguage_->GetString(id_label_.c_str());
 }
 
-const char* Function::GetLabel(unsigned int language)
+const char* Function::GetShortcut()
 {
-   return label_[language].label.c_str();
-}
-
-const char* Function::GetShortcut(unsigned int language)
-{
-   return label_[language].shortcut.c_str();
+   return "TODO";
 }
 
 void Function::Call()
@@ -34,7 +28,9 @@ void Function::Call()
    function_();
 }
 
-FunctionList::FunctionList():function_handler_(nullptr), current_language_(0)
+FunctionList::FunctionList(MultiLanguage* multilanguage):
+   multilanguage_(multilanguage),
+   function_handler_(nullptr)
 {
 
 }
@@ -51,14 +47,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // Function creation
    function_list_.clear();
 
-   Function fn_exit(std::bind(&IFunctionInterface::Exit, function_handler_));
-   fn_exit.AddLabel(0, "Exit", "Alt-F4");
-   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, fn_exit));
+   // For each function : Add languages & shortcuts
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
 
-   // Menu init
+   // Custom menu ?
+   // Otherwise, default menu init
    menu_list_.push_back(MenuItems{ "Files",  
                   {&function_list_.at(IFunctionInterface::FN_EXIT)}
-                  
                   }
       );
 }
@@ -81,12 +76,12 @@ unsigned int FunctionList::NbSubMenu(int index_menu)
 
 const char* FunctionList::GetSubMenuLabel(unsigned int index_menu, int index_submenu)
 {
-   return menu_list_[index_menu].submenu_list[index_submenu]->GetLabel(current_language_);
+   return menu_list_[index_menu].submenu_list[index_submenu]->GetLabel();
 }
 
 const char* FunctionList::GetSubMenuShortcut(unsigned int index_menu, int index_submenu)
 {
-   return menu_list_[index_menu].submenu_list[index_submenu]->GetShortcut(current_language_);
+   return menu_list_[index_menu].submenu_list[index_submenu]->GetShortcut();
 }
 
 void FunctionList::Call(unsigned int index_menu, int index_submenu)

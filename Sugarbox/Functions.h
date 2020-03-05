@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <map>
+#include "MultiLanguage.h"
 
 class IFunctionInterface
 {
@@ -15,30 +16,22 @@ public:
 
 };
 
-
 class Function
 {
 public:
-   Function(std::function<void()> fn);
+   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label);
    virtual ~Function();
 
-   // Functions Init
-   void AddLabel(unsigned int, const std::string, const std::string);
-
    // Function access
-   const char* GetLabel(unsigned int language);
-   const char* GetShortcut(unsigned int language);
+   const char* GetLabel();
+   const char* GetShortcut();
    void Call();
 
 protected:
-   struct Label
-   {
-      const std::string label;
-      const std::string shortcut;
-   };
-   std::map<unsigned int, Label> label_;
 
+   std::string id_label_;
    std::function<void()> function_;
+   MultiLanguage* multilanguage_;
 };
 
 
@@ -46,7 +39,7 @@ class FunctionList
 {
 public:
 
-   FunctionList();
+   FunctionList(MultiLanguage* multilanguage);
    virtual ~FunctionList();
 
    // Function Initialization
@@ -71,12 +64,6 @@ protected:
 
    ///////////////////////////
    // Menu access
-   struct SubMenuItem
-   {
-      std::string label;
-      IFunctionInterface::FunctionType *function;
-   };
-
    struct MenuItems
    {
       std::string label;
@@ -87,9 +74,8 @@ protected:
    // Toolbar access
    //
    //
-   
+   MultiLanguage* multilanguage_;
    IFunctionInterface* function_handler_;
-   unsigned int current_language_;
 };
 
 

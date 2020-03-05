@@ -50,7 +50,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr)
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr), language_(), functions_list_(&language_)
 {
   
 }
