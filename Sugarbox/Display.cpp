@@ -110,10 +110,10 @@ void CDisplay::Init()
 
    ///////////////////////
    // Init vertices
-//static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 1
-//                           -1.0, -1.0,   -1.0, 1.0,   1.0, 1.0 };   // Triangle 2
-   static float vertices[] = { -1.0, -0.8,   1.0, -0.8,   1.0, 1.2,    // Triangle 1
-                             -1.0, -0.8,   -1.0, 1.2,   1.0, 1.2 };   // Triangle 2
+static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 1
+                           -1.0, -1.0,   -1.0, 1.0,   1.0, 1.0 };   // Triangle 2
+/*   static float vertices[] = { -1.0, -0.8,   1.0, -0.8,   1.0, 1.2,    // Triangle 1
+                             -1.0, -0.8,   -1.0, 1.2,   1.0, 1.2 };   // Triangle 2*/
 
    int tailleVerticesBytes = 12 * sizeof(float);
    glGenBuffers(1, &vbo);
