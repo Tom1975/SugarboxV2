@@ -119,6 +119,13 @@ bool Emulation::LoadSnapshot(const char* path_file)
    return emulator_engine_->LoadSnapshot(path_file);
 }
 
+void Emulation::SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->SaveDiskAs(0, file, format_type);
+}
+
 int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bool differential_load )
 {
    command_waiting_ = true;

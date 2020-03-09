@@ -25,9 +25,15 @@ file(GLOB RES
 )
 
 set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
+set (IMGUI_FILEDIALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ImGuiFileDialog)
 set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
             
-include_directories(${IMGUI_DIR} ${IMGUI_DIR}/examples ${GLAD_GL_DIR}/deps ${IMGUI_DIR}/examples/libs/gl3w )
+include_directories(${IMGUI_DIR} 
+                    ${IMGUI_DIR}/examples 
+                    ${GLAD_GL_DIR}/deps 
+                    ${IMGUI_DIR}/examples/libs/gl3w 
+                    ${IMGUI_FILEDIALOG_DIR}
+                    ${IMGUI_FILEDIALOG_DIR}/3rdparty/dirent/include)
 
 set (HEADERS 
    ${HEADERS}
@@ -42,6 +48,7 @@ set (SRCS
       ${IMGUI_DIR}/examples/imgui_impl_glfw.cpp
       ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
       ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
+      ${IMGUI_FILEDIALOG_DIR}/ImGuiFileDialog/ImGuiFileDialog.cpp
    )
 
 source_group("Resources" FILES ${RES} )

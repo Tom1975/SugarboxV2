@@ -1,9 +1,9 @@
 #include "SugarboxApp.h"
 
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "ImGuiFileDialog/ImGuiFileDialog.h"
 
 #include <GL/gl3w.h>
 #define GLFW_INCLUDE_NONE
@@ -50,13 +50,14 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), keyboard_handler_(nullptr), language_(), functions_list_(&language_)
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_)
 {
   
 }
 
 SugarboxApp::~SugarboxApp()
 {
+   delete[]write_disk_extension_;
 }
 
 void error_callback(int error, const char* description)
@@ -90,6 +91,8 @@ void SugarboxApp::InitMenu()
 {
    functions_list_.InitFunctions(this);
    language_.Init("Resources/labels.ini");
+
+   InitFileDialogs();
 }
 
 int SugarboxApp::RunApp()
@@ -179,6 +182,18 @@ void SugarboxApp::RunMainLoop()
       DrawMenu();
       DrawPeripherals();
       DrawStatusBar();
+
+      if (ImGuiFileDialog::Instance()->FileDialog("SaveAs"))
+      {
+         ImGuiFileDialog* imgui_fd = ImGuiFileDialog::Instance();
+         switch (file_dialog_type_)
+         {
+         case FD_SAVE_AS:
+            emulation_.SaveDiskAs(0, imgui_fd->GetCurrentPath().c_str(), format_ext_map_[imgui_fd->GetCurrentFilter()]);
+            break;
+         }
+         ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
+      }
 
       HandlePopups();
 
@@ -390,4 +405,41 @@ void SugarboxApp::AskForSaving(int drive)
 void SugarboxApp::Exit()
 {
    glfwSetWindowShouldClose(window_, true);
+}
+
+void SugarboxApp::InitFileDialogs()
+{
+   DiskBuilder disk_builder;
+   std::vector<std::string> list_format_ext_str;
+   std::vector<FormatType*> format_list = disk_builder.GetFormatsList(DiskBuilder::WRITE);
+   unsigned int buffer_ext_length = 0;
+   for (auto it = format_list.begin(); it != format_list.end(); it++)
+   {
+      //
+      std::string ext = std::string(".") + std::string((*it)->GetFormatExt());
+      list_format_ext_str.push_back(ext);
+      buffer_ext_length += ext.size() + 1;
+      format_ext_map_.insert(std::pair< std::string, const FormatType *> (ext, *it));
+   }
+   buffer_ext_length += 1;
+   delete[]write_disk_extension_;
+   write_disk_extension_ = new char[buffer_ext_length];
+   memset(write_disk_extension_, 0, buffer_ext_length);
+   char* ptr = write_disk_extension_;
+   for (auto it2 : list_format_ext_str)
+   {
+      
+      ptr = strcat (ptr, it2.c_str());
+      unsigned int size_ext = strlen(ptr);
+      ptr[size_ext] = '\0';
+      ptr = &ptr[size_ext + 1];
+   }
+   ptr[0] = '\0';
+}
+
+void SugarboxApp::SaveAs(int drive)
+{
+   // Todo : Generic types, multilanguage, etc.
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save as...", write_disk_extension_, ".");
+   file_dialog_type_ = FD_SAVE_AS;
 }

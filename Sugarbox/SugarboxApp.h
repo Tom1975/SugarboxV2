@@ -3,6 +3,9 @@
 #include <functional>
 #include <map>
 
+#include <imgui.h>
+
+
 #include "Emulation.h"
 #include "Display.h"
 #include "ALSoundMixer.h"
@@ -25,6 +28,7 @@ public:
 
    // IFunctionInterface interface
    virtual void Exit();
+   virtual void SaveAs(int drive);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -41,6 +45,7 @@ public:
 protected:
    // Menu init
    void InitMenu();
+   void InitFileDialogs();
 
    // Display gui
    void RunMainLoop();
@@ -58,6 +63,15 @@ protected:
       POPUP_ASK_SAVE
    } PopupType;
    unsigned int PopupArg;
+
+   //////////////
+   // File dialogs
+   enum {
+      FD_SAVE_AS
+   } file_dialog_type_;
+
+   std::map<std::string, const FormatType*> format_ext_map_;
+   char* write_disk_extension_;
 
    // Keyboard handler
    IKeyboard* keyboard_handler_;

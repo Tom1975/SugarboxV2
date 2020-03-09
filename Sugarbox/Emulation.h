@@ -26,6 +26,7 @@ public :
    bool LoadSnr(const char* path_file);
    bool LoadBin(const char* path_file);
    bool LoadSnapshot(const char* path_file);
+   void SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type);
    int LoadDisk(DataContainer* container, unsigned int drive_number = 0, bool differential_load = true);
    int LoadTape(const char* file_path);
    int LoadTape(IContainedElement* container);

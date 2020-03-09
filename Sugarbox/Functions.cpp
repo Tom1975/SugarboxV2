@@ -49,14 +49,35 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
-   //function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
+
+//   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_EJECT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_EJECT")));
+//   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT")));
+//   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_FLIP, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_FLIP")));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_SAVE_AS, Function(std::bind(&IFunctionInterface::SaveAs, function_handler_, 0), multilanguage_, "L_FN_DISK_1_SAVE_AS")));
+   //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT_BLANK, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT_BLANK")));
+
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_SAVE_AS, Function(std::bind(&IFunctionInterface::SaveAs, function_handler_, 1), multilanguage_, "L_FN_DISK_2_SAVE_AS")));
 
    // Custom menu ?
    // Otherwise, default menu init
-   menu_list_.push_back(MenuItems{ "Files",  
-                  {&function_list_.at(IFunctionInterface::FN_EXIT)}
-                  }
-      );
+   menu_list_.push_back(MenuItems{ "Files",
+                           {&function_list_.at(IFunctionInterface::FN_EXIT)} });
+   //menu_list_.push_back(MenuItems{ "Settings",
+   //                        {&function_list_.at(IFunctionInterface::FN_EXIT)} });
+   menu_list_.push_back(MenuItems{ "Disk",
+      {
+       //                          {&function_list_.at(IFunctionInterface::FN_DISK_1_EJECT),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_1_FLIP),
+                            &function_list_.at(IFunctionInterface::FN_DISK_1_SAVE_AS),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_2_EJECT),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT),
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_2_FLIP),
+                            &function_list_.at(IFunctionInterface::FN_DISK_2_SAVE_AS)
+      //                      &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK)
+                           } });
+
 }
 
 

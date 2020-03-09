@@ -42,7 +42,11 @@ public:
 
    }FunctionType;
 
+   //
    virtual void Exit() = 0;
+
+   // Disk
+   virtual void SaveAs(int drive) = 0;
 
 };
 
