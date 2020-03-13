@@ -90,6 +90,7 @@ void CDisplay::Init()
       framebufferArray_[i] = new int[1024 * 1024];
    }
 
+#ifdef TOTO
    ///////////////////////
    // Init shaders
    fragment_shader_ = glCreateShader(GL_FRAGMENT_SHADER);
@@ -108,6 +109,7 @@ void CDisplay::Init()
    glLinkProgram(program_);
    GLint status;
 
+#endif
    ///////////////////////
    // Init vertices
 static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 1
@@ -131,8 +133,9 @@ static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindVertexArray(0);
 
+#ifdef TOTO
    glUseProgram(program_);
-
+#endif
    //sh_texture_ = glGetUniformLocation(program_, "texture_in");
    glGenTextures(NB_FRAMES, texture_);
    glBindTexture(GL_TEXTURE_2D, texture_[0]);
@@ -151,7 +154,6 @@ static float vertices[] = { -1.0, -1.0,   1.0, -1.0,   1.0, 1.0,    // Triangle 
 
    glUniform2f(sh_ratio_, ratiox, ratioy );
    glUniform2f(sh_origin_, ORIGIN_X / 1024 * ratiox, ORIGIN_Y / 1024 * ratioy);
-   
 }
 
 void CDisplay::HSync ()
@@ -166,7 +168,7 @@ void CDisplay::StartSync()
 void CDisplay::VSync (bool bDbg)
 {
    // Add a frame to display, if display buffer is not full !
-   if (number_of_frame_to_display_ < NB_FRAMES)
+   //if (number_of_frame_to_display_ < NB_FRAMES)
    {
       index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
       //current_texture_ = (current_texture_ + 1) % NB_FRAMES;
@@ -183,8 +185,9 @@ void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
-
+#ifdef TOTO
       glUseProgram(program_);
+#else
       glBindVertexArray(vao);
 
       glActiveTexture(GL_TEXTURE0);
@@ -197,6 +200,7 @@ void CDisplay::Display()
       glBindVertexArray(0);
 
       glUseProgram(0);
+#endif
    }
 
 }
