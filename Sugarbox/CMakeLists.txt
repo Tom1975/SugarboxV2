@@ -91,12 +91,12 @@ endif()
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
 set ( CMAKE_CXX_STANDARD 17 )
 
-IF(APPLE)
-   MESSAGE("APPLE DETECTED")
-   set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE")
-endif()
 IF(WIN32)
    set (OPENGL_LINK opengl32)
+endif()
+
+if (APPLE)
+  target_link_libraries(Graphics "-framework OpenGL")
 endif()
 
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
