@@ -95,14 +95,14 @@ IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
-if (APPLE)
-  target_link_libraries(Sugarbox "-framework OpenGL")
-endif()
-
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
 
 # Link test executable against gtest & gtest_main
 target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} OpenAL)
+if (APPLE)
+  target_link_libraries(Sugarbox "-framework OpenGL")
+endif()
+
 
 # Installation
 install ( FILES "./SugarBox.ini" DESTINATION ${PROJECT_BINARY_DIR}) 
