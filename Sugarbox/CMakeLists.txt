@@ -74,7 +74,7 @@ set ( CMAKE_CXX_STANDARD 17 )
 
 IF(APPLE)
    MESSAGE("APPLE DETECTED")
-   set ( CompilerFlag "${CompilerFlag} APPLE")
+   set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE")
 endif()
 IF(WIN32)
    set (OPENGL_LINK opengl32)
