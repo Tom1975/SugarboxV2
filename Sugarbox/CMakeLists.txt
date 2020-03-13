@@ -53,6 +53,20 @@ set (SRCS
 
 source_group("Resources" FILES ${RES} )
 
+if(UNIX)
+    if (APPLE)
+        add_definitions(-DAPPLE)
+    else()
+        add_definitions(-DLINUX)
+    endif()
+    add_definitions(-DUNIX)
+elseif(WIN32)
+    add_definitions(-DWIN32)
+    add_definitions(-DMINGW32)
+    set(DIRENT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/dirent/include)
+    include_directories(${DIRENT_INCLUDE_DIR})
+endif()
+
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
    if (USE_SHARED_CRT)
