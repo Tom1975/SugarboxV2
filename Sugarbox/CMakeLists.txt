@@ -96,7 +96,7 @@ IF(WIN32)
 endif()
 
 if (APPLE)
-  target_link_libraries(Graphics "-framework OpenGL")
+  target_link_libraries(Sugarbox "-framework OpenGL")
 endif()
 
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
