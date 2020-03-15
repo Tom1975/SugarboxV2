@@ -8,6 +8,7 @@
 #include <GL/gl3w.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <filesystem>
 
 /////////////////////////////////////
 // Generic callbacks
@@ -50,7 +51,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_)
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
+dlg_settings_(&config_manager_), configuration_settings_(false)
 {
   
 }
@@ -97,6 +99,8 @@ void SugarboxApp::InitMenu()
 
 int SugarboxApp::RunApp()
 {
+   std::filesystem::path current_path_exe = std::filesystem::current_path();
+
    // Generic init
    InitMenu();
 
@@ -104,7 +108,7 @@ int SugarboxApp::RunApp()
    if (!glfwInit())
    {
       // Initialization failed
-      return -1;
+      return -1; 
    }
    glfwSetErrorCallback(error_callback);
 
@@ -152,6 +156,10 @@ int SugarboxApp::RunApp()
    display_.Init();
    emulation_.Init(&display_, this);
    keyboard_handler_ = emulation_.GetKeyboardHandler();
+   
+   // Get current directory, and add the CONF to it
+   current_path_exe /= "CONF";
+   dlg_settings_.Refresh(current_path_exe.string().c_str());
 
    // Run main loop
    RunMainLoop();
@@ -182,6 +190,7 @@ void SugarboxApp::RunMainLoop()
       DrawMenu();
       DrawPeripherals();
       DrawStatusBar();
+      DrawOthers();
 
       if (ImGuiFileDialog::Instance()->FileDialog("SaveAs"))
       {
@@ -274,6 +283,16 @@ void SugarboxApp::DrawStatusBar()
    // Sound control
 
    ImGui::End();
+}
+
+void SugarboxApp::DrawOthers()
+{
+   // Configuration ?
+   
+   if (configuration_settings_)
+   {
+      dlg_settings_.DisplayMenu();
+   }
 }
 
 void SugarboxApp::HandlePopups()
@@ -405,6 +424,14 @@ void SugarboxApp::AskForSaving(int drive)
 void SugarboxApp::Exit()
 {
    glfwSetWindowShouldClose(window_, true);
+}
+
+void SugarboxApp::ConfigurationSettings()
+{
+   
+
+   // Set the Configuration window as opened
+   configuration_settings_ = true;
 }
 
 void SugarboxApp::InitFileDialogs()

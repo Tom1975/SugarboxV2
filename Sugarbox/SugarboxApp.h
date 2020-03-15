@@ -17,6 +17,8 @@
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
+#include "SettingsList.h"
+#include "DlgSettings.h"
 
 class SugarboxApp : public ISoundFactory, public IFunctionInterface
 {
@@ -28,6 +30,7 @@ public:
 
    // IFunctionInterface interface
    virtual void Exit();
+   virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
 
    // ISoundFactory interface
@@ -53,6 +56,7 @@ protected:
    void DrawMenu();
    void DrawPeripherals();
    void DrawStatusBar();
+   void DrawOthers();
    void HandlePopups();
 
    void AskForSaving(int drive);
@@ -87,11 +91,11 @@ protected:
    float window_height_;
 
    // Emulation and so on 
+   ConfigurationManager config_manager_;
    Emulation emulation_;
    CDisplay display_;
    ALSoundMixer sound_mixer_;
    GLFWwindow* window_;
-
    // counters
    char str_speed_[16];
    int counter_;
@@ -99,5 +103,9 @@ protected:
    // Functions
    MultiLanguage language_;
    FunctionList functions_list_;
+
+   // Opened / close windows
+   DlgSettings dlg_settings_;
+   bool configuration_settings_;
 };
 

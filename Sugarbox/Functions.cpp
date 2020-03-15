@@ -50,6 +50,10 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT")));
 
+   
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CONFIG_SETTINGS, Function(std::bind(&IFunctionInterface::ConfigurationSettings, function_handler_), multilanguage_, "L_SETTINGS_CONFIG")));
+   
+
 //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_EJECT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_EJECT")));
 //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT")));
 //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_FLIP, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_FLIP")));
@@ -62,8 +66,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // Otherwise, default menu init
    menu_list_.push_back(MenuItems{ "Files",
                            {&function_list_.at(IFunctionInterface::FN_EXIT)} });
-   //menu_list_.push_back(MenuItems{ "Settings",
-   //                        {&function_list_.at(IFunctionInterface::FN_EXIT)} });
+   menu_list_.push_back(MenuItems{ "Settings",
+                           {&function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)} });
    menu_list_.push_back(MenuItems{ "Disk",
       {
        //                          {&function_list_.at(IFunctionInterface::FN_DISK_1_EJECT),

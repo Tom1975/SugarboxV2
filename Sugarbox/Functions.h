@@ -45,6 +45,9 @@ public:
    //
    virtual void Exit() = 0;
 
+   // Settings
+   virtual void ConfigurationSettings() = 0;
+
    // Disk
    virtual void SaveAs(int drive) = 0;
 
