@@ -29,7 +29,7 @@ void DlgSettings::DisplayMenu()
 
    // Display contents in a scrolling region
    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
-   ImGui::BeginChild("Scrolling");
+   ImGui::BeginChild("Scrolling", ImVec2(250, 0), true);
    int nb_conf = settings_list_.GetNumberOfConfigurations();
 
    for (int i = 0; i < nb_conf; i++)
@@ -43,12 +43,18 @@ void DlgSettings::DisplayMenu()
       }
    }
    ImGui::EndChild();
-
-   // Display configuration list
-   if (seletected_conf_ != nullptr)
-   {
-
-   }
+   ImGui::SameLine();
+   ImGui::BeginGroup();
+      // Display configuration list
+      if (seletected_conf_ != nullptr)
+      {
+         // Hardware type
+         // CRTC
+         // RAM quatity
+         // ROM /Cartridge
+         // Keyboard type
+      }
+   ImGui::EndGroup();
 
    ImGui::End();
 
