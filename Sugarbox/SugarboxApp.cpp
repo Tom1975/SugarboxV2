@@ -162,6 +162,61 @@ int SugarboxApp::RunApp()
    current_path_exe /= "CONF";
    dlg_settings_.Refresh(current_path_exe.string().c_str());
 
+   /*
+   // This part was used to convert keyboard from windows to keycode (for cross platform usage)
+   // It's no longer used, but I think I don't want to lose this code :)
+   // Set a map to convert scancode to key
+   std::map < int, int > scancode_to_key;
+   for (int k = GLFW_KEY_SPACE; k <= GLFW_KEY_LAST; k++)
+   {
+      scancode_to_key.insert(std::pair<int, int>(glfwGetKeyScancode(k), k));
+   }
+   ConfigurationManager key_mgr, key_mgr_out;
+   std::filesystem::path key_path = current_path_exe;
+   key_path /= "KeyboardMaps.ini";
+   key_mgr.OpenFile(key_path.string().c_str());
+
+   std::filesystem::path key_path_out = current_path_exe;
+   key_path_out /= "KeyboardMaps_Generic.ini";
+   key_mgr_out.OpenFile(key_path_out.string().c_str());
+
+   // Load KeyboardMaps.ini
+   // Read scancode, convert to key
+   // Write it
+   const char* section = key_mgr.GetFirstSection();
+   while (section != nullptr)
+   {
+      const char* key = key_mgr.GetFirstKey(section);
+      while (key != nullptr)
+      {
+         if (strstr(key, "_SC") != nullptr)
+         {
+            // Ok, this is a scancode key.
+            unsigned int value_sc = key_mgr.GetConfigurationInt(section, key, -1);
+
+            // Convert it
+            unsigned int value_key = scancode_to_key[value_sc];
+
+            if (value_key != 0)
+            {
+               // Add it to new map
+               char buffer[16];
+               sprintf(buffer, "%i", value_key);
+               key_mgr_out.SetConfiguration(section, key, buffer);
+
+            }
+         }
+
+         key = key_mgr.GetNextKey();
+      }
+      section = key_mgr.GetNextSection();
+   }
+   key_mgr_out.CloseFile();
+   */
+
+
+
+
    // Run main loop
    RunMainLoop();
 
@@ -406,12 +461,12 @@ void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
    // Send scancode to emulation
    if (action == GLFW_PRESS)
    {
-      emulation_.GetKeyboardHandler()->SendScanCode(scancode, true);
+      emulation_.GetKeyboardHandler()->SendScanCode(key, true);
    }
 
    if (action == GLFW_RELEASE)
    {
-      emulation_.GetKeyboardHandler()->SendScanCode(scancode, false);
+      emulation_.GetKeyboardHandler()->SendScanCode(key, false);
    }
 }
 

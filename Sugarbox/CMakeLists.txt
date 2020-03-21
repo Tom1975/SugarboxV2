@@ -33,7 +33,7 @@ include_directories(${IMGUI_DIR}
                     ${GLAD_GL_DIR}/deps 
                     ${IMGUI_DIR}/examples/libs/gl3w 
                     ${IMGUI_FILEDIALOG_DIR}
-                    ${IMGUI_FILEDIALOG_DIR}/3rdparty/dirent/include)
+                    )
 
 set (HEADERS 
    ${HEADERS}
@@ -63,7 +63,8 @@ if(UNIX)
 elseif(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-DMINGW32)
-    set(DIRENT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/dirent/include)
+    set(DIRENT_INCLUDE_DIR ${IMGUI_FILEDIALOG_DIR}/3rdparty/dirent/include)
+    
     include_directories(${DIRENT_INCLUDE_DIR})
 endif()
 

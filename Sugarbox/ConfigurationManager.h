@@ -15,9 +15,10 @@ public:
    virtual ~ConfigurationManager();
 
    virtual void OpenFile(const char* config_file);
+   virtual void CloseFile();
 
-   virtual void SetConfiguration(const char* section, const char* cle, const char* valeur, const char* file);
-   virtual void SetConfiguration(const char* section, const char* cle, const char* valeur);
+   virtual void SetConfiguration(const char* section, const char* key, const char* value, const char* file);
+   virtual void SetConfiguration(const char* section, const char* key, const char* value);
 
    virtual unsigned int GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size, const char* file);
    virtual unsigned int GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size);

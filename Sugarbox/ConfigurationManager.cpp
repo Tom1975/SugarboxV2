@@ -114,14 +114,50 @@ void ConfigurationManager::OpenFile(const char* config_file)
    }
 }
 
-void ConfigurationManager::SetConfiguration(const char* section, const char* cle, const char* valeur, const char* file)
+void ConfigurationManager::CloseFile()
+{
+   std::ofstream f(current_config_file_);
+
+   // Write this file
+   for (auto const& ent1 : config_file_)
+   {
+      // ent1.first is the first key
+      if (ent1.second != nullptr)
+      {
+         f << "[" << ent1.first << "]\n";
+
+         for (auto const& ent2 : *ent1.second)
+         {
+            // ent2.first is the second key
+            f << ent2.first << " = " << ent2.second << "\n";
+            // ent2.second is the data
+         }
+
+      }
+   }
+
+}
+
+void ConfigurationManager::SetConfiguration(const char* section, const char* key, const char* value, const char* file)
 {
    OpenFile(file);
-   SetConfiguration(section, cle, valeur);
+   SetConfiguration(section, key, value);
 }
-void ConfigurationManager::SetConfiguration(const char* section, const char* cle, const char* valeur)
+void ConfigurationManager::SetConfiguration(const char* section, const char* key, const char* value)
 {
    // Add or update key
+   data* d;
+   if (config_file_.count(section) == 0)
+   {
+      d = new data;
+      config_file_[section] = d;
+   }
+   else
+   {
+      d = config_file_[section];
+   }
+   (*d)[key] = value;
+   config_file_.at(section) = d;
    // rewrite whole file
 }
 
