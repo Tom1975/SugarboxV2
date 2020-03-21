@@ -5,13 +5,19 @@
 #include "imgui_impl_opengl3.h"
 #include "ImGuiFileDialog/ImGuiFileDialog.h"
 
-DlgSettings::DlgSettings(ConfigurationManager* config_manager) : config_manager_(config_manager), seletected_conf_(nullptr)
+DlgSettings::DlgSettings(ConfigurationManager* config_manager) : config_manager_(config_manager), engine_(nullptr), seletected_conf_(nullptr)
 {
 }
 
 DlgSettings::~DlgSettings()
 {
 
+}
+
+void DlgSettings::Init(EmulatorEngine* engine)
+{
+   engine_ = engine;
+   seletected_conf_ = engine_->GetSettings();
 }
 
 void DlgSettings::Refresh(const char* path)
@@ -22,6 +28,34 @@ void DlgSettings::Refresh(const char* path)
    settings_list_.BuildList();
 }
 
+void DlgSettings::DisplayConfigCombo()
+{
+   int nb_conf = settings_list_.GetNumberOfConfigurations();
+
+   const char* current_conf = nullptr;
+   if (seletected_conf_ != nullptr)
+   {
+      current_conf = seletected_conf_->GetShortDescription();
+   }
+      
+   if (ImGui::BeginCombo("##Configuration", current_conf))
+   {
+
+      for (int i = 0; i < nb_conf; i++)
+      {
+         MachineSettings* conf = settings_list_.GetConfiguration(i);
+         if (ImGui::Selectable(conf->GetShortDescription(), seletected_conf_ == conf))
+         {
+            // Set it !
+            conf->Load();
+            engine_->ChangeConfig(conf);
+            engine_->OnOff();
+            seletected_conf_ = conf;
+         }
+      }
+      ImGui::EndCombo();
+   }
+}
 
 void DlgSettings::DisplayMenu()
 {

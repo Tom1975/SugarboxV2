@@ -8,16 +8,17 @@
 #include "ConfigurationManager.h"
 #include "ISound.h"
 
-class Emulation 
+class Emulation  : public IDirectories
 {
 public :
    Emulation();
    virtual ~Emulation();
 
-   virtual void Init(IDisplay* display, ISoundFactory* sound);
+   virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
    virtual void Stop();
    virtual void EmulationLoop();
 
+   virtual const char* GetBaseDirectory();
    IKeyboard* GetKeyboardHandler();
    unsigned int GetSpeed();
 
@@ -53,4 +54,5 @@ protected:
    // Thread synchronisation
    bool command_waiting_;
    std::mutex command_mutex_;
+   std::string current_path_;
 };

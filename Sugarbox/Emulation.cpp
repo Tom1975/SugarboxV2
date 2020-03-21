@@ -21,6 +21,13 @@ Emulation::~Emulation()
    delete motherboard_;
 }
 
+//////////////////////////////////////////////
+///
+
+const char* Emulation::GetBaseDirectory()
+{
+   return current_path_.c_str();
+}
 
 //////////////////////////////////////////////
 ///
@@ -39,12 +46,14 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeed();
 }
 
-void Emulation::Init( IDisplay* display, ISoundFactory* sound)
+void Emulation::Init( IDisplay* display, ISoundFactory* sound, const char* current_path)
 {
+   current_path_ = current_path;
    emulator_settings_.Init(&config_manager_, sound);
    emulator_settings_.Load("Sugarbox.ini");
 
    emulator_engine_ = new EmulatorEngine();
+   emulator_engine_->SetDirectories(this);
    emulator_engine_->SetConfigurationManager(&config_manager_);
    emulator_engine_->Init(display, nullptr);
 

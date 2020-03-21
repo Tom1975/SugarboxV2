@@ -26,8 +26,11 @@ void ConfigurationManager::Clear()
             // ent2.first is the second key
             // ent2.second is the data
          }
+
       }
+      ent1.second->clear();
    }
+   config_file_.clear();
 }
 
 void ConfigurationManager::OpenFile(const char* config_file)

@@ -154,7 +154,8 @@ int SugarboxApp::RunApp()
    SizeChanged(window_width_, window_height_);
 
    display_.Init();
-   emulation_.Init(&display_, this);
+   emulation_.Init(&display_, this, current_path_exe.string().c_str());
+   dlg_settings_.Init(emulation_.GetEngine());
    keyboard_handler_ = emulation_.GetKeyboardHandler();
    
    // Get current directory, and add the CONF to it
@@ -248,8 +249,11 @@ void SugarboxApp::DrawMenu()
       }
       ImGui::EndMenuBar();
    }
-   ImGui::End();
 
+   // Toolbar : Add configs
+   dlg_settings_.DisplayConfigCombo();
+
+   ImGui::End();
 }
 
 void SugarboxApp::DrawPeripherals()
