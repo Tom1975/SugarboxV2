@@ -3,13 +3,16 @@
 // C RunTime Header Files
 #include <stdlib.h>
 #include <string>
-#include <malloc.h>
 #include <memory.h>
+
+//#include <glad/gl.h>
+#include <GL/gl3w.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 #include "Screen.h"
 
-// SFML
-#include <SFML/Graphics.hpp>
-
+#define NB_FRAMES 3
 // Display
 class CDisplay : public IDisplay
 {
@@ -17,12 +20,12 @@ public :
    CDisplay ();
    virtual ~CDisplay ();
 
-   void Init(sf::RenderWindow* window);
+   void Init();
    void Show(bool bShow);
+   void Display();
 
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
-   virtual void Display() {};
    virtual bool AFrameIsReady  () {return true;};
    virtual void Config () {};
    virtual const char* GetInformations () { return "TCL GDI";};
@@ -48,8 +51,6 @@ public :
    virtual bool GetBlackScreenInterval () { return false ;};
    virtual void SetBlackScreenInterval (bool bBS) { };
 
-   virtual void StopMessaging  ( bool bStop ){stop_=bStop;};
-
    virtual void SetSize (SizeEnum size){};
    virtual SizeEnum  GetSize () { return S_STANDARD; };
 
@@ -62,19 +63,42 @@ public :
    virtual void SetCurrentPart (int x, int y ){};
    virtual int GetDnDPart () { return 0;};
 
+   virtual GLuint GetTexture();
 protected:
-   bool m_bShow;
-   bool stop_; 
+
    // Displayed window : 
    int m_X, m_Y;
    int m_Width;
    int m_Height;
 
-   sf::RenderTexture *renderTexture_;
-   sf::Texture* framebuffer_;
-   sf::RenderWindow *window_;
+   // Window
+   int* framebufferArray_[NB_FRAMES];
 
-   sf::Image screenshot_texture_;
-   const unsigned char* screenshot_buffer_;
-   int* framebufferArray_;
+   // Textures to display indexes
+   int index_to_display_[NB_FRAMES];
+   int current_index_of_index_to_display_;
+   int number_of_frame_to_display_;
+
+   // Texture Indexes
+   int current_texture_;
+
+   // Open gl stuff
+   GLuint texture_ [NB_FRAMES] ;
+   GLuint fragment_shader_;
+   GLuint vertex_shader_;
+   GLuint program_;
+
+   GLint sh_texture_;
+   GLint sh_origin_;
+   GLint sh_ratio_;
+   GLint sh_size_of_display_;
+   GLint sh_size_of_texture_;
+
+   GLuint readFboId_;
+   GLuint VertexArrayID_;
+   GLuint vertexbuffer_;
+
+   GLuint vbo;
+   GLuint vao;
+
 };

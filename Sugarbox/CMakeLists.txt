@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include/msvc/wx)
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/include)
-include_directories (${CMAKE_CURRENT_BINARY_DIR}/../wxlib/lib/vc_x64_lib)
-
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -24,6 +20,54 @@ file(GLOB SRCS
     *.cpp
 )
 
+file(GLOB RES
+   ${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*
+)
+
+set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
+set (IMGUI_FILEDIALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ImGuiFileDialog)
+set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
+            
+include_directories(${IMGUI_DIR} 
+                    ${IMGUI_DIR}/examples 
+                    ${GLAD_GL_DIR}/deps 
+                    ${IMGUI_DIR}/examples/libs/gl3w 
+                    ${IMGUI_FILEDIALOG_DIR}
+                    )
+
+set (HEADERS 
+   ${HEADERS}
+   ${IMGUI_DIR}/examples/imgui_impl_glfw.h
+   ${IMGUI_DIR}/examples/imgui_impl_opengl3.h
+)
+set (SRCS 
+      ${SRCS}
+      ${IMGUI_DIR}/imgui.cpp
+      ${IMGUI_DIR}/imgui_draw.cpp
+      ${IMGUI_DIR}/imgui_widgets.cpp
+      ${IMGUI_DIR}/examples/imgui_impl_glfw.cpp
+      ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
+      ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
+      ${IMGUI_FILEDIALOG_DIR}/ImGuiFileDialog/ImGuiFileDialog.cpp
+   )
+
+source_group("Resources" FILES ${RES} )
+
+if(UNIX)
+    if (APPLE)
+        add_definitions(-DAPPLE)
+    else()
+        add_definitions(-DLINUX)
+    endif()
+    add_definitions(-DUNIX)
+elseif(WIN32)
+    add_definitions(-DWIN32)
+    add_definitions(-DMINGW32)
+    set(DIRENT_INCLUDE_DIR ${IMGUI_FILEDIALOG_DIR}/3rdparty/dirent/include)
+    
+    include_directories(${DIRENT_INCLUDE_DIR})
+endif()
+
 IF(MSVC)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
    if (USE_SHARED_CRT)
@@ -35,19 +79,40 @@ IF(MSVC)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")  
 ENDIF(MSVC)
 
-if(CMAKE_COMPILER_IS_GNUCC)
+if(CMAKE_COMPILER_IS_GNUCC )
 	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a stdc++fs )
+   set ( LIBZA libz.a stdc++fs GLEW GL )
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
+   set ( LIBZA libz.a )
+endif()
+
+set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
+set ( CMAKE_CXX_STANDARD 17 )
+
+IF(WIN32)
+   set (OPENGL_LINK opengl32)
+endif()
+
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
+
+# Link test executable against gtest & gtest_main
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} OpenAL)
+if (APPLE)
+  target_link_libraries(Sugarbox "-framework OpenGL")
 endif()
 
 
-add_executable(Sugarbox ${SRCS} ${HEADERS}  )
-
-# Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic sfml-graphics sfml-window ${LIBZA} net core base)
+# Installation
+install ( FILES "./SugarBox.ini" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./ROM" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./CART" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./CONF" DESTINATION ${PROJECT_BINARY_DIR}) 
+install ( DIRECTORY "./Resources" DESTINATION ${PROJECT_BINARY_DIR}) 
 
 # CPACK
-set(CPACK_GENERATOR WIX)
 set(CPACK_PACKAGE_NAME "Sugarbox")
 set(CPACK_PACKAGE_VENDOR "Thomas GUILLEMIN")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An amstrad CPC Emulator")
@@ -58,3 +123,6 @@ set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sugarbox")
 
 INCLUDE(CPack)
+
+# Install
+

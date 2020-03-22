@@ -19,12 +19,18 @@ void ConfigurationManager::Clear()
    for (auto const& ent1 : config_file_)
    {
       // ent1.first is the first key
-      for (auto const& ent2 : *ent1.second)
-      {
-         // ent2.first is the second key
-         // ent2.second is the data
+      if (ent1.second != nullptr)
+      { 
+         for (auto const& ent2 : *ent1.second)
+         {
+            // ent2.first is the second key
+            // ent2.second is the data
+         }
+
       }
+      ent1.second->clear();
    }
+   config_file_.clear();
 }
 
 void ConfigurationManager::OpenFile(const char* config_file)
@@ -108,16 +114,61 @@ void ConfigurationManager::OpenFile(const char* config_file)
    }
 }
 
-void ConfigurationManager::SetConfiguration(const char* section, const char* cle, const char* valeur, const char* file)
+void ConfigurationManager::CloseFile()
+{
+   std::ofstream f(current_config_file_);
+
+   // Write this file
+   for (auto const& ent1 : config_file_)
+   {
+      // ent1.first is the first key
+      if (ent1.second != nullptr)
+      {
+         f << "[" << ent1.first << "]\n";
+
+         for (auto const& ent2 : *ent1.second)
+         {
+            // ent2.first is the second key
+            f << ent2.first << " = " << ent2.second << "\n";
+            // ent2.second is the data
+         }
+
+      }
+   }
+
+}
+
+void ConfigurationManager::SetConfiguration(const char* section, const char* key, const char* value, const char* file)
 {
    OpenFile(file);
+   SetConfiguration(section, key, value);
+}
+void ConfigurationManager::SetConfiguration(const char* section, const char* key, const char* value)
+{
    // Add or update key
+   data* d;
+   if (config_file_.count(section) == 0)
+   {
+      d = new data;
+      config_file_[section] = d;
+   }
+   else
+   {
+      d = config_file_[section];
+   }
+   (*d)[key] = value;
+   config_file_.at(section) = d;
    // rewrite whole file
 }
 
 unsigned int ConfigurationManager::GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size, const char* file)
 {
    OpenFile(file);
+   return GetConfiguration(section, cle, default_value, out_buffer, buffer_size);
+}
+
+unsigned int ConfigurationManager::GetConfiguration(const char* section, const char* cle, const char* default_value, char* out_buffer, unsigned int buffer_size)
+{
    if (config_file_.count(section) > 0)
    {
       if (config_file_[section]->count(cle) > 0)
@@ -142,6 +193,11 @@ unsigned int ConfigurationManager::GetConfiguration(const char* section, const c
 unsigned int ConfigurationManager::GetConfigurationInt(const char* section, const char* cle, unsigned int default_value, const char* file)
 {
    OpenFile(file);
+   return GetConfigurationInt(section, cle, default_value);
+}
+
+unsigned int ConfigurationManager::GetConfigurationInt(const char* section, const char* cle, unsigned int default_value)
+{
    if (config_file_.count(section) > 0)
    {
       if (config_file_[section]->count(cle) > 0)
@@ -152,3 +208,41 @@ unsigned int ConfigurationManager::GetConfigurationInt(const char* section, cons
    }
    return default_value;
 }
+
+const char* ConfigurationManager::GetFirstSection()
+{
+   it_section_ = config_file_.begin();
+   return GetNextSection();
+}
+
+const char* ConfigurationManager::GetNextSection()
+{
+   if (it_section_ != config_file_.end())
+   {
+      const char* value = it_section_->first.c_str();
+      ++it_section_;
+      return value;
+   }
+   return nullptr;
+}
+
+const char* ConfigurationManager::GetFirstKey(const char* section)
+{
+   current_key_section_it_ = config_file_[std::string(section)];
+   if (current_key_section_it_ == nullptr )
+      return nullptr;
+   it_key_ = current_key_section_it_->begin();
+   return GetNextKey();
+}
+
+const char* ConfigurationManager::GetNextKey()
+{
+   if (it_key_ != current_key_section_it_->end())
+   {
+      const char* value = it_key_->first.c_str();
+      ++it_key_;
+      return value;
+   }
+   return nullptr;
+}
+

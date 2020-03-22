@@ -49,45 +49,11 @@ build_script:
 - sh: |-
     make all
 
-after_build:
-- cmd : |- 
-    set artifact_name=SugarConvDsk_%platform%.zip
-    7z a %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\SugarConvDsk\%configuration%\SugarConvDsk.exe
-    appveyor PushArtifact %artifact_name%
-- sh:  |-
-    artifact_name=$APPVEYOR_BUILD_FOLDER/build/SugarConvDsk/$configuration/SugarConvDsk_$PLATFORM.gz
-    gzip -k $APPVEYOR_BUILD_FOLDER/build/SugarConvDsk/$configuration/SugarConvDsk
-    mv $APPVEYOR_BUILD_FOLDER/build/SugarConvDsk/$configuration/SugarConvDsk.gz $artifact_name
-    appveyor PushArtifact $artifact_name
-
-test_script:
-- cmd:  |-
-    cd c:\projects\SugarConvDsk\build\Tests
-    cd %configuration%
-    Tests.exe
-- sh:  |-
-    cd $APPVEYOR_BUILD_FOLDER/build/Tests
-    make install
-    chmod +777 SugarConvDsk
-    ./Tests
 
 only_commits:
   files:
     - CMakeLists.txt
     - appveyor.yml
-    - SugarConvDsk/
-    - CPCCoreEMu/
-    - Tests/
+    - Sugarbox/
+    - CPCCore/
 
-deploy:
-  release: SugarConvDsk-v1.0.$(appveyor_build_version)
-  description: SugarConvDsk tool. Zip are for windows system, .gz for linux.
-  provider: GitHub
-  tag: $(APPVEYOR_REPO_TAG_NAME) 
-  auth_token:
-    secure: /Nr3QtuzpAw6S9iRX/KJ5f3RGXpx9xiuhrxz+jLV5aVSVrhNPX2ZTFaNn0ToOBDx
-  artifact: SugarConvDsk_x86.gz,SugarConvDsk_x64.gz,SugarConvDsk_x86.zip,SugarConvDsk_x64.zip
-  draft: false
-  prerelease: true
-  on:
-    APPVEYOR_REPO_TAG : true       # deploy on tag push only

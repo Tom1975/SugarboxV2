@@ -1,4 +1,12 @@
-#include "SugarApp.h"
+#ifdef WIN32
+   #pragma comment(linker, " /ENTRY:mainCRTStartup")
+#endif
 
-wxIMPLEMENT_APP(SugarApp);
+#include "SugarboxApp.h"
+
+int main()
+{
+   SugarboxApp app;
+   return app.RunApp();
+}
 
