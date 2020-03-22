@@ -21,8 +21,7 @@ platform:
 - x64
 
 install:
-- git submodule init 
-- git submodule update --recursive
+- git submodule update --init --recursive
 
 - sh: |- 
     echo 'Update to gcc8'
