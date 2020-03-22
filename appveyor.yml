@@ -11,7 +11,6 @@ branches:
 
 image:
 - Visual Studio 2017
-- Ubuntu1804
 
 configuration:
 - Release   
@@ -23,14 +22,6 @@ platform:
 install:
 - git submodule update --init --recursive
 
-- sh: |- 
-    echo 'Update to gcc8'
-    sudo update-alternatives --set gcc /usr/bin/gcc-8
-    sudo apt-get -y install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev
-    sudo apt-get -y install libxinerama-dev libxcursor-dev 
-    sudo apt-get -y install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev
-    sudo apt-get -y install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev
-    sudo apt-get -y install libgconf2-dev
   
 before_build:
 - cmd: |-
@@ -40,20 +31,11 @@ before_build:
     cmake --version
     echo %CMAKE_GENERATOR%
     cmake .. -G %CMAKE_GENERATOR%
-- sh: |-
-    mkdir build
-    cd build
-    cmake --version
-    cmake .. 
-
     
 build_script:
 - cmd : |- 
     cmake --build . --config %configuration%
     cmake --build . --config %configuration% --target INSTALL
-- sh: |-
-    make all
-
 
 only_commits:
   files:
