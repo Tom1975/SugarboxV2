@@ -6,6 +6,7 @@ environment:
 branches:
   only:
   - master
+  - CI_update_and_fix
  
 
 image:
@@ -21,7 +22,8 @@ platform:
 
 install:
 - git submodule init 
-- git submodule update
+- git submodule update --recursive
+
 - sh: |- 
     echo 'Update to gcc8'
     sudo update-alternatives --set gcc /usr/bin/gcc-8
