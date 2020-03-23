@@ -52,7 +52,7 @@ public:
    virtual void SaveAs(int drive) = 0;
    virtual void Eject(int drive) = 0;
    virtual bool DiskPresent(int drive) = 0;
-
+   virtual void Flip(int drive) = 0;
 };
 
 class Function

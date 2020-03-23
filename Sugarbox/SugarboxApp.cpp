@@ -553,3 +553,8 @@ void SugarboxApp::Eject(int drive)
    popup_associated_function_ = std::bind (&EmulatorEngine::Eject, emulation_.GetEngine(), drive);
    AskForSaving(drive);
 }
+
+void SugarboxApp::Flip(int drive)
+{
+   return emulation_.GetEngine()->FlipDisk(drive);
+}

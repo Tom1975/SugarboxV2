@@ -34,6 +34,7 @@ public:
    virtual void SaveAs(int drive);
    virtual void Eject(int drive);
    virtual bool DiskPresent(int drive);
+   virtual void Flip(int drive);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);

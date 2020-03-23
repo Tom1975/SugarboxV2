@@ -59,12 +59,12 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_SAVE_AS, Function(std::bind(&IFunctionInterface::SaveAs, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_SAVE_AS")));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_EJECT, Function(std::bind(&IFunctionInterface::Eject, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_EJECT")));
-//   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT")));
-//   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_FLIP, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_FLIP")));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_FLIP, Function(std::bind(&IFunctionInterface::Flip, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_FLIP")));
+   //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT")));
    //   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_INSERT_BLANK, Function(std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FN_DISK_1_INSERT_BLANK")));
-
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_SAVE_AS, Function(std::bind(&IFunctionInterface::SaveAs, function_handler_, 1), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 1), multilanguage_, "L_FN_DISK_2_SAVE_AS")));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_EJECT, Function(std::bind(&IFunctionInterface::Eject, function_handler_, 1), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 1), multilanguage_, "L_FN_DISK_2_EJECT")));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_FLIP, Function(std::bind(&IFunctionInterface::Flip, function_handler_, 1), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 1), multilanguage_, "L_FN_DISK_2_FLIP")));
 
    // Custom menu ?
    // Otherwise, default menu init
@@ -76,12 +76,12 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       {
                             &function_list_.at(IFunctionInterface::FN_DISK_1_EJECT),
       //                      &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT),
-      //                      &function_list_.at(IFunctionInterface::FN_DISK_1_FLIP),
+                            &function_list_.at(IFunctionInterface::FN_DISK_1_FLIP),
                             &function_list_.at(IFunctionInterface::FN_DISK_1_SAVE_AS),
       //                      &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK),
                             &function_list_.at(IFunctionInterface::FN_DISK_2_EJECT),
       //                      &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT),
-      //                      &function_list_.at(IFunctionInterface::FN_DISK_2_FLIP),
+                            &function_list_.at(IFunctionInterface::FN_DISK_2_FLIP),
                             &function_list_.at(IFunctionInterface::FN_DISK_2_SAVE_AS)
       //                      &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK)
                            } });
