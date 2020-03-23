@@ -6,11 +6,11 @@ environment:
 branches:
   only:
   - master
+  - CI_update_and_fix
  
 
 image:
 - Visual Studio 2017
-- Ubuntu1804
 
 configuration:
 - Release   
@@ -20,11 +20,7 @@ platform:
 - x64
 
 install:
-- git submodule init 
-- git submodule update
-- sh: |- 
-    echo 'Update to gcc8'
-    sudo update-alternatives --set gcc /usr/bin/gcc-8
+- git submodule update --init --recursive
 
   
 before_build:
@@ -35,20 +31,11 @@ before_build:
     cmake --version
     echo %CMAKE_GENERATOR%
     cmake .. -G %CMAKE_GENERATOR%
-- sh: |-
-    mkdir build
-    cd build
-    cmake --version
-    cmake .. 
-
     
 build_script:
 - cmd : |- 
     cmake --build . --config %configuration%
     cmake --build . --config %configuration% --target INSTALL
-- sh: |-
-    make all
-
 
 only_commits:
   files:
