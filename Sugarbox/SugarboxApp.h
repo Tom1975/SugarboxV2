@@ -32,6 +32,8 @@ public:
    virtual void Exit();
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
+   virtual void Eject(int drive);
+   virtual bool DiskPresent(int drive);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -59,7 +61,7 @@ protected:
    void DrawOthers();
    void HandlePopups();
 
-   void AskForSaving(int drive);
+   bool AskForSaving(int drive);
 
    // Gui related
    enum {
@@ -67,6 +69,8 @@ protected:
       POPUP_ASK_SAVE
    } PopupType;
    unsigned int PopupArg;
+   std::function<void()> popup_associated_function_;
+   
 
    //////////////
    // File dialogs
@@ -105,6 +109,7 @@ protected:
    FunctionList functions_list_;
 
    // Opened / close windows
+   DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
    bool configuration_settings_;
 };

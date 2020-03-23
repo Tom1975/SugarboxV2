@@ -50,24 +50,28 @@ public:
 
    // Disk
    virtual void SaveAs(int drive) = 0;
+   virtual void Eject(int drive) = 0;
+   virtual bool DiskPresent(int drive) = 0;
 
 };
 
 class Function
 {
 public:
-   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label);
+   Function(std::function<void()> fn, std::function<bool()> available, MultiLanguage* multilanguage, std::string id_label);
    virtual ~Function();
 
    // Function access
    const char* GetLabel();
    const char* GetShortcut();
+   bool IsAvailable();
    void Call();
 
 protected:
 
    std::string id_label_;
    std::function<void()> function_;
+   std::function<bool()> available_;
    MultiLanguage* multilanguage_;
 };
 
@@ -93,6 +97,7 @@ public:
    const char* GetSubMenuLabel(unsigned int index_menu, int index_submenu);
    const char* GetSubMenuShortcut(unsigned int index_menu, int index_submenu);
    void Call (unsigned int index_menu, int index_submenu);
+   bool IsAvailable(unsigned int index_menu, int index_submenu);
    // Toolbar access
 
 protected:
