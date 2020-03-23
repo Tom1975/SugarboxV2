@@ -6,8 +6,7 @@ environment:
 branches:
   only:
   - master
-  - CI_update_and_fix
- 
+  
 
 image:
 - Visual Studio 2017
