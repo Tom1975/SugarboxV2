@@ -54,9 +54,11 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function(std::bind(&IFunctionInterface::Exit, function_handler_), [](){ return true; }, multilanguage_, "L_FILE_EXIT")));
+
+   // Settings
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CONFIG_SETTINGS, Function(std::bind(&IFunctionInterface::ConfigurationSettings, function_handler_), []() { return true; }, multilanguage_, "L_SETTINGS_CONFIG")));
    
-
+   // Disk
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_SAVE_AS, Function(std::bind(&IFunctionInterface::SaveAs, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_SAVE_AS")));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_EJECT, Function(std::bind(&IFunctionInterface::Eject, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_EJECT")));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_1_FLIP, Function(std::bind(&IFunctionInterface::Flip, function_handler_, 0), std::bind(&IFunctionInterface::DiskPresent, function_handler_, 0), multilanguage_, "L_FN_DISK_1_FLIP")));
