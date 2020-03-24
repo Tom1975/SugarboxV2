@@ -51,6 +51,8 @@ public:
 
    // Control
    virtual void HardReset() = 0;
+   virtual void Pause() = 0;
+   virtual bool PauseEnabled() = 0;
 
    // Settings
    virtual void ConfigurationSettings() = 0;
@@ -67,12 +69,13 @@ public:
 class Function
 {
 public:
-   Function(std::function<void()> fn, std::function<bool()> available, MultiLanguage* multilanguage, std::string id_label);
+   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available = []() { return true; }, std::function<bool()> selected = []() { return false; });
    virtual ~Function();
 
    // Function access
    const char* GetLabel();
    const char* GetShortcut();
+   bool IsSelected();
    bool IsAvailable();
    void Call();
 
@@ -81,6 +84,7 @@ protected:
    std::string id_label_;
    std::function<void()> function_;
    std::function<bool()> available_;
+   std::function<bool()> selected_;
    MultiLanguage* multilanguage_;
 };
 
@@ -107,6 +111,7 @@ public:
    const char* GetSubMenuShortcut(unsigned int index_menu, int index_submenu);
    void Call (unsigned int index_menu, int index_submenu);
    bool IsAvailable(unsigned int index_menu, int index_submenu);
+   bool IsSelected(unsigned int index_menu, int index_submenu);
    // Toolbar access
 
 protected:

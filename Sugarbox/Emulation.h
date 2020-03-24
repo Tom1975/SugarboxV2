@@ -17,6 +17,8 @@ public :
    virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
    virtual void Stop();
    virtual void HardReset();
+   virtual void Pause();
+   virtual bool EmulationRun();
    virtual void EmulationLoop();
 
    virtual const char* GetBaseDirectory();
@@ -50,6 +52,9 @@ protected:
 
    ConfigurationManager config_manager_;
    EmulatorSettings emulator_settings_;
+
+   // Emulation control
+   bool pause_;
 
    std::thread* worker_thread_;
    bool running_thread_;

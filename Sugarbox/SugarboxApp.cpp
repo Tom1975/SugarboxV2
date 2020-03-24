@@ -299,7 +299,7 @@ void SugarboxApp::DrawMenu()
                if (ImGui::MenuItem(
                      functions_list_.GetSubMenuLabel(menu_index, submenu_index), 
                      functions_list_.GetSubMenuShortcut(menu_index, submenu_index), 
-                     false, 
+                     functions_list_.IsSelected(menu_index, submenu_index),
                      functions_list_.IsAvailable(menu_index, submenu_index)))
                {
                   functions_list_.Call (menu_index, submenu_index); 
@@ -500,6 +500,16 @@ bool SugarboxApp::AskForSaving(int drive)
 void SugarboxApp::Exit()
 {
    glfwSetWindowShouldClose(window_, true);
+}
+
+bool SugarboxApp::PauseEnabled()
+{
+   return emulation_.EmulationRun() == false;
+}
+
+void SugarboxApp::Pause()
+{
+   emulation_.Pause( );
 }
 
 void SugarboxApp::HardReset()

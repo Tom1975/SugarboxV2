@@ -31,6 +31,8 @@ public:
    // IFunctionInterface interface
    virtual void Exit();
    virtual void HardReset();
+   virtual void Pause();
+   virtual bool PauseEnabled();
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
    virtual void Eject(int drive);

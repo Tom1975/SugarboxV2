@@ -11,6 +11,7 @@ Emulation::Emulation() :
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
+   pause_(false),
    worker_thread_(nullptr),
    command_waiting_(false)
 {
@@ -83,7 +84,14 @@ void Emulation::EmulationLoop()
 
    while (running_thread_)
    {
-      emulator_engine_->RunTimeSlice(true);
+      if (!pause_)
+      {
+         emulator_engine_->RunTimeSlice(true);
+      }
+      else
+      {
+         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
 
       // Command waiting ? 
       if (command_waiting_)
@@ -96,6 +104,16 @@ void Emulation::EmulationLoop()
       }
    }
    emulator_engine_->Stop();
+}
+
+void Emulation::Pause()
+{
+   pause_ = !pause_;
+}
+
+bool Emulation::EmulationRun()
+{
+   return pause_==false;
 }
 
 void Emulation::HardReset()
