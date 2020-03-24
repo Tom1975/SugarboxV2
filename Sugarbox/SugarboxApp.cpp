@@ -51,7 +51,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
+SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_), configuration_settings_(false)
 {
   
@@ -60,6 +60,7 @@ dlg_settings_(&config_manager_), configuration_settings_(false)
 SugarboxApp::~SugarboxApp()
 {
    delete[]write_disk_extension_;
+   delete[]load_disk_extension_;
 }
 
 void error_callback(int error, const char* description)
@@ -254,7 +255,10 @@ void SugarboxApp::RunMainLoop()
          switch (file_dialog_type_)
          {
          case FD_SAVE_AS:
-            emulation_.SaveDiskAs(0, imgui_fd->GetCurrentPath().c_str(), format_ext_map_[imgui_fd->GetCurrentFilter()]);
+            emulation_.SaveDiskAs(0, imgui_fd->GetFilepathName().c_str(), format_ext_map_[imgui_fd->GetCurrentFilter()]);
+            break;
+         case FD_INSERT:
+            emulation_.GetEngine()->LoadDisk( imgui_fd->GetFilepathName().c_str(), 0);
             break;
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
@@ -292,8 +296,11 @@ void SugarboxApp::DrawMenu()
          {
             for (int submenu_index = 0; submenu_index < functions_list_.NbSubMenu(menu_index); submenu_index++)
             {
-               //if (ImGui::MenuItem(language_.GetString("L_FILE_EXIT"), "Alt+F4")) { glfwSetWindowShouldClose(window_, true); }
-               if (ImGui::MenuItem(functions_list_.GetSubMenuLabel(menu_index, submenu_index), functions_list_.GetSubMenuShortcut(menu_index, submenu_index))) 
+               if (ImGui::MenuItem(
+                     functions_list_.GetSubMenuLabel(menu_index, submenu_index), 
+                     functions_list_.GetSubMenuShortcut(menu_index, submenu_index), 
+                     false, 
+                     functions_list_.IsAvailable(menu_index, submenu_index)))
                {
                   functions_list_.Call (menu_index, submenu_index); 
                }
@@ -368,12 +375,15 @@ void SugarboxApp::HandlePopups()
             {
                emulation_.GetEngine()->SaveDisk(PopupArg);
                PopupType = POPUP_NONE;
+               popup_associated_function_();
             }
             if (ImGui::Button("No"))
             {
                emulation_.GetEngine()->SaveDisk(PopupArg);
                PopupType = POPUP_NONE;
+               popup_associated_function_();
             }
+            // Call associated function
             ImGui::EndPopup();
          }
          break;
@@ -416,14 +426,18 @@ void SugarboxApp::Drop(int count, const char** paths)
          // Set ROM : TODO
          break;
       case 3:
+      {
          test = true;
+         auto fn = [](Emulation* emulation, DataContainer* dnd_container) { emulation->LoadDisk(dnd_container, 0); };
+         popup_associated_function_ = std::bind(fn, &emulation_, dnd_container);
          AskForSaving(0);
-         //m_SkipNextAutorun = false;
-         //m_pMachine->LoadDisk (m_DragFiles[0], part);
-         emulation_.LoadDisk(dnd_container, 0);
-
+         /*if (!AskForSaving(0))
+         {
+            emulation_.LoadDisk(dnd_container, 0);
+         }*/
          break;
          // Tape - TODO
+      }
       case 4:
          // TODO : Ask for tape saving ?
 
@@ -470,13 +484,16 @@ void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
    }
 }
 
-void SugarboxApp::AskForSaving(int drive)
+bool SugarboxApp::AskForSaving(int drive)
 {
    if (emulation_.GetEngine()->IsDiskModified(drive))
    {
       PopupType = POPUP_ASK_SAVE;
       PopupArg = drive;
+      return true;
    }
+   popup_associated_function_();
+   return false;
 }
 
 
@@ -495,10 +512,10 @@ void SugarboxApp::ConfigurationSettings()
 
 void SugarboxApp::InitFileDialogs()
 {
-   DiskBuilder disk_builder;
    std::vector<std::string> list_format_ext_str;
-   std::vector<FormatType*> format_list = disk_builder.GetFormatsList(DiskBuilder::WRITE);
+   std::vector<FormatType*> format_list = disk_builder_.GetFormatsList(DiskBuilder::WRITE);
    unsigned int buffer_ext_length = 0;
+   format_ext_map_.clear();
    for (auto it = format_list.begin(); it != format_list.end(); it++)
    {
       //
@@ -521,6 +538,38 @@ void SugarboxApp::InitFileDialogs()
       ptr = &ptr[size_ext + 1];
    }
    ptr[0] = '\0';
+
+   format_ext_map_read_.clear();
+   list_format_ext_str.clear();
+   format_list = disk_builder_.GetFormatsList(DiskBuilder::READ);
+   buffer_ext_length = 0;
+   for (auto it = format_list.begin(); it != format_list.end(); it++)
+   {
+      //
+      std::string ext = std::string(".") + std::string((*it)->GetFormatExt());
+      list_format_ext_str.push_back(ext);
+      buffer_ext_length += ext.size() + 1;
+      format_ext_map_read_.insert(std::pair< std::string, const FormatType*>(ext, *it));
+   }
+   buffer_ext_length += 1;
+   delete[]load_disk_extension_;
+   load_disk_extension_ = new char[buffer_ext_length];
+   memset(load_disk_extension_, 0, buffer_ext_length);
+   ptr = load_disk_extension_;
+   for (auto it2 : list_format_ext_str)
+   {
+      ptr = strcat(ptr, it2.c_str());
+      unsigned int size_ext = strlen(ptr);
+      ptr[size_ext] = '\0';
+      ptr = &ptr[size_ext + 1];
+   }
+   ptr[0] = '\0';
+
+}
+
+bool SugarboxApp::DiskPresent(int drive)
+{
+   return emulation_.IsDiskPresent(drive);
 }
 
 void SugarboxApp::SaveAs(int drive)
@@ -528,4 +577,40 @@ void SugarboxApp::SaveAs(int drive)
    // Todo : Generic types, multilanguage, etc.
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save as...", write_disk_extension_, ".");
    file_dialog_type_ = FD_SAVE_AS;
+}
+
+void SugarboxApp::Eject(int drive)
+{
+   // save ?
+   popup_associated_function_ = std::bind (&EmulatorEngine::Eject, emulation_.GetEngine(), drive);
+   AskForSaving(drive);
+}
+
+void SugarboxApp::Flip(int drive)
+{
+   emulation_.GetEngine()->FlipDisk(drive);
+}
+
+void SugarboxApp::InsertSelectFile(int drive)
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert disk...", load_disk_extension_, ".");
+   file_dialog_type_ = FD_INSERT;
+}
+
+void SugarboxApp::Insert(int drive)
+{
+   popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectFile, this, drive);
+   AskForSaving(drive);
+}
+
+void SugarboxApp::InsertBlankDisk(int drive, IDisk::DiskType type)
+{
+   emulation_.InsertBlankDisk(drive, type);
+}
+
+void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
+{
+   popup_associated_function_ = std::bind(&SugarboxApp::InsertBlankDisk, this, drive, type);
+   AskForSaving(drive);
+
 }
