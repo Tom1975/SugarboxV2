@@ -36,6 +36,7 @@ public:
    virtual bool DiskPresent(int drive);
    virtual void Flip(int drive);
    virtual void Insert(int drive);
+   virtual void InsertBlank(int drive, IDisk::DiskType type);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -65,6 +66,7 @@ protected:
 
    bool AskForSaving(int drive);
    void InsertSelectFile(int drive);
+   void InsertBlankDisk(int drive, IDisk::DiskType type);
 
    // Gui related
    enum {

@@ -3,6 +3,8 @@
 #include <map>
 #include "MultiLanguage.h"
 
+#include "IDisk.h"
+
 class IFunctionInterface
 {
 public:
@@ -26,12 +28,14 @@ public:
       FN_DISK_1_INSERT,
       FN_DISK_1_FLIP,
       FN_DISK_1_SAVE_AS,
-      FN_DISK_1_INSERT_BLANK,
+      FN_DISK_1_INSERT_BLANK_VENDOR,
+      FN_DISK_1_INSERT_BLANK_DATA,
       FN_DISK_2_EJECT,
       FN_DISK_2_INSERT,
       FN_DISK_2_FLIP,
       FN_DISK_2_SAVE_AS,
-      FN_DISK_2_INSERT_BLANK,
+      FN_DISK_2_INSERT_BLANK_VENDOR,
+      FN_DISK_2_INSERT_BLANK_DATA,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE
@@ -54,6 +58,7 @@ public:
    virtual bool DiskPresent(int drive) = 0;
    virtual void Flip(int drive) = 0;
    virtual void Insert(int drive) = 0;
+   virtual void InsertBlank(int drive, IDisk::DiskType type) = 0;
 };
 
 class Function

@@ -135,6 +135,13 @@ bool Emulation::IsDiskPresent(unsigned int drive)
    return emulator_engine_->IsDiskPresent(drive);
 }
 
+void Emulation::InsertBlankDisk(int drive, IDisk::DiskType type)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->InsertBlankDisk(drive, type );
+}
+
 void Emulation::SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type)
 {
    command_waiting_ = true;

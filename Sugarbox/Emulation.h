@@ -24,6 +24,7 @@ public :
 
    // Media handling
    bool IsDiskPresent(unsigned int drive);
+   void InsertBlankDisk(int drive, IDisk::DiskType type);
    DataContainer* CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types = { MediaManager::MEDIA_DISK, MediaManager::MEDIA_SNA, MediaManager::MEDIA_SNR, MediaManager::MEDIA_TAPE, MediaManager::MEDIA_BIN,MediaManager::MEDIA_CPR });
    bool LoadSnr(const char* path_file);
    bool LoadBin(const char* path_file);

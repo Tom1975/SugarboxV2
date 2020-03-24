@@ -601,5 +601,16 @@ void SugarboxApp::Insert(int drive)
 {
    popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectFile, this, drive);
    AskForSaving(drive);
-   
+}
+
+void SugarboxApp::InsertBlankDisk(int drive, IDisk::DiskType type)
+{
+   emulation_.InsertBlankDisk(drive, type);
+}
+
+void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
+{
+   popup_associated_function_ = std::bind(&SugarboxApp::InsertBlankDisk, this, drive, type);
+   AskForSaving(drive);
+
 }
