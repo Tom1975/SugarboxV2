@@ -502,10 +502,13 @@ void SugarboxApp::Exit()
    glfwSetWindowShouldClose(window_, true);
 }
 
+void SugarboxApp::HardReset()
+{
+   emulation_.HardReset();
+}
+
 void SugarboxApp::ConfigurationSettings()
 {
-   
-
    // Set the Configuration window as opened
    configuration_settings_ = true;
 }

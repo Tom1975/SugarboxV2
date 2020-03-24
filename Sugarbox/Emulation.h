@@ -16,6 +16,7 @@ public :
 
    virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
    virtual void Stop();
+   virtual void HardReset();
    virtual void EmulationLoop();
 
    virtual const char* GetBaseDirectory();

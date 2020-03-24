@@ -49,6 +49,9 @@ public:
    //
    virtual void Exit() = 0;
 
+   // Control
+   virtual void HardReset() = 0;
+
    // Settings
    virtual void ConfigurationSettings() = 0;
 

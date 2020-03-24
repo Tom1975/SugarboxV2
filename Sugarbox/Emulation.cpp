@@ -93,13 +93,16 @@ void Emulation::EmulationLoop()
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
          command_waiting_ = false;
          command_mutex_.lock();
-         
-
       }
-
    }
    emulator_engine_->Stop();
+}
 
+void Emulation::HardReset()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->OnOff();
 }
 
 DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
