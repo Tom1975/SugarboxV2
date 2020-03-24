@@ -35,6 +35,7 @@ public:
    virtual void Eject(int drive);
    virtual bool DiskPresent(int drive);
    virtual void Flip(int drive);
+   virtual void Insert(int drive);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -63,6 +64,7 @@ protected:
    void HandlePopups();
 
    bool AskForSaving(int drive);
+   void InsertSelectFile(int drive);
 
    // Gui related
    enum {
@@ -76,11 +78,15 @@ protected:
    //////////////
    // File dialogs
    enum {
-      FD_SAVE_AS
+      FD_SAVE_AS,
+      FD_INSERT
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
+   std::map<std::string, const FormatType*> format_ext_map_read_;
    char* write_disk_extension_;
+   char* load_disk_extension_;
+
 
    // Keyboard handler
    IKeyboard* keyboard_handler_;
