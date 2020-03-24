@@ -524,6 +524,11 @@ void SugarboxApp::Pause()
    emulation_.Pause( );
 }
 
+void SugarboxApp::SetSpeed(int speedlimit)
+{
+   emulation_.GetEngine()->SetSpeed(speedlimit);
+}
+
 void SugarboxApp::HardReset()
 {
    emulation_.HardReset();

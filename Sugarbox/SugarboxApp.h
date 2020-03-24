@@ -33,6 +33,7 @@ public:
    virtual void HardReset();
    virtual void Pause();
    virtual bool PauseEnabled();
+   virtual void SetSpeed(int speedlimit);
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
    virtual void Eject(int drive);

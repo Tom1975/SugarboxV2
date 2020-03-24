@@ -21,8 +21,14 @@ public:
       FN_CONFIG_SETTINGS,
       // Control
       FN_CTRL_ONOFF,
-      FN_CTRL_SET_SPEED,
       FN_CTRL_PAUSE,
+      FN_CTRL_SET_SPEED_50,
+      FN_CTRL_SET_SPEED_100,
+      FN_CTRL_SET_SPEED_150,
+      FN_CTRL_SET_SPEED_200,
+      FN_CTRL_SET_SPEED_400,
+      FN_CTRL_SET_SPEED_VSync,
+      FN_CTRL_SET_SPEED_MAX,
       // DISK
       FN_DISK_1_EJECT,
       FN_DISK_1_INSERT,
@@ -53,6 +59,7 @@ public:
    virtual void HardReset() = 0;
    virtual void Pause() = 0;
    virtual bool PauseEnabled() = 0;
+   virtual void SetSpeed(int speedlimit) = 0;
 
    // Settings
    virtual void ConfigurationSettings() = 0;

@@ -83,6 +83,14 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_ONOFF, Function(std::bind(&IFunctionInterface::HardReset, function_handler_), multilanguage_, "L_CONTROL_ONOFF", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_PAUSE, Function(std::bind(&IFunctionInterface::Pause, function_handler_), multilanguage_, "L_CONTROL_PAUSE", []() { return true; }, std::bind(&IFunctionInterface::PauseEnabled, function_handler_) )));
 
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_50, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 50), multilanguage_, "L_CONTROL_SPEED_50", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_100, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 100), multilanguage_, "L_CONTROL_SPEED_100", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_150, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 150), multilanguage_, "L_CONTROL_SPEED_150", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_200, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 200), multilanguage_, "L_CONTROL_SPEED_200", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_400, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 400), multilanguage_, "L_CONTROL_SPEED_400", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, -1), multilanguage_, "L_CONTROL_SPEED_VSYNC", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, Function(std::bind(&IFunctionInterface::SetSpeed, function_handler_, 0), multilanguage_, "L_CONTROL_SPEED_MAX", []() { return true; }, []() { return false; })));
+
    // Settings
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CONFIG_SETTINGS, Function(std::bind(&IFunctionInterface::ConfigurationSettings, function_handler_), multilanguage_, "L_SETTINGS_CONFIG", []() { return true; }, []() { return false; })));
    
@@ -110,7 +118,17 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Control", 
                            {
                            &function_list_.at(IFunctionInterface::FN_CTRL_ONOFF),
-                           &function_list_.at(IFunctionInterface::FN_CTRL_PAUSE)
+                           &function_list_.at(IFunctionInterface::FN_CTRL_PAUSE),
+                           new Function(multilanguage_, "L_FN_MENU_Control_Speed",
+                           {
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_50),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_100),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_150),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_200),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_400),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_VSync),
+                              &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_MAX)
+                           })
                            }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
