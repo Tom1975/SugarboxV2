@@ -62,6 +62,7 @@ protected:
    void RunMainLoop();
    void DrawMainWindow();
    void DrawMenu();
+   void DrawSubMenu(Function*);
    void DrawPeripherals();
    void DrawStatusBar();
    void DrawOthers();

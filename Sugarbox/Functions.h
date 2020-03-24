@@ -69,9 +69,12 @@ public:
 class Function
 {
 public:
-   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available = []() { return true; }, std::function<bool()> selected = []() { return false; });
+   Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list);
+   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available, std::function<bool()> selected );
    virtual ~Function();
 
+   // Node access
+   bool IsNode();
    // Function access
    const char* GetLabel();
    const char* GetShortcut();
@@ -79,7 +82,19 @@ public:
    bool IsAvailable();
    void Call();
 
+   unsigned int NbSubMenu();
+
+   Function* GetMenu(int index_menu);
+   
+   const char* GetSubMenuLabel(int index_submenu);
+   const char* GetSubMenuShortcut(int index_submenu);
+   void Call(int index_submenu);
+   bool IsAvailable(int index_submenu);
+   bool IsSelected(int index_submenu);
+
 protected:
+   bool node_;
+   std::vector<Function*> submenu_list_;
 
    std::string id_label_;
    std::function<void()> function_;
@@ -106,13 +121,7 @@ public:
    // Menu access
    unsigned int NbMenu();
    const char* MenuLabel(unsigned int index_menu);
-   unsigned int NbSubMenu(int index_menu);
-   const char* GetSubMenuLabel(unsigned int index_menu, int index_submenu);
-   const char* GetSubMenuShortcut(unsigned int index_menu, int index_submenu);
-   void Call (unsigned int index_menu, int index_submenu);
-   bool IsAvailable(unsigned int index_menu, int index_submenu);
-   bool IsSelected(unsigned int index_menu, int index_submenu);
-   // Toolbar access
+   Function* GetMenu(int index_menu);
 
 protected:
    // Direct function access
@@ -120,12 +129,7 @@ protected:
 
    ///////////////////////////
    // Menu access
-   struct MenuItems
-   {
-      std::string label;
-      std::vector<Function*> submenu_list;
-   };
-   std::vector<MenuItems> menu_list_;
+   std::vector<Function*> menu_list_;
    
    // Toolbar access
    //
@@ -133,5 +137,3 @@ protected:
    MultiLanguage* multilanguage_;
    IFunctionInterface* function_handler_;
 };
-
-

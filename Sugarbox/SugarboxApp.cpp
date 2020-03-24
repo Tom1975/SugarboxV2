@@ -282,6 +282,33 @@ void SugarboxApp::DrawMainWindow()
    display_.Display();
 }
 
+void SugarboxApp::DrawSubMenu(Function* submenu)
+{
+   if (submenu->IsNode())
+   {
+      if (ImGui::BeginMenu(submenu->GetLabel()))
+      {
+         for (int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
+         {
+            DrawSubMenu(submenu->GetMenu(submenu_index));
+         }
+         ImGui::EndMenu();
+      }
+   }
+   else
+   {
+      if (ImGui::MenuItem(
+         submenu->GetLabel(),
+         submenu->GetShortcut(),
+         submenu->IsSelected(),
+         submenu->IsAvailable()))
+      {
+         submenu->Call();
+      }
+
+   }
+}
+
 void SugarboxApp::DrawMenu()
 {
    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -292,22 +319,7 @@ void SugarboxApp::DrawMenu()
    {
       for (int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
       {
-         if (ImGui::BeginMenu(functions_list_.MenuLabel(menu_index)))
-         {
-            for (int submenu_index = 0; submenu_index < functions_list_.NbSubMenu(menu_index); submenu_index++)
-            {
-               if (ImGui::MenuItem(
-                     functions_list_.GetSubMenuLabel(menu_index, submenu_index), 
-                     functions_list_.GetSubMenuShortcut(menu_index, submenu_index), 
-                     functions_list_.IsSelected(menu_index, submenu_index),
-                     functions_list_.IsAvailable(menu_index, submenu_index)))
-               {
-                  functions_list_.Call (menu_index, submenu_index); 
-               }
-
-            }
-            ImGui::EndMenu();
-         }
+         DrawSubMenu(functions_list_.GetMenu(menu_index));
       }
       ImGui::EndMenuBar();
    }
