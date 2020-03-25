@@ -38,6 +38,7 @@ void DlgSettings::DisplayConfigCombo()
       current_conf = seletected_conf_->GetShortDescription();
    }
       
+   ImGui::SetNextItemWidth(300.0f);
    if (ImGui::BeginCombo("##Configuration", current_conf))
    {
 

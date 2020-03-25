@@ -205,3 +205,35 @@ bool ALSoundMixer::LoadConfiguration(const char* config_name, const char* ini_fi
 {
    return true;
 }
+
+void ALSoundMixer::Mute(bool bMute)
+{
+
+}
+
+bool ALSoundMixer::IsMuted()
+{
+   return false;
+}
+
+void ALSoundMixer::SetVolume(float vol)
+{
+   alSourcef(source_, AL_GAIN, (ALfloat)vol);
+}
+
+float ALSoundMixer::GetVolume()
+{
+   ALfloat vol;
+   alGetSourcef(source_, AL_GAIN, &vol);
+   return (float)vol;
+}
+
+void ALSoundMixer::Record(bool bOn)
+{
+
+}
+
+bool ALSoundMixer::IsRecordOn()
+{
+   return false;
+}
