@@ -19,7 +19,6 @@ void SoundControl::DrawSoundVolume()
    float v = sound_notification_->GetVolume();
 
    // 200 pixel wide
-   ImGui::SetNextWindowPos(ImVec2(800, 0));
    ImGui::SetNextItemWidth(200.0f);
    if (ImGui::SliderFloat(language_->GetString("L_Volume"), &v, 0.0f, 1.0f))
    {

@@ -49,6 +49,7 @@ public:
       FN_TAPE_REWIND,
       FN_TAPE_PAUSE,
       FN_TAPE_STOP,
+      FN_TAPE_INSERT,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE
@@ -85,7 +86,7 @@ public:
    virtual void TapeRewind() = 0;
    virtual void TapePause() = 0;
    virtual void TapeStop() = 0;
-
+   virtual void TapeInsert() = 0;
 };
 
 class Function

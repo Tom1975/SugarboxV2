@@ -115,7 +115,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_REWIND, Function(std::bind(&IFunctionInterface::TapeRewind, function_handler_), multilanguage_, "L_FN_TAPE_REWIND", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_PAUSE, Function(std::bind(&IFunctionInterface::TapePause, function_handler_), multilanguage_, "L_FN_TAPE_PAUSE", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_STOP, Function(std::bind(&IFunctionInterface::TapeStop, function_handler_), multilanguage_, "L_FN_TAPE_STOP", []() { return true; }, []() { return false; })));
-
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_INSERT, Function(std::bind(&IFunctionInterface::TapeInsert, function_handler_), multilanguage_, "L_FN_TAPE_INSERT", []() { return true; }, []() { return false; })));
    // Custom menu ?
    // Otherwise, default menu init
    
@@ -173,7 +173,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_TAPE_FASTFORWARD),
       &function_list_.at(IFunctionInterface::FN_TAPE_REWIND),
       &function_list_.at(IFunctionInterface::FN_TAPE_PAUSE),
-      &function_list_.at(IFunctionInterface::FN_TAPE_STOP)
+      &function_list_.at(IFunctionInterface::FN_TAPE_STOP),
+      &function_list_.at(IFunctionInterface::FN_TAPE_INSERT)
       }
    ));
 }

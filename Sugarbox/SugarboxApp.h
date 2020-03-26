@@ -48,6 +48,7 @@ public:
    virtual void TapeRewind();
    virtual void TapePause();
    virtual void TapeStop();
+   virtual void TapeInsert();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -79,6 +80,8 @@ protected:
    bool AskForSaving(int drive);
    void InsertSelectFile(int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
+   bool AskForSavingTape();
+   void InsertSelectTape();
 
    // Gui related
    enum {
@@ -93,13 +96,15 @@ protected:
    // File dialogs
    enum {
       FD_SAVE_AS,
-      FD_INSERT
+      FD_INSERT,
+      FD_INSERT_TAPE
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
    std::map<std::string, const FormatType*> format_ext_map_read_;
    char* write_disk_extension_;
    char* load_disk_extension_;
+   char* load_tape_extension_;
 
 
    // Keyboard handler

@@ -258,8 +258,12 @@ void SugarboxApp::RunMainLoop()
             emulation_.SaveDiskAs(0, imgui_fd->GetFilepathName().c_str(), format_ext_map_[imgui_fd->GetCurrentFilter()]);
             break;
          case FD_INSERT:
-            emulation_.GetEngine()->LoadDisk( imgui_fd->GetFilepathName().c_str(), 0);
+            emulation_.LoadDisk( imgui_fd->GetFilepathName().c_str(), 0);
             break;
+         case FD_INSERT_TAPE:
+            emulation_.LoadTape(imgui_fd->GetFilepathName().c_str());
+            break;
+
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
       }
@@ -511,6 +515,13 @@ bool SugarboxApp::AskForSaving(int drive)
    return false;
 }
 
+bool SugarboxApp::AskForSavingTape()
+{
+   // TODO : check tape !
+   popup_associated_function_();
+   return false;
+}
+
 
 void SugarboxApp::Exit()
 {
@@ -598,6 +609,7 @@ void SugarboxApp::InitFileDialogs()
    }
    ptr[0] = '\0';
 
+   load_tape_extension_ = ".wav\0.cdt\0.csw\0\0";
 }
 
 bool SugarboxApp::DiskPresent(int drive)
@@ -628,6 +640,12 @@ void SugarboxApp::InsertSelectFile(int drive)
 {
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert disk...", load_disk_extension_, ".");
    file_dialog_type_ = FD_INSERT;
+}
+
+void SugarboxApp::InsertSelectTape()
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert tape...", load_tape_extension_, ".");
+   file_dialog_type_ = FD_INSERT_TAPE;
 }
 
 void SugarboxApp::Insert(int drive)
@@ -676,4 +694,11 @@ void SugarboxApp::TapePause()
 void SugarboxApp::TapeStop()
 {
    emulation_.TapeStop();
+}
+
+void SugarboxApp::TapeInsert()
+{
+   popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectTape, this);
+   AskForSavingTape();
+
 }

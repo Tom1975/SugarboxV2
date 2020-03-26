@@ -177,6 +177,13 @@ int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bo
    return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
+int Emulation::LoadDisk(const char* container, unsigned int drive_number)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->LoadDisk(container, drive_number);
+}
+
 int Emulation::LoadTape(const char* file_path)
 {
    command_waiting_ = true;
