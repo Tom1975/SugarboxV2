@@ -5,6 +5,8 @@
 #include "AL/alc.h"
 #include "AL/al.h"
 
+#include "ISoundNotification.h"
+
 class OAWaveHDR : public IWaveHDR
 {
 public:
@@ -12,11 +14,19 @@ public:
 };
 
 
-class ALSoundMixer : public ISound
+class ALSoundMixer : public ISound, public ISoundNotification
 {
 public:
    ALSoundMixer();
    virtual ~ALSoundMixer();
+
+   // Interface ISoundNotification
+   virtual void Mute(bool bMute);
+   virtual bool IsMuted();
+   virtual void SetVolume(float);
+   virtual float GetVolume();
+   virtual void Record(bool bOn);
+   virtual bool IsRecordOn();
 
    // Interface ICfg
    virtual void SetDefaultConfiguration();

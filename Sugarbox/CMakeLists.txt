@@ -104,7 +104,6 @@ if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")
 endif()
 
-
 # Installation
 install ( FILES "./SugarBox.ini" DESTINATION ${PROJECT_BINARY_DIR}) 
 install ( DIRECTORY "./ROM" DESTINATION ${PROJECT_BINARY_DIR}) 

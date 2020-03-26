@@ -19,6 +19,7 @@
 #include "Functions.h"
 #include "SettingsList.h"
 #include "DlgSettings.h"
+#include "SoundControl.h"
 
 class SugarboxApp : public ISoundFactory, public IFunctionInterface
 {
@@ -125,6 +126,7 @@ protected:
    // Opened / close windows
    DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
+   SoundControl sound_control_;
    bool configuration_settings_;
 };
 

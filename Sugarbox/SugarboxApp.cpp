@@ -52,7 +52,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 // SugarbonApp
 
 SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), configuration_settings_(false)
+dlg_settings_(&config_manager_), sound_control_(&sound_mixer_), configuration_settings_(false)
 {
   
 }
@@ -347,18 +347,21 @@ void SugarboxApp::DrawStatusBar()
    ImGui::SetNextWindowSize(ImVec2(window_width_, status_height), ImGuiCond_Always);
    ImGui::Begin("Status bar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
 
-   // Speed of emulation : only 1 every 50 frames
-   counter_++;
+      // Speed of emulation : only 1 every 50 frames
+      counter_++;
 
-   if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
-   {
-      // Update
+      if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
+      {
+         // Update
       
-      sprintf(str_speed_, "%i%%", emulation_.GetSpeed());
-      counter_ = 0;
-   }
-   ImGui::Text(str_speed_);
-   // Sound control
+         sprintf(str_speed_, "%i %%%%", emulation_.GetSpeed());
+         counter_ = 0;
+      }
+      ImGui::Text(str_speed_);
+
+      // Sound control
+      ImGui::SameLine();
+      sound_control_.DrawSoundVolume();
 
    ImGui::End();
 }
