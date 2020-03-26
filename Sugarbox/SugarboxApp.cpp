@@ -263,6 +263,9 @@ void SugarboxApp::RunMainLoop()
          case FD_INSERT_TAPE:
             emulation_.LoadTape(imgui_fd->GetFilepathName().c_str());
             break;
+         case FD_SAVE_TAPE_AS:
+            emulation_.SaveTapeAs(imgui_fd->GetFilepathName().c_str(), format_);
+            break;
 
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
@@ -700,5 +703,30 @@ void SugarboxApp::TapeInsert()
 {
    popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectTape, this);
    AskForSavingTape();
+
+}
+
+void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
+{
+   const char* format_ext;
+   switch (format)
+   {
+   case Emulation::TAPE_WAV:
+      format_ext = ".wav";
+      break;
+   case Emulation::TAPE_CDT_DRB:
+   case Emulation::TAPE_CDT_CSW:
+      format_ext = ".cdt";
+      break;
+   case Emulation::TAPE_CSW11:
+   case Emulation::TAPE_CSW20:
+      format_ext = ".csw";
+      break;
+   }
+
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
+   file_dialog_type_ = FD_SAVE_TAPE_AS;
+   format_ = format;
+
 
 }

@@ -49,6 +49,7 @@ public:
    virtual void TapePause();
    virtual void TapeStop();
    virtual void TapeInsert();
+   virtual void TapeSaveAs(Emulation::TapeFormat format);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -97,7 +98,8 @@ protected:
    enum {
       FD_SAVE_AS,
       FD_INSERT,
-      FD_INSERT_TAPE
+      FD_INSERT_TAPE,
+      FD_SAVE_TAPE_AS
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
@@ -105,7 +107,7 @@ protected:
    char* write_disk_extension_;
    char* load_disk_extension_;
    char* load_tape_extension_;
-
+   Emulation::TapeFormat format_;
 
    // Keyboard handler
    IKeyboard* keyboard_handler_;

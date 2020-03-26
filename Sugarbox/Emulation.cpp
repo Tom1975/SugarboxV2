@@ -184,6 +184,36 @@ int Emulation::LoadDisk(const char* container, unsigned int drive_number)
    return emulator_engine_->LoadDisk(container, drive_number);
 }
 
+void Emulation::SaveTapeAs(const char* file, TapeFormat tape_format)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+
+   CTape* tape = emulator_engine_->GetTape();
+   if (tape != nullptr)
+   {
+      switch (tape_format)
+      {
+      case TAPE_WAV:
+         tape->SaveAsWav(file);
+         break;
+      case TAPE_CDT_DRB:
+         tape->SaveAsCdtDrb(file);
+         break;
+      case TAPE_CDT_CSW:
+         tape->SaveAsCdtCSW(file);
+         break;
+      case TAPE_CSW11:
+         tape->SaveAsCSW(file, 1, 1);
+         break;
+      case TAPE_CSW20:
+         tape->SaveAsCSW(file, 2, 2);
+         break;
+      }
+   }
+}
+
+
 int Emulation::LoadTape(const char* file_path)
 {
    command_waiting_ = true;

@@ -14,6 +14,15 @@ public :
    Emulation();
    virtual ~Emulation();
 
+   typedef enum 
+   {
+      TAPE_WAV,
+      TAPE_CDT_DRB,
+      TAPE_CDT_CSW,
+      TAPE_CSW11,
+      TAPE_CSW20
+   } TapeFormat;
+
    virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
    virtual void Stop();
    virtual void HardReset();
@@ -35,6 +44,8 @@ public :
    void SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type);
    int LoadDisk(DataContainer* container, unsigned int drive_number = 0, bool differential_load = true);
    int LoadDisk(const char* container, unsigned int drive_number);
+
+   void SaveTapeAs(const char* file, TapeFormat tape_format);
    int LoadTape(const char* file_path);
    int LoadTape(IContainedElement* container);
    int LoadCpr(const char* file_path);

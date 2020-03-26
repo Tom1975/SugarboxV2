@@ -2,7 +2,7 @@
 #include <functional>
 #include <map>
 #include "MultiLanguage.h"
-
+#include "Emulation.h"
 #include "IDisk.h"
 
 class IFunctionInterface
@@ -50,6 +50,11 @@ public:
       FN_TAPE_PAUSE,
       FN_TAPE_STOP,
       FN_TAPE_INSERT,
+      FN_TAPE_SAVE_AS_WAV,
+      FN_TAPE_SAVE_AS_CDT_DRB,
+      FN_TAPE_SAVE_AS_CDT_CSW,
+      FN_TAPE_SAVE_AS_CSW11,
+      FN_TAPE_SAVE_AS_CSW20,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE
@@ -87,6 +92,7 @@ public:
    virtual void TapePause() = 0;
    virtual void TapeStop() = 0;
    virtual void TapeInsert() = 0;
+   virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
 };
 
 class Function

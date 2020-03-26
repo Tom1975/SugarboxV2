@@ -1,6 +1,5 @@
 #include "Functions.h"
 
-
 Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list) : node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list)
 {
 
@@ -116,6 +115,11 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_PAUSE, Function(std::bind(&IFunctionInterface::TapePause, function_handler_), multilanguage_, "L_FN_TAPE_PAUSE", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_STOP, Function(std::bind(&IFunctionInterface::TapeStop, function_handler_), multilanguage_, "L_FN_TAPE_STOP", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_INSERT, Function(std::bind(&IFunctionInterface::TapeInsert, function_handler_), multilanguage_, "L_FN_TAPE_INSERT", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_WAV, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_WAV), multilanguage_, "L_FN_TAPE_SAVE_AS_WAV", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_DRB, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CDT_DRB), multilanguage_, "L_FN_TAPE_SAVE_AS_CDT_DRB", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CDT_CSW), multilanguage_, "L_FN_TAPE_SAVE_AS_CDT_CSW", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW11), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW11", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW20), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW20", []() { return true; }, []() { return false; })));
    // Custom menu ?
    // Otherwise, default menu init
    
@@ -174,7 +178,15 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_TAPE_REWIND),
       &function_list_.at(IFunctionInterface::FN_TAPE_PAUSE),
       &function_list_.at(IFunctionInterface::FN_TAPE_STOP),
-      &function_list_.at(IFunctionInterface::FN_TAPE_INSERT)
+      &function_list_.at(IFunctionInterface::FN_TAPE_INSERT),
+      new Function(multilanguage_, "L_FN_MENU_SAVE_TAPE",
+         {
+            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_WAV),
+            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_DRB),
+            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW),
+            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11),
+            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20),
+         })
       }
    ));
 }
