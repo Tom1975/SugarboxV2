@@ -42,6 +42,14 @@ public:
    virtual void Flip(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
+   virtual void TapeRecord();
+   virtual void TapePlay();
+   virtual void TapeFastForward();
+   virtual void TapeRewind();
+   virtual void TapePause();
+   virtual void TapeStop();
+   virtual void TapeInsert();
+   virtual void TapeSaveAs(Emulation::TapeFormat format);
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -73,6 +81,8 @@ protected:
    bool AskForSaving(int drive);
    void InsertSelectFile(int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
+   bool AskForSavingTape();
+   void InsertSelectTape();
 
    // Gui related
    enum {
@@ -87,14 +97,17 @@ protected:
    // File dialogs
    enum {
       FD_SAVE_AS,
-      FD_INSERT
+      FD_INSERT,
+      FD_INSERT_TAPE,
+      FD_SAVE_TAPE_AS
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
    std::map<std::string, const FormatType*> format_ext_map_read_;
    char* write_disk_extension_;
    char* load_disk_extension_;
-
+   char* load_tape_extension_;
+   Emulation::TapeFormat format_;
 
    // Keyboard handler
    IKeyboard* keyboard_handler_;

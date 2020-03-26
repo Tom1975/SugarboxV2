@@ -2,7 +2,7 @@
 #include <functional>
 #include <map>
 #include "MultiLanguage.h"
-
+#include "Emulation.h"
 #include "IDisk.h"
 
 class IFunctionInterface
@@ -42,12 +42,24 @@ public:
       FN_DISK_2_SAVE_AS,
       FN_DISK_2_INSERT_BLANK_VENDOR,
       FN_DISK_2_INSERT_BLANK_DATA,
+      // TAPE
+      FN_TAPE_RECORD,
+      FN_TAPE_PLAY,
+      FN_TAPE_FASTFORWARD,
+      FN_TAPE_REWIND,
+      FN_TAPE_PAUSE,
+      FN_TAPE_STOP,
+      FN_TAPE_INSERT,
+      FN_TAPE_SAVE_AS_WAV,
+      FN_TAPE_SAVE_AS_CDT_DRB,
+      FN_TAPE_SAVE_AS_CDT_CSW,
+      FN_TAPE_SAVE_AS_CSW11,
+      FN_TAPE_SAVE_AS_CSW20,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE
       // DISPLAY
       // DEBUGER
-      // TAPE
 
 
    }FunctionType;
@@ -71,6 +83,16 @@ public:
    virtual void Flip(int drive) = 0;
    virtual void Insert(int drive) = 0;
    virtual void InsertBlank(int drive, IDisk::DiskType type) = 0;
+
+   // Tape
+   virtual void TapeRecord() = 0;
+   virtual void TapePlay() = 0;
+   virtual void TapeFastForward() = 0;
+   virtual void TapeRewind() = 0;
+   virtual void TapePause() = 0;
+   virtual void TapeStop() = 0;
+   virtual void TapeInsert() = 0;
+   virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
 };
 
 class Function
