@@ -38,6 +38,9 @@ public :
    int LoadTape(IContainedElement* container);
    int LoadCpr(const char* file_path);
 
+   // Tape
+   void Record();
+
    EmulatorEngine* GetEngine() 
    {
       return emulator_engine_;

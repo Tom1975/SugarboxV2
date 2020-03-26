@@ -108,6 +108,9 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_INSERT_BLANK_VENDOR, Function(std::bind(&IFunctionInterface::InsertBlank, function_handler_, 1, IDisk::VENDOR), multilanguage_, "L_FN_DISK_2_INSERT_BLANK_VENDOR", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA, Function(std::bind(&IFunctionInterface::InsertBlank, function_handler_, 1, IDisk::DATA), multilanguage_, "L_FN_DISK_2_INSERT_BLANK_DATA", []() { return true; }, []() { return false; })));
 
+   // Tape
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_RECORD, Function(std::bind(&IFunctionInterface::TapeRecord, function_handler_), multilanguage_, "L_FN_TAPE_RECORD", []() { return true; }, []() { return false; })));
+
    // Custom menu ?
    // Otherwise, default menu init
    
@@ -157,6 +160,11 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
              &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA)
          })
       }));
+
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Tape",
+      {
+      &function_list_.at(IFunctionInterface::FN_TAPE_RECORD) }
+   ));
 }
 
 

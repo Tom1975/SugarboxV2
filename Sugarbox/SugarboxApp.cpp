@@ -52,7 +52,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 // SugarbonApp
 
 SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), sound_control_(&sound_mixer_), configuration_settings_(false)
+dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)
 {
   
 }
@@ -647,3 +647,9 @@ void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
    AskForSaving(drive);
 
 }
+
+void SugarboxApp::TapeRecord()
+{
+   emulation_.Record();
+}
+

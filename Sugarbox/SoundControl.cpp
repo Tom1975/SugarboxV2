@@ -5,7 +5,7 @@
 #include "imgui_impl_opengl3.h"
 #include "ImGuiFileDialog/ImGuiFileDialog.h"
 
-SoundControl::SoundControl(ISoundNotification* sound_notification) :sound_notification_(sound_notification)
+SoundControl::SoundControl(ISoundNotification* sound_notification, MultiLanguage* language) :sound_notification_(sound_notification), language_(language)
 {
 }
 
@@ -21,7 +21,7 @@ void SoundControl::DrawSoundVolume()
    // 200 pixel wide
    ImGui::SetNextWindowPos(ImVec2(800, 0));
    ImGui::SetNextItemWidth(200.0f);
-   if (ImGui::SliderFloat("Volume", &v, 0.0f, 1.0f))
+   if (ImGui::SliderFloat(language_->GetString("L_Volume"), &v, 0.0f, 1.0f))
    {
       // Update soud volume
       sound_notification_->SetVolume(v);

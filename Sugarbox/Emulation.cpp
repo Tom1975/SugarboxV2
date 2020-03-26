@@ -106,6 +106,13 @@ void Emulation::EmulationLoop()
    emulator_engine_->Stop();
 }
 
+void Emulation::Record()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->Record();
+}
+
 void Emulation::Pause()
 {
    pause_ = !pause_;

@@ -42,6 +42,7 @@ public:
    virtual void Flip(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
+   virtual void TapeRecord();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
