@@ -44,6 +44,11 @@ public:
       FN_DISK_2_INSERT_BLANK_DATA,
       // TAPE
       FN_TAPE_RECORD,
+      FN_TAPE_PLAY,
+      FN_TAPE_FASTFORWARD,
+      FN_TAPE_REWIND,
+      FN_TAPE_PAUSE,
+      FN_TAPE_STOP,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE
@@ -75,6 +80,12 @@ public:
 
    // Tape
    virtual void TapeRecord() = 0;
+   virtual void TapePlay() = 0;
+   virtual void TapeFastForward() = 0;
+   virtual void TapeRewind() = 0;
+   virtual void TapePause() = 0;
+   virtual void TapeStop() = 0;
+
 };
 
 class Function

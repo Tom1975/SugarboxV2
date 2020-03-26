@@ -39,7 +39,12 @@ public :
    int LoadCpr(const char* file_path);
 
    // Tape
-   void Record();
+   void TapeRecord();
+   void TapePlay();
+   void TapeFastForward();
+   void TapeRewind();
+   void TapePause();
+   void TapeStop();
 
    EmulatorEngine* GetEngine() 
    {

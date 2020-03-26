@@ -650,6 +650,30 @@ void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
 
 void SugarboxApp::TapeRecord()
 {
-   emulation_.Record();
+   emulation_.TapeRecord();
 }
 
+void SugarboxApp::TapePlay()
+{
+   emulation_.TapePlay();
+}
+
+void SugarboxApp::TapeFastForward()
+{
+   emulation_.TapeFastForward();
+}
+
+void SugarboxApp::TapeRewind()
+{
+   emulation_.TapeRewind();
+}
+
+void SugarboxApp::TapePause()
+{
+   emulation_.TapePause();
+}
+
+void SugarboxApp::TapeStop()
+{
+   emulation_.TapeStop();
+}

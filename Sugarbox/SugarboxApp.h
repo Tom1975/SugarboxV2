@@ -43,6 +43,11 @@ public:
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
    virtual void TapeRecord();
+   virtual void TapePlay();
+   virtual void TapeFastForward();
+   virtual void TapeRewind();
+   virtual void TapePause();
+   virtual void TapeStop();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);

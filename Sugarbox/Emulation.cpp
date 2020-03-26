@@ -106,13 +106,6 @@ void Emulation::EmulationLoop()
    emulator_engine_->Stop();
 }
 
-void Emulation::Record()
-{
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
-   return emulator_engine_->GetTape()->Record();
-}
-
 void Emulation::Pause()
 {
    pause_ = !pause_;
@@ -204,3 +197,47 @@ int Emulation::LoadCpr(const char* file_path)
    const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->LoadCpr(file_path);
 }
+
+
+void Emulation::TapeRecord()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->Record();
+}
+
+void Emulation::TapePlay()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->Play();
+}
+
+void Emulation::TapeFastForward()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->FastForward();
+}
+
+void Emulation::TapeRewind()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->Rewind();
+}
+
+void Emulation::TapePause()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->Pause();
+}
+
+void Emulation::TapeStop()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->GetTape()->StopEject();
+}
+

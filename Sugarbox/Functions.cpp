@@ -110,6 +110,11 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    // Tape
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_RECORD, Function(std::bind(&IFunctionInterface::TapeRecord, function_handler_), multilanguage_, "L_FN_TAPE_RECORD", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_PLAY, Function(std::bind(&IFunctionInterface::TapePlay, function_handler_), multilanguage_, "L_FN_TAPE_PLAY", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_FASTFORWARD, Function(std::bind(&IFunctionInterface::TapeFastForward, function_handler_), multilanguage_, "L_FN_TAPE_FASTFORWARD", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_REWIND, Function(std::bind(&IFunctionInterface::TapeRewind, function_handler_), multilanguage_, "L_FN_TAPE_REWIND", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_PAUSE, Function(std::bind(&IFunctionInterface::TapePause, function_handler_), multilanguage_, "L_FN_TAPE_PAUSE", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_STOP, Function(std::bind(&IFunctionInterface::TapeStop, function_handler_), multilanguage_, "L_FN_TAPE_STOP", []() { return true; }, []() { return false; })));
 
    // Custom menu ?
    // Otherwise, default menu init
@@ -163,7 +168,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Tape",
       {
-      &function_list_.at(IFunctionInterface::FN_TAPE_RECORD) }
+      &function_list_.at(IFunctionInterface::FN_TAPE_RECORD),
+      &function_list_.at(IFunctionInterface::FN_TAPE_PLAY),
+      &function_list_.at(IFunctionInterface::FN_TAPE_FASTFORWARD),
+      &function_list_.at(IFunctionInterface::FN_TAPE_REWIND),
+      &function_list_.at(IFunctionInterface::FN_TAPE_PAUSE),
+      &function_list_.at(IFunctionInterface::FN_TAPE_STOP)
+      }
    ));
 }
 
