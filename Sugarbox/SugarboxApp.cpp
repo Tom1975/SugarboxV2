@@ -268,6 +268,16 @@ void SugarboxApp::RunMainLoop()
             break;
          case FD_INSERT_SNA:
             emulation_.LoadSnapshot(imgui_fd->GetFilepathName().c_str());
+            break;
+         case FD_SAVE_SNA:
+            emulation_.SaveSnapshot(imgui_fd->GetFilepathName().c_str());
+            break;
+         case FD_LOAD_SNR:
+            emulation_.LoadSnr(imgui_fd->GetFilepathName().c_str());
+            break;
+         case FD_RECORD_SNR:
+            emulation_.RecordSnr(imgui_fd->GetFilepathName().c_str());
+            break;
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
       }
@@ -730,15 +740,21 @@ void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
    format_ = format;
 }
 
+bool SugarboxApp::IsQuickSnapAvailable()
+{
+   return emulation_.GetEngine()->IsQuickSnapAvailable();
+}
+
 void SugarboxApp::SnaLoad()
 {
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
    file_dialog_type_ = FD_INSERT_SNA;
 }
 
-bool SugarboxApp::IsQuickSnapAvailable()
+void SugarboxApp::SnaSave()
 {
-   return emulation_.GetEngine()->IsQuickSnapAvailable();
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save snapshot", ".sna\0", ".");
+   file_dialog_type_ = FD_SAVE_SNA;
 }
 
 void SugarboxApp::SnaQuickLoad()
@@ -749,4 +765,16 @@ void SugarboxApp::SnaQuickLoad()
 void SugarboxApp::SnaQuickSave()
 {
    emulation_.QuickSavesnapshot();
+}
+
+void SugarboxApp::SnrLoad()
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load SNR", ".snr\0", ".");
+   file_dialog_type_ = FD_LOAD_SNR;
+}
+
+void SugarboxApp::SnrRecord()
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
+   file_dialog_type_ = FD_RECORD_SNR;
 }

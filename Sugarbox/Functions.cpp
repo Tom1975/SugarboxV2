@@ -124,8 +124,10 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // Snapshots
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_LOAD, Function(std::bind(&IFunctionInterface::SnaLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNA", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_LOAD, Function(std::bind(&IFunctionInterface::SnaQuickLoad, function_handler_), multilanguage_, "L_FN_QUICK_LOAD_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_SAVE, Function(std::bind(&IFunctionInterface::SnaSave, function_handler_), multilanguage_, "L_FN_SAVE_SNA", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_SAVE, Function(std::bind(&IFunctionInterface::SnaQuickSave, function_handler_), multilanguage_, "L_FN_QUICK_SAVE_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
-
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_RECORD, Function(std::bind(&IFunctionInterface::SnrLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNR", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_LOAD, Function(std::bind(&IFunctionInterface::SnrRecord, function_handler_), multilanguage_, "L_FN_RECORD_SNR", []() { return true; }, []() { return false; })));
 
    // Custom menu ?
    // Otherwise, default menu init
@@ -200,8 +202,10 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       {
       &function_list_.at(IFunctionInterface::FN_SNA_LOAD),
       &function_list_.at(IFunctionInterface::FN_SNA_QUICK_LOAD),
-      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_SAVE)
-      
+      &function_list_.at(IFunctionInterface::FN_SNA_SAVE),
+      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_SAVE),
+      &function_list_.at(IFunctionInterface::FN_SNR_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNR_RECORD)
       }));
 }
 

@@ -16,6 +16,8 @@ public:
       FN_SNA_QUICK_LOAD,
       FN_SNA_SAVE,
       FN_SNA_QUICK_SAVE,
+      FN_SNR_LOAD,
+      FN_SNR_RECORD,
       // Settings
       FN_EMULATOR_SETTINGS,
       FN_CONFIG_SETTINGS,
@@ -95,11 +97,14 @@ public:
    virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
 
    // Snapshots
-   virtual void SnaLoad() = 0;
    virtual bool IsQuickSnapAvailable() = 0;
+   virtual void SnaLoad() = 0;
    virtual void SnaQuickLoad() = 0;
+   virtual void SnaSave() = 0;
    virtual void SnaQuickSave() = 0;
-   
+   virtual void SnrLoad() = 0;
+   virtual void SnrRecord() = 0;
+
 
 };
 
