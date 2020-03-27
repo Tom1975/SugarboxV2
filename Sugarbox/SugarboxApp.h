@@ -50,6 +50,7 @@ public:
    virtual void TapeStop();
    virtual void TapeInsert();
    virtual void TapeSaveAs(Emulation::TapeFormat format);
+   virtual void SnaLoad();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -99,7 +100,8 @@ protected:
       FD_SAVE_AS,
       FD_INSERT,
       FD_INSERT_TAPE,
-      FD_SAVE_TAPE_AS
+      FD_SAVE_TAPE_AS,
+      FD_INSERT_SNA
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;

@@ -266,7 +266,8 @@ void SugarboxApp::RunMainLoop()
          case FD_SAVE_TAPE_AS:
             emulation_.SaveTapeAs(imgui_fd->GetFilepathName().c_str(), format_);
             break;
-
+         case FD_INSERT_SNA:
+            emulation_.LoadSnapshot(imgui_fd->GetFilepathName().c_str());
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
       }
@@ -727,6 +728,10 @@ void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
    file_dialog_type_ = FD_SAVE_TAPE_AS;
    format_ = format;
+}
 
-
+void SugarboxApp::SnaLoad()
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
+   file_dialog_type_ = FD_INSERT_SNA;
 }

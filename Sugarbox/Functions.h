@@ -12,10 +12,10 @@ public:
    {
       // File
       FN_EXIT,
-      FN_LOAD_SNA,
-      FN_QUICK_LOAD_SNA,
-      FN_SAVE_SNA,
-      FN_QUICK_SAVE_SNA,
+      FN_SNA_LOAD,
+      FN_SNA_QUICK_LOAD,
+      FN_SNA_SAVE,
+      FN_SNA_QUICK_SAVE,
       // Settings
       FN_EMULATOR_SETTINGS,
       FN_CONFIG_SETTINGS,
@@ -93,6 +93,11 @@ public:
    virtual void TapeStop() = 0;
    virtual void TapeInsert() = 0;
    virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
+
+   // Snapshots
+   virtual void SnaLoad() = 0;
+
+
 };
 
 class Function

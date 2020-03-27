@@ -78,7 +78,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT", []() { return true; }, []() { return false; })));
    
-   // Control 
+   // Control  
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_ONOFF, Function(std::bind(&IFunctionInterface::HardReset, function_handler_), multilanguage_, "L_CONTROL_ONOFF", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_PAUSE, Function(std::bind(&IFunctionInterface::Pause, function_handler_), multilanguage_, "L_CONTROL_PAUSE", []() { return true; }, std::bind(&IFunctionInterface::PauseEnabled, function_handler_) )));
 
@@ -120,6 +120,11 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CDT_CSW), multilanguage_, "L_FN_TAPE_SAVE_AS_CDT_CSW", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW11), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW11", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW20), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW20", []() { return true; }, []() { return false; })));
+
+   // Snapshots
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_LOAD, Function(std::bind(&IFunctionInterface::SnaLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNA", []() { return true; }, []() { return false; })));
+
+
    // Custom menu ?
    // Otherwise, default menu init
    
@@ -189,6 +194,10 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
          })
       }
    ));
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Sna",
+      {
+      &function_list_.at(IFunctionInterface::FN_SNA_LOAD)
+      }));
 }
 
 
