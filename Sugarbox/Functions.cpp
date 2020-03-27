@@ -131,6 +131,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_PLAYING, Function(std::bind(&IFunctionInterface::SnrStopPlayback, function_handler_), multilanguage_, "L_FN_STOP_PLAYBACK_SNR", std::bind(&IFunctionInterface::SnrIsReplaying, function_handler_), []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_RECORD, Function(std::bind(&IFunctionInterface::SnrStopRecord, function_handler_), multilanguage_, "L_FN_STOP_RECORD_SNR", std::bind(&IFunctionInterface::SnrIsRecording, function_handler_), []() { return false; })));
 
+   // 
    // Custom menu ?
    // Otherwise, default menu init
    
