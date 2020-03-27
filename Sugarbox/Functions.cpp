@@ -123,6 +123,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    // Snapshots
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_LOAD, Function(std::bind(&IFunctionInterface::SnaLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNA", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_LOAD, Function(std::bind(&IFunctionInterface::SnaQuickLoad, function_handler_), multilanguage_, "L_FN_QUICK_LOAD_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_SAVE, Function(std::bind(&IFunctionInterface::SnaQuickSave, function_handler_), multilanguage_, "L_FN_QUICK_SAVE_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
 
 
    // Custom menu ?
@@ -196,7 +198,10 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    ));
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Sna",
       {
-      &function_list_.at(IFunctionInterface::FN_SNA_LOAD)
+      &function_list_.at(IFunctionInterface::FN_SNA_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_SAVE)
+      
       }));
 }
 

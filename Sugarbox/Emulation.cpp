@@ -149,6 +149,23 @@ bool Emulation::LoadSnapshot(const char* path_file)
    return emulator_engine_->LoadSnapshot(path_file);
 }
 
+void Emulation::QuickLoadsnapshot()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->QuickLoadsnapshot();
+
+}
+
+void Emulation::QuickSavesnapshot()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->QuickSavesnapshot();
+
+}
+
+
 bool Emulation::IsDiskPresent(unsigned int drive)
 {
    command_waiting_ = true;

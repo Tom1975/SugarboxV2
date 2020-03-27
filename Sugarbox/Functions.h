@@ -96,7 +96,10 @@ public:
 
    // Snapshots
    virtual void SnaLoad() = 0;
-
+   virtual bool IsQuickSnapAvailable() = 0;
+   virtual void SnaQuickLoad() = 0;
+   virtual void SnaQuickSave() = 0;
+   
 
 };
 

@@ -735,3 +735,18 @@ void SugarboxApp::SnaLoad()
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
    file_dialog_type_ = FD_INSERT_SNA;
 }
+
+bool SugarboxApp::IsQuickSnapAvailable()
+{
+   return emulation_.GetEngine()->IsQuickSnapAvailable();
+}
+
+void SugarboxApp::SnaQuickLoad()
+{
+   emulation_.QuickLoadsnapshot();
+}
+
+void SugarboxApp::SnaQuickSave()
+{
+   emulation_.QuickSavesnapshot();
+}

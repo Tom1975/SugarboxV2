@@ -51,6 +51,9 @@ public:
    virtual void TapeInsert();
    virtual void TapeSaveAs(Emulation::TapeFormat format);
    virtual void SnaLoad();
+   virtual bool IsQuickSnapAvailable();
+   virtual void SnaQuickLoad();
+   virtual void SnaQuickSave();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
