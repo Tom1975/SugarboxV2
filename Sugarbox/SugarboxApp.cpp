@@ -778,3 +778,23 @@ void SugarboxApp::SnrRecord()
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
    file_dialog_type_ = FD_RECORD_SNR;
 }
+
+bool SugarboxApp::SnrIsRecording()
+{
+   return emulation_.GetEngine()->IsSnrRecording();
+}
+
+bool SugarboxApp::SnrIsReplaying()
+{
+   return emulation_.GetEngine()->IsSnrReplaying();
+}
+
+void SugarboxApp::SnrStopRecord()
+{
+   emulation_.GetEngine()->StopRecord();
+}
+
+void SugarboxApp::SnrStopPlayback()
+{
+   emulation_.GetEngine()->StopPlayback();
+}

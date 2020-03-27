@@ -18,6 +18,8 @@ public:
       FN_SNA_QUICK_SAVE,
       FN_SNR_LOAD,
       FN_SNR_RECORD,
+      FN_SNR_STOP_PLAYING,
+      FN_SNR_STOP_RECORD,
       // Settings
       FN_EMULATOR_SETTINGS,
       FN_CONFIG_SETTINGS,
@@ -104,7 +106,10 @@ public:
    virtual void SnaQuickSave() = 0;
    virtual void SnrLoad() = 0;
    virtual void SnrRecord() = 0;
-
+   virtual bool SnrIsRecording() = 0;
+   virtual bool SnrIsReplaying() = 0;
+   virtual void SnrStopRecord() = 0;
+   virtual void SnrStopPlayback() = 0;
 
 };
 

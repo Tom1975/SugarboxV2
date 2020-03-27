@@ -57,6 +57,10 @@ public:
    virtual void SnaQuickSave();
    virtual void SnrLoad();
    virtual void SnrRecord();
+   virtual void SnrStopRecord();
+   virtual void SnrStopPlayback();
+   virtual bool SnrIsRecording();
+   virtual bool SnrIsReplaying();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
