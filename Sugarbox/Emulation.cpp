@@ -142,12 +142,43 @@ bool Emulation::LoadBin(const char* path_file)
    return emulator_engine_->LoadBin(path_file);
 }
 
-bool Emulation::LoadSnapshot(const char* path_file)
+bool Emulation::LoadSnapshot(const char* file_path)
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   return emulator_engine_->LoadSnapshot(path_file);
+   return emulator_engine_->LoadSnapshot(file_path);
 }
+
+void Emulation::SaveSnapshot(const char* file_path)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->SaveSnapshot(file_path);
+}
+
+void Emulation::RecordSnr(const char* file_path)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->StartRecord(file_path);
+}
+
+void Emulation::QuickLoadsnapshot()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->QuickLoadsnapshot();
+
+}
+
+void Emulation::QuickSavesnapshot()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->QuickSavesnapshot();
+
+}
+
 
 bool Emulation::IsDiskPresent(unsigned int drive)
 {
@@ -277,4 +308,3 @@ void Emulation::TapeStop()
    const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->GetTape()->StopEject();
 }
-

@@ -50,6 +50,17 @@ public:
    virtual void TapeStop();
    virtual void TapeInsert();
    virtual void TapeSaveAs(Emulation::TapeFormat format);
+   virtual bool IsQuickSnapAvailable();
+   virtual void SnaLoad();
+   virtual void SnaSave();
+   virtual void SnaQuickLoad();
+   virtual void SnaQuickSave();
+   virtual void SnrLoad();
+   virtual void SnrRecord();
+   virtual void SnrStopRecord();
+   virtual void SnrStopPlayback();
+   virtual bool SnrIsRecording();
+   virtual bool SnrIsReplaying();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -99,7 +110,11 @@ protected:
       FD_SAVE_AS,
       FD_INSERT,
       FD_INSERT_TAPE,
-      FD_SAVE_TAPE_AS
+      FD_SAVE_TAPE_AS,
+      FD_INSERT_SNA,
+      FD_SAVE_SNA,
+      FD_LOAD_SNR,
+      FD_RECORD_SNR
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;

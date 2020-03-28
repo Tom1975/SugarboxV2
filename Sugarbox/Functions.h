@@ -12,10 +12,14 @@ public:
    {
       // File
       FN_EXIT,
-      FN_LOAD_SNA,
-      FN_QUICK_LOAD_SNA,
-      FN_SAVE_SNA,
-      FN_QUICK_SAVE_SNA,
+      FN_SNA_LOAD,
+      FN_SNA_QUICK_LOAD,
+      FN_SNA_SAVE,
+      FN_SNA_QUICK_SAVE,
+      FN_SNR_LOAD,
+      FN_SNR_RECORD,
+      FN_SNR_STOP_PLAYING,
+      FN_SNR_STOP_RECORD,
       // Settings
       FN_EMULATOR_SETTINGS,
       FN_CONFIG_SETTINGS,
@@ -93,6 +97,20 @@ public:
    virtual void TapeStop() = 0;
    virtual void TapeInsert() = 0;
    virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
+
+   // Snapshots
+   virtual bool IsQuickSnapAvailable() = 0;
+   virtual void SnaLoad() = 0;
+   virtual void SnaQuickLoad() = 0;
+   virtual void SnaSave() = 0;
+   virtual void SnaQuickSave() = 0;
+   virtual void SnrLoad() = 0;
+   virtual void SnrRecord() = 0;
+   virtual bool SnrIsRecording() = 0;
+   virtual bool SnrIsReplaying() = 0;
+   virtual void SnrStopRecord() = 0;
+   virtual void SnrStopPlayback() = 0;
+
 };
 
 class Function

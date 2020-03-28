@@ -78,7 +78,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // For each function : Add languages & shortcuts
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_EXIT, Function (std::bind(&IFunctionInterface::Exit, function_handler_), multilanguage_, "L_FILE_EXIT", []() { return true; }, []() { return false; })));
    
-   // Control 
+   // Control  
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_ONOFF, Function(std::bind(&IFunctionInterface::HardReset, function_handler_), multilanguage_, "L_CONTROL_ONOFF", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CTRL_PAUSE, Function(std::bind(&IFunctionInterface::Pause, function_handler_), multilanguage_, "L_CONTROL_PAUSE", []() { return true; }, std::bind(&IFunctionInterface::PauseEnabled, function_handler_) )));
 
@@ -120,6 +120,18 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CDT_CSW), multilanguage_, "L_FN_TAPE_SAVE_AS_CDT_CSW", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW11), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW11", []() { return true; }, []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20, Function(std::bind(&IFunctionInterface::TapeSaveAs, function_handler_, Emulation::TAPE_CSW20), multilanguage_, "L_FN_TAPE_SAVE_AS_CSW20", []() { return true; }, []() { return false; })));
+
+   // Snapshots
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_LOAD, Function(std::bind(&IFunctionInterface::SnaLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNA", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_LOAD, Function(std::bind(&IFunctionInterface::SnaQuickLoad, function_handler_), multilanguage_, "L_FN_QUICK_LOAD_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_SAVE, Function(std::bind(&IFunctionInterface::SnaSave, function_handler_), multilanguage_, "L_FN_SAVE_SNA", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNA_QUICK_SAVE, Function(std::bind(&IFunctionInterface::SnaQuickSave, function_handler_), multilanguage_, "L_FN_QUICK_SAVE_SNA", std::bind(&IFunctionInterface::IsQuickSnapAvailable, function_handler_), []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_LOAD, Function(std::bind(&IFunctionInterface::SnrLoad, function_handler_), multilanguage_, "L_FN_LOAD_SNR", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_RECORD, Function(std::bind(&IFunctionInterface::SnrRecord, function_handler_), multilanguage_, "L_FN_RECORD_SNR", []() { return true; }, []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_PLAYING, Function(std::bind(&IFunctionInterface::SnrStopPlayback, function_handler_), multilanguage_, "L_FN_STOP_PLAYBACK_SNR", std::bind(&IFunctionInterface::SnrIsReplaying, function_handler_), []() { return false; })));
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_RECORD, Function(std::bind(&IFunctionInterface::SnrStopRecord, function_handler_), multilanguage_, "L_FN_STOP_RECORD_SNR", std::bind(&IFunctionInterface::SnrIsRecording, function_handler_), []() { return false; })));
+
+   // 
    // Custom menu ?
    // Otherwise, default menu init
    
@@ -189,6 +201,17 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
          })
       }
    ));
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Sna",
+      {
+      &function_list_.at(IFunctionInterface::FN_SNA_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNA_SAVE),
+      &function_list_.at(IFunctionInterface::FN_SNA_QUICK_SAVE),
+      &function_list_.at(IFunctionInterface::FN_SNR_LOAD),
+      &function_list_.at(IFunctionInterface::FN_SNR_STOP_PLAYING),
+      &function_list_.at(IFunctionInterface::FN_SNR_RECORD),
+      &function_list_.at(IFunctionInterface::FN_SNR_STOP_RECORD)
+      }));
 }
 
 
