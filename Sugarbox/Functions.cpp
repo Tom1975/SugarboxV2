@@ -131,6 +131,9 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_PLAYING, Function(std::bind(&IFunctionInterface::SnrStopPlayback, function_handler_), multilanguage_, "L_FN_STOP_PLAYBACK_SNR", std::bind(&IFunctionInterface::SnrIsReplaying, function_handler_), []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_RECORD, Function(std::bind(&IFunctionInterface::SnrStopRecord, function_handler_), multilanguage_, "L_FN_STOP_RECORD_SNR", std::bind(&IFunctionInterface::SnrIsRecording, function_handler_), []() { return false; })));
 
+   // CPR
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CPR_LOAD, Function(std::bind(&IFunctionInterface::CprLoad, function_handler_), multilanguage_, "L_FN_CPR_LOAD", []() { return true; }, []() { return false; })));
+
    // 
    // Custom menu ?
    // Otherwise, default menu init
@@ -212,6 +215,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_SNR_RECORD),
       &function_list_.at(IFunctionInterface::FN_SNR_STOP_RECORD)
       }));
+
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Cpr",
+      {
+      &function_list_.at(IFunctionInterface::FN_CPR_LOAD)
+      }));
+
+   
 }
 
 

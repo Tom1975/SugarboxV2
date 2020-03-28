@@ -308,3 +308,4 @@ void Emulation::TapeStop()
    const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->GetTape()->StopEject();
 }
+

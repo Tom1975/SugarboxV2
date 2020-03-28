@@ -61,7 +61,9 @@ public:
       FN_TAPE_SAVE_AS_CSW20,
       // Sound
       FN_SND_RECORD,
-      FN_SND_MUTE
+      FN_SND_MUTE,
+      // CPR
+      FN_CPR_LOAD,
       // DISPLAY
       // DEBUGER
 
@@ -111,6 +113,8 @@ public:
    virtual void SnrStopRecord() = 0;
    virtual void SnrStopPlayback() = 0;
 
+   // CPR
+   virtual void CprLoad() = 0;
 };
 
 class Function

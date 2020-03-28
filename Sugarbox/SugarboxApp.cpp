@@ -278,6 +278,9 @@ void SugarboxApp::RunMainLoop()
          case FD_RECORD_SNR:
             emulation_.RecordSnr(imgui_fd->GetFilepathName().c_str());
             break;
+         case FD_LOAD_CPR:
+            emulation_.LoadCpr(imgui_fd->GetFilepathName().c_str());
+            break;
          }
          ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
       }
@@ -797,4 +800,10 @@ void SugarboxApp::SnrStopRecord()
 void SugarboxApp::SnrStopPlayback()
 {
    emulation_.GetEngine()->StopPlayback();
+}
+
+void SugarboxApp::CprLoad()
+{
+   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
+   file_dialog_type_ = FD_LOAD_CPR;
 }

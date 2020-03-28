@@ -61,6 +61,7 @@ public:
    virtual void SnrStopPlayback();
    virtual bool SnrIsRecording();
    virtual bool SnrIsReplaying();
+   virtual void CprLoad();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -114,7 +115,8 @@ protected:
       FD_INSERT_SNA,
       FD_SAVE_SNA,
       FD_LOAD_SNR,
-      FD_RECORD_SNR
+      FD_RECORD_SNR,
+      FD_LOAD_CPR
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
