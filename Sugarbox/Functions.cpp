@@ -1,6 +1,6 @@
 #include "Functions.h"
 
-Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list) : node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list)
+Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available) : node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list), available_(available)
 {
 
 }
@@ -140,7 +140,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Files", {
       &function_list_.at(IFunctionInterface::FN_EXIT)
-      }));
+      },[]() { return true; }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Control", 
                            {
@@ -155,12 +155,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_400),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_VSync),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_MAX)
-                           })
-                           }));
+                           }, []() { return true; })
+                           }, []() { return true; }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
                            {
-                           &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)}
+                           &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)
+                           }, []() { return true; }
                            ));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Disk",
@@ -173,7 +174,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
              &function_list_.at(IFunctionInterface::FN_DISK_1_SAVE_AS),
              &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK_VENDOR),
              &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK_DATA),
-         }),
+         },[]() { return true; }),
          new Function(multilanguage_, "L_FN_MENU_Disk_2",
          {
              &function_list_.at(IFunctionInterface::FN_DISK_2_EJECT),
@@ -182,8 +183,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
              &function_list_.at(IFunctionInterface::FN_DISK_2_SAVE_AS),
              &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK_VENDOR),
              &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA)
-         })
-      }));
+         },[]() { return true; })
+      }, std::bind(&IFunctionInterface::FdcPresent, function_handler_)));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Tape",
       {
@@ -201,8 +202,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW),
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11),
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20),
-         })
-      }
+         },[]() { return true; })
+      }, std::bind(&IFunctionInterface::TapePresent, function_handler_)
    ));
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Sna",
       {
@@ -214,12 +215,12 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_SNR_STOP_PLAYING),
       &function_list_.at(IFunctionInterface::FN_SNR_RECORD),
       &function_list_.at(IFunctionInterface::FN_SNR_STOP_RECORD)
-      }));
+      }, []() { return true; }));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Cpr",
       {
       &function_list_.at(IFunctionInterface::FN_CPR_LOAD)
-      }));
+      }, std::bind(&IFunctionInterface::PlusEnabled, function_handler_)));
 
    
 }

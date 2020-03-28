@@ -309,7 +309,7 @@ void SugarboxApp::DrawSubMenu(Function* submenu)
    {
       if (ImGui::BeginMenu(submenu->GetLabel()))
       {
-         for (int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
+         for (unsigned int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
          {
             DrawSubMenu(submenu->GetMenu(submenu_index));
          }
@@ -338,9 +338,12 @@ void SugarboxApp::DrawMenu()
    ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
    if (ImGui::BeginMenuBar())
    {
-      for (int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
+      for (unsigned int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
       {
-         DrawSubMenu(functions_list_.GetMenu(menu_index));
+         if (functions_list_.GetMenu(menu_index)->IsAvailable())
+         {
+            DrawSubMenu(functions_list_.GetMenu(menu_index));
+         }
       }
       ImGui::EndMenuBar();
    }
@@ -807,3 +810,20 @@ void SugarboxApp::CprLoad()
    ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
    file_dialog_type_ = FD_LOAD_CPR;
 }
+
+bool SugarboxApp::PlusEnabled()
+{
+   return emulation_.GetEngine()->IsPLUS();
+}
+
+bool SugarboxApp::FdcPresent()
+{
+   return emulation_.GetEngine()->GetSettings()->FDCPlugged();
+}
+
+bool SugarboxApp::TapePresent()
+{
+   // Default is : a tape is always plugged
+   return true;
+}
+

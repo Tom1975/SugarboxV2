@@ -30,6 +30,10 @@ public:
    int RunApp();
 
    // IFunctionInterface interface
+   virtual bool PlusEnabled();
+   virtual bool FdcPresent();
+   virtual bool TapePresent();
+
    virtual void Exit();
    virtual void HardReset();
    virtual void Pause();

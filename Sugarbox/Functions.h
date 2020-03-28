@@ -70,6 +70,11 @@ public:
 
    }FunctionType;
 
+   // Machine state and components
+   virtual bool PlusEnabled() = 0;
+   virtual bool FdcPresent() = 0;
+   virtual bool TapePresent() = 0;
+
    //
    virtual void Exit() = 0;
 
@@ -120,7 +125,7 @@ public:
 class Function
 {
 public:
-   Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list);
+   Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available);
    Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available, std::function<bool()> selected );
    virtual ~Function();
 
