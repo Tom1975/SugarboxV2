@@ -64,6 +64,10 @@ public:
       FN_SND_MUTE,
       // CPR
       FN_CPR_LOAD,
+      // Autoload
+      FN_AUTOLOAD,
+      // AutoType
+      FN_AUTOTYPE,
       // DISPLAY
       // DEBUGER
 
@@ -120,6 +124,12 @@ public:
 
    // CPR
    virtual void CprLoad() = 0;
+
+   virtual bool IsAutoloadEnabled() = 0;
+   virtual void ToggleAutoload() = 0;
+
+   virtual bool IsSomethingInClipboard() = 0;
+   virtual void AutoType() = 0;
 };
 
 class Function

@@ -66,6 +66,10 @@ public:
    virtual bool SnrIsRecording();
    virtual bool SnrIsReplaying();
    virtual void CprLoad();
+   virtual bool IsAutoloadEnabled();
+   virtual void ToggleAutoload();
+   virtual bool IsSomethingInClipboard();
+   virtual void AutoType();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);

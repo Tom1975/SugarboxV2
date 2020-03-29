@@ -164,6 +164,7 @@ int SugarboxApp::RunApp()
    dlg_settings_.Refresh(current_path_exe.string().c_str());
 
    /*
+
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
    // Set a map to convert scancode to key
@@ -205,6 +206,58 @@ int SugarboxApp::RunApp()
                sprintf(buffer, "%i", value_key);
                key_mgr_out.SetConfiguration(section, key, buffer);
 
+               // Also, get the other keys : 
+               char char_buffer[16];
+               memset(char_buffer, 0, sizeof(char_buffer));
+               char base_key[32];
+               memset(base_key, 0, sizeof(base_key));
+               strncpy(base_key, key, 4);
+
+               // char, uchar, charctrl, ucharctrl
+               strcpy(&base_key[4], "char"); 
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "char_value");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "char_value_Alt");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "UCHAR");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "UCHAR_value");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "UCHAR_Alt");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "UCHAR_value_Alt");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+               
+               strcpy(&base_key[4], "charCtrl");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "charCtrl_value");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+               
+               strcpy(&base_key[4], "UCHARCTRL");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               strcpy(&base_key[4], "UCHARCTRL_value");
+               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+               
             }
          }
 
@@ -214,9 +267,6 @@ int SugarboxApp::RunApp()
    }
    key_mgr_out.CloseFile();
    */
-
-
-
 
    // Run main loop
    RunMainLoop();
@@ -827,3 +877,23 @@ bool SugarboxApp::TapePresent()
    return true;
 }
 
+bool SugarboxApp::IsAutoloadEnabled()
+{
+   return emulation_.IsAutoloadEnabled();
+}
+
+void SugarboxApp::ToggleAutoload()
+{
+   emulation_.ToggleAutoload();
+}
+
+bool SugarboxApp::IsSomethingInClipboard()
+{
+   const char* clipdata = glfwGetClipboardString(window_);
+   return (clipdata != nullptr && strlen( glfwGetClipboardString(window_) ) > 0);
+}
+
+void SugarboxApp::AutoType()
+{
+   emulation_.AutoType(glfwGetClipboardString(window_));
+}

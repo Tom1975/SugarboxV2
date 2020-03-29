@@ -134,12 +134,20 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    // CPR
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CPR_LOAD, Function(std::bind(&IFunctionInterface::CprLoad, function_handler_), multilanguage_, "L_FN_CPR_LOAD", []() { return true; }, []() { return false; })));
 
+   // AutoLoad
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_AUTOLOAD, Function(std::bind(&IFunctionInterface::ToggleAutoload, function_handler_), multilanguage_, "L_FN_AUTOLOAD", []() { return true; }, std::bind(&IFunctionInterface::IsAutoloadEnabled, function_handler_))));
+
+   // Autotype
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_AUTOTYPE, Function(std::bind(&IFunctionInterface::AutoType, function_handler_), multilanguage_, "L_FN_AUTOTYPE", std::bind(&IFunctionInterface::IsSomethingInClipboard, function_handler_), [](){ return false; } )));
+
    // 
    // Custom menu ?
    // Otherwise, default menu init
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Files", {
-      &function_list_.at(IFunctionInterface::FN_EXIT)
+      &function_list_.at(IFunctionInterface::FN_EXIT),
+      &function_list_.at(IFunctionInterface::FN_AUTOLOAD),
+      & function_list_.at(IFunctionInterface::FN_AUTOTYPE)
       },[]() { return true; }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Control", 
