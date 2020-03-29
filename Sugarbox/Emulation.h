@@ -7,8 +7,9 @@
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
 #include "ISound.h"
+#include "Inotify.h"
 
-class Emulation  : public IDirectories
+class Emulation  : public IDirectories, IFdcNotify
 {
 public :
    Emulation();
@@ -23,6 +24,12 @@ public :
       TAPE_CSW20
    } TapeFormat;
 
+   // IFdcNotify
+   virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
+   virtual void DiskEject();
+   virtual void DiskRunning(bool on);
+   virtual void TrackChanged(int nb_tracks);
+
    virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
    virtual void Stop();
    virtual void HardReset();
@@ -35,6 +42,8 @@ public :
    unsigned int GetSpeed();
 
    // Media handling
+   bool IsAutoloadEnabled();
+   void ToggleAutoload();
    bool IsDiskPresent(unsigned int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
    DataContainer* CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types = { MediaManager::MEDIA_DISK, MediaManager::MEDIA_SNA, MediaManager::MEDIA_SNR, MediaManager::MEDIA_TAPE, MediaManager::MEDIA_BIN,MediaManager::MEDIA_CPR });
@@ -62,6 +71,10 @@ public :
    void TapePause();
    void TapeStop();
 
+
+   //Auto type
+   void AutoType(const char* clipboard);
+
    EmulatorEngine* GetEngine() 
    {
       return emulator_engine_;
@@ -76,6 +89,9 @@ protected:
 
    ConfigurationManager config_manager_;
    EmulatorSettings emulator_settings_;
+
+   // Autorun
+   bool autorun_;
 
    // Emulation control
    bool pause_;

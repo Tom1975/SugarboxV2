@@ -61,12 +61,23 @@ public:
       FN_TAPE_SAVE_AS_CSW20,
       // Sound
       FN_SND_RECORD,
-      FN_SND_MUTE
+      FN_SND_MUTE,
+      // CPR
+      FN_CPR_LOAD,
+      // Autoload
+      FN_AUTOLOAD,
+      // AutoType
+      FN_AUTOTYPE,
       // DISPLAY
       // DEBUGER
 
 
    }FunctionType;
+
+   // Machine state and components
+   virtual bool PlusEnabled() = 0;
+   virtual bool FdcPresent() = 0;
+   virtual bool TapePresent() = 0;
 
    //
    virtual void Exit() = 0;
@@ -111,12 +122,20 @@ public:
    virtual void SnrStopRecord() = 0;
    virtual void SnrStopPlayback() = 0;
 
+   // CPR
+   virtual void CprLoad() = 0;
+
+   virtual bool IsAutoloadEnabled() = 0;
+   virtual void ToggleAutoload() = 0;
+
+   virtual bool IsSomethingInClipboard() = 0;
+   virtual void AutoType() = 0;
 };
 
 class Function
 {
 public:
-   Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list);
+   Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available);
    Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available, std::function<bool()> selected );
    virtual ~Function();
 

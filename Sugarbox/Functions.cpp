@@ -1,6 +1,6 @@
 #include "Functions.h"
 
-Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list) : node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list)
+Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available) : node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list), available_(available)
 {
 
 }
@@ -131,13 +131,24 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_PLAYING, Function(std::bind(&IFunctionInterface::SnrStopPlayback, function_handler_), multilanguage_, "L_FN_STOP_PLAYBACK_SNR", std::bind(&IFunctionInterface::SnrIsReplaying, function_handler_), []() { return false; })));
    function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_SNR_STOP_RECORD, Function(std::bind(&IFunctionInterface::SnrStopRecord, function_handler_), multilanguage_, "L_FN_STOP_RECORD_SNR", std::bind(&IFunctionInterface::SnrIsRecording, function_handler_), []() { return false; })));
 
+   // CPR
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_CPR_LOAD, Function(std::bind(&IFunctionInterface::CprLoad, function_handler_), multilanguage_, "L_FN_CPR_LOAD", []() { return true; }, []() { return false; })));
+
+   // AutoLoad
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_AUTOLOAD, Function(std::bind(&IFunctionInterface::ToggleAutoload, function_handler_), multilanguage_, "L_FN_AUTOLOAD", []() { return true; }, std::bind(&IFunctionInterface::IsAutoloadEnabled, function_handler_))));
+
+   // Autotype
+   function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(IFunctionInterface::FN_AUTOTYPE, Function(std::bind(&IFunctionInterface::AutoType, function_handler_), multilanguage_, "L_FN_AUTOTYPE", std::bind(&IFunctionInterface::IsSomethingInClipboard, function_handler_), [](){ return false; } )));
+
    // 
    // Custom menu ?
    // Otherwise, default menu init
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Files", {
-      &function_list_.at(IFunctionInterface::FN_EXIT)
-      }));
+      &function_list_.at(IFunctionInterface::FN_EXIT),
+      &function_list_.at(IFunctionInterface::FN_AUTOLOAD),
+      & function_list_.at(IFunctionInterface::FN_AUTOTYPE)
+      },[]() { return true; }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Control", 
                            {
@@ -152,12 +163,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_400),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_VSync),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_MAX)
-                           })
-                           }));
+                           }, []() { return true; })
+                           }, []() { return true; }));
    
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
                            {
-                           &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)}
+                           &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)
+                           }, []() { return true; }
                            ));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Disk",
@@ -170,7 +182,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
              &function_list_.at(IFunctionInterface::FN_DISK_1_SAVE_AS),
              &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK_VENDOR),
              &function_list_.at(IFunctionInterface::FN_DISK_1_INSERT_BLANK_DATA),
-         }),
+         },[]() { return true; }),
          new Function(multilanguage_, "L_FN_MENU_Disk_2",
          {
              &function_list_.at(IFunctionInterface::FN_DISK_2_EJECT),
@@ -179,8 +191,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
              &function_list_.at(IFunctionInterface::FN_DISK_2_SAVE_AS),
              &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK_VENDOR),
              &function_list_.at(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA)
-         })
-      }));
+         },[]() { return true; })
+      }, std::bind(&IFunctionInterface::FdcPresent, function_handler_)));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Tape",
       {
@@ -198,8 +210,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW),
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11),
             &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20),
-         })
-      }
+         },[]() { return true; })
+      }, std::bind(&IFunctionInterface::TapePresent, function_handler_)
    ));
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Sna",
       {
@@ -211,7 +223,14 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_SNR_STOP_PLAYING),
       &function_list_.at(IFunctionInterface::FN_SNR_RECORD),
       &function_list_.at(IFunctionInterface::FN_SNR_STOP_RECORD)
-      }));
+      }, []() { return true; }));
+
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Cpr",
+      {
+      &function_list_.at(IFunctionInterface::FN_CPR_LOAD)
+      }, std::bind(&IFunctionInterface::PlusEnabled, function_handler_)));
+
+   
 }
 
 

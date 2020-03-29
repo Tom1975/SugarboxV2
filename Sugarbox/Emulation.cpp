@@ -13,7 +13,8 @@ Emulation::Emulation() :
    running_thread_(false),
    pause_(false),
    worker_thread_(nullptr),
-   command_waiting_(false)
+   command_waiting_(false),
+   autorun_(true)
 {
 }
 
@@ -60,9 +61,9 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, const char* curre
 
    emulator_engine_->SetDefaultConfiguration();
    emulator_engine_->SetSettings(emulator_settings_);
+   emulator_engine_->SetNotifier(this);
 
    emulator_engine_->LoadConfiguration("Current", "Sugarbox.ini");
-
    emulator_engine_->GetMem()->Initialisation();
    // Update computer
    emulator_engine_->Reinit();
@@ -308,3 +309,77 @@ void Emulation::TapeStop()
    const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->GetTape()->StopEject();
 }
+
+bool Emulation::IsAutoloadEnabled()
+{
+   return autorun_;
+}
+
+void Emulation::ToggleAutoload()
+{
+   autorun_ = !autorun_;
+}
+
+void Emulation::AutoType(const char* clipboard)
+{
+   // todo
+   emulator_engine_->Paste(clipboard);
+}
+
+void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
+{
+   // Register path (for tooltip display)
+
+   // Play insert disk soiund
+   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_INSERT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+
+   // Autoload ?
+   // todo : skip startup disk inserted ?
+   if (autorun_ && load_ok == 0 )
+   {
+      char fileToLoad[16] = { 0 };
+      switch (emulator_engine_->GetFDC()->GetAutorun(drive_number, fileToLoad, 16))
+      {
+      case IDisk::AUTO_CPM:
+      {
+         emulator_engine_->Paste("|CPM");
+         emulator_engine_->Paste("\r");
+         break;
+      }
+      case IDisk::AUTO_FILE:
+      {
+         char wcsCmdLine[256];
+         sprintf (wcsCmdLine, "RUN\"%s", fileToLoad);
+         emulator_engine_->Paste(wcsCmdLine);
+         emulator_engine_->Paste("\r");
+      }
+      break;
+
+      default:
+         break;
+      };
+   }
+}
+
+void Emulation::DiskEject()
+{
+   // Play "disk ejection" sound
+   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_EJECT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+}
+
+void Emulation::DiskRunning(bool on)
+{
+   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_RUN), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+
+}
+
+void Emulation::TrackChanged(int nb_tracks)
+{
+   // play the "insert disk" wave
+   /*if (nbTracks < 20)
+      PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_TRACK_CHG_SHORT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+   else
+      PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_TRACK_CHG_LONG), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+      */
+}
+

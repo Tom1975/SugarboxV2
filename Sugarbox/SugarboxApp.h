@@ -30,6 +30,10 @@ public:
    int RunApp();
 
    // IFunctionInterface interface
+   virtual bool PlusEnabled();
+   virtual bool FdcPresent();
+   virtual bool TapePresent();
+
    virtual void Exit();
    virtual void HardReset();
    virtual void Pause();
@@ -61,6 +65,11 @@ public:
    virtual void SnrStopPlayback();
    virtual bool SnrIsRecording();
    virtual bool SnrIsReplaying();
+   virtual void CprLoad();
+   virtual bool IsAutoloadEnabled();
+   virtual void ToggleAutoload();
+   virtual bool IsSomethingInClipboard();
+   virtual void AutoType();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -114,7 +123,8 @@ protected:
       FD_INSERT_SNA,
       FD_SAVE_SNA,
       FD_LOAD_SNR,
-      FD_RECORD_SNR
+      FD_RECORD_SNR,
+      FD_LOAD_CPR
    } file_dialog_type_;
 
    std::map<std::string, const FormatType*> format_ext_map_;
