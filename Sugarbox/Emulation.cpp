@@ -337,7 +337,27 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
    // todo : skip startup disk inserted ?
    if (autorun_ && load_ok == 0 )
    {
+      char fileToLoad[16] = { 0 };
+      switch (emulator_engine_->GetFDC()->GetAutorun(drive_number, fileToLoad, 16))
+      {
+      case IDisk::AUTO_CPM:
+      {
+         emulator_engine_->Paste("|CPM");
+         emulator_engine_->Paste("\r");
+         break;
+      }
+      case IDisk::AUTO_FILE:
+      {
+         char wcsCmdLine[256];
+         sprintf (wcsCmdLine, "RUN\"%s", fileToLoad);
+         emulator_engine_->Paste(wcsCmdLine);
+         emulator_engine_->Paste("\r");
+      }
+      break;
 
+      default:
+         break;
+      };
    }
 }
 
