@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+
 #include "ALSoundMixer.h"
 
 ALSoundMixer::ALSoundMixer():sample_rate_(0), 
@@ -27,6 +30,8 @@ ALSoundMixer::ALSoundMixer():sample_rate_(0),
 
 ALSoundMixer::~ALSoundMixer()
 {
+   // Release loaded wav !
+
    alcMakeContextCurrent(NULL);
    alcDestroyContext(context_);
    if (device_ != nullptr)
@@ -236,4 +241,106 @@ void ALSoundMixer::Record(bool bOn)
 bool ALSoundMixer::IsRecordOn()
 {
    return false;
+}
+
+
+ bool isBigEndian()
+{
+   int a = 1;
+   return !((char*)&a)[0];
+}
+
+int convertToInt(const unsigned char* buffer, int len)
+{
+   int a = 0;
+   if (!isBigEndian())
+      for (int i = 0; i < len; i++)
+         ((char*)&a)[i] = buffer[i];
+   else
+      for (int i = 0; i < len; i++)
+         ((char*)&a)[3 - i] = buffer[i];
+   return a;
+}
+
+void ALSoundMixer::AddWav(int id, const unsigned char* databuffer, unsigned int buffersize)
+{
+   // Add new wav to wav buffer
+   WavInfo info;
+   
+   info.channel = convertToInt(&databuffer[0x16], 2);
+   info.samplerate = convertToInt(&databuffer[0x18], 4);
+   info.bps = convertToInt(&databuffer[0x22], 2);
+   info.size = convertToInt(&databuffer[0x28], 4);
+   info.data = new char[info.size];
+   memcpy(info.data, &databuffer[0x2C], info.size);
+
+   if (info.channel == 1)
+   {
+      if (info.bps == 8)
+      {
+         info.format = AL_FORMAT_MONO8;
+      }
+      else {
+         info.format = AL_FORMAT_MONO16;
+      }
+   }
+   else {
+      if (info.bps == 8)
+      {
+         info.format = AL_FORMAT_STEREO8;
+      }
+      else {
+         info.format = AL_FORMAT_STEREO16;
+      }
+   }
+   ALenum error;
+   alGenBuffers((ALuint)1, &info.buffer);
+   if ((error = alGetError()) != AL_NO_ERROR)
+   {
+   }
+
+   alBufferData(info.buffer, info.format, info.data, info.size, info.samplerate);
+   if ((error = alGetError()) != AL_NO_ERROR)
+   {
+   }
+   wav_list_[id] = info;
+}
+
+void ALSoundMixer::PlayWav(int wav_registered)
+{
+   ALuint source;
+   
+   alGenSources((ALuint)1, &source);
+   // check for errors
+
+   alSourcef(source, AL_PITCH, 1);
+   // check for errors
+   alSourcef(source, AL_GAIN, 1);
+   // check for errors
+   alSource3f(source, AL_POSITION, 0, 0, 0);
+   // check for errors
+   alSource3f(source, AL_VELOCITY, 0, 0, 0);
+   // check for errors
+   alSourcei(source, AL_LOOPING, AL_FALSE);
+
+   alSourcei(source, AL_BUFFER, wav_list_[wav_registered].buffer);
+
+   ALenum error;
+   alSourcePlay(source);
+   if ((error = alGetError()) != AL_NO_ERROR)
+   {
+   }
+
+   ALint source_state;
+   alGetSourcei(source, AL_SOURCE_STATE, &source_state);
+   // check for errors
+   while (source_state == AL_PLAYING) {
+      alGetSourcei(source, AL_SOURCE_STATE, &source_state);
+      // check for errors
+   }
+/*   // cleanup context
+   alDeleteSources(1, &source);
+   alDeleteBuffers(1, &buffer);
+   alcMakeContextCurrent(NULL);
+   */
 }

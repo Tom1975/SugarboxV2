@@ -3,7 +3,15 @@
 #include <thread>
 
 #include "Emulation.h"
+#include "wav.h"
 
+// Wav registered
+
+#define SND_SEEK_SHORT     0
+#define SND_SEEK_LONG      1
+#define SND_INSERT_DISK    2
+#define SND_EJECT_DISK     3
+#define SND_MOTOR_ON       4
 
 //////////////////////////////////////////////
 /// ctor/dtor
@@ -14,6 +22,7 @@ Emulation::Emulation() :
    pause_(false),
    worker_thread_(nullptr),
    command_waiting_(false),
+   sound_mixer_(nullptr),
    autorun_(true)
 {
 }
@@ -48,8 +57,9 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeed();
 }
 
-void Emulation::Init( IDisplay* display, ISoundFactory* sound, const char* current_path)
+void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path)
 {
+   sound_mixer_ = sound_mixer;
    current_path_ = current_path;
    emulator_settings_.Init(&config_manager_, sound);
    emulator_settings_.Load("Sugarbox.ini");
@@ -70,6 +80,13 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, const char* curre
 
    running_thread_ = true;
    worker_thread_ = new std::thread(RunLoop, this);
+
+   sound_mixer_->AddWav(SND_SEEK_SHORT, seek_short_wav, sizeof(seek_short_wav));
+   sound_mixer_->AddWav(SND_SEEK_LONG, seek_long_wav, sizeof(seek_short_wav));
+   sound_mixer_->AddWav(SND_INSERT_DISK, insert_wav, sizeof(seek_short_wav));
+   sound_mixer_->AddWav(SND_EJECT_DISK, eject_wav, sizeof(seek_short_wav));
+   sound_mixer_->AddWav(SND_MOTOR_ON, drive_mo_wav, sizeof(seek_short_wav));
+   
 }
 
 void Emulation::Stop()
@@ -331,7 +348,7 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
    // Register path (for tooltip display)
 
    // Play insert disk soiund
-   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_INSERT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+   sound_mixer_->PlayWav(SND_INSERT_DISK);
 
    // Autoload ?
    // todo : skip startup disk inserted ?
@@ -364,22 +381,21 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
 void Emulation::DiskEject()
 {
    // Play "disk ejection" sound
-   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_EJECT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+   sound_mixer_->PlayWav(SND_EJECT_DISK);
 }
 
 void Emulation::DiskRunning(bool on)
 {
-   //PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_RUN), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
-
+   sound_mixer_->PlayWav(SND_MOTOR_ON);
 }
 
 void Emulation::TrackChanged(int nb_tracks)
 {
    // play the "insert disk" wave
-   /*if (nbTracks < 20)
-      PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_TRACK_CHG_SHORT), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
+   if (nb_tracks < 20)
+      sound_mixer_->PlayWav(SND_SEEK_SHORT);
    else
-      PlaySound(MAKEINTRESOURCE(IDR_WAVE_DISK_TRACK_CHG_LONG), m_hInstance, SND_RESOURCE | SND_ASYNC | SND_NODEFAULT);
-      */
+      sound_mixer_->PlayWav(SND_SEEK_LONG);
+      
 }
 
