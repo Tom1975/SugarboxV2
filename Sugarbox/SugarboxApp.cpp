@@ -155,7 +155,7 @@ int SugarboxApp::RunApp()
    SizeChanged(window_width_, window_height_);
 
    display_.Init();
-   emulation_.Init(&display_, this, current_path_exe.string().c_str());
+   emulation_.Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
    dlg_settings_.Init(emulation_.GetEngine());
    keyboard_handler_ = emulation_.GetKeyboardHandler();
    

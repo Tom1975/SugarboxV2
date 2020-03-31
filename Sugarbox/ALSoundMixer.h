@@ -2,6 +2,7 @@
 
 #include "ISound.h"
 #include <vector>
+#include <map>
 #include "AL/alc.h"
 #include "AL/al.h"
 
@@ -48,6 +49,11 @@ public:
 
    virtual void SyncWithSound();
 
+   // Play other sound
+   void AddWav(int id, const unsigned char * buffer, unsigned int size);
+   void PlayWav(int wav_registered);
+
+
 protected:
    // Sound values
    unsigned int sample_rate_;
@@ -64,13 +70,27 @@ protected:
    IWaveHDR* last_used_buffer_;
    bool play_;
 
+   // Wav registered
+   typedef struct
+   {
+      ALuint buffer;
+
+      unsigned int format;
+      unsigned int channel;
+      unsigned int bps;
+      int samplerate;
+      unsigned int size;
+      char *data;
+
+   } WavInfo;
+   std::map <int, WavInfo> wav_list_;
+
    // Open AL related
    ALCdevice*     device_;
    ALCcontext*    context_;
 
    ALuint         buffers_[NB_BUFFERS_];
    ALuint         source_;
-
    ALenum         format_;
 };
 

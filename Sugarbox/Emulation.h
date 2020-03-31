@@ -8,6 +8,7 @@
 #include "ConfigurationManager.h"
 #include "ISound.h"
 #include "Inotify.h"
+#include "ALSoundMixer.h"
 
 class Emulation  : public IDirectories, IFdcNotify
 {
@@ -30,7 +31,7 @@ public :
    virtual void DiskRunning(bool on);
    virtual void TrackChanged(int nb_tracks);
 
-   virtual void Init(IDisplay* display, ISoundFactory* sound, const char* current_path);
+   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path);
    virtual void Stop();
    virtual void HardReset();
    virtual void Pause();
@@ -89,6 +90,7 @@ protected:
 
    ConfigurationManager config_manager_;
    EmulatorSettings emulator_settings_;
+   ALSoundMixer * sound_mixer_;
 
    // Autorun
    bool autorun_;
