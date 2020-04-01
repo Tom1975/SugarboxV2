@@ -30,7 +30,7 @@ script:
 - make install
 - pwd
 - ls -l $TRAVIS_BUILD_DIR
-- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR
+- tar -zcf $TRAVIS_BUILD_DIR.tar.gz ./Sugarbox
 - ls -l
 
 deploy:
