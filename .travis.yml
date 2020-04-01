@@ -28,5 +28,15 @@ script:
 - make all
 - make install
 - ls -l
-- gzip -k $TRAVIS_BUILD_DIR
+- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR
 - ls -l
+
+deploy:
+  provider: releases
+  token: $GITHUB_API_KEY
+  file: $TRAVIS_BUILD_DIR.tar.gz
+  skip_cleanup: true
+  draft: true
+  on:
+    tags: true
+    
