@@ -24,5 +24,20 @@ before_install:
 
 script:
 - echo 'Generating makefile'
-- cmake . 
-- make all
+- mkdir build
+- cd build
+- cmake .. -DCMAKE_BUILD_TYPE=Release
+- make install
+- ls -l
+- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR/build
+- ls -l
+
+deploy:
+  provider: releases
+  token: $GITHUB_API_KEY
+  file: $TRAVIS_BUILD_DIR.tar.gz
+  skip_cleanup: true
+  draft: true
+  on:
+    tags: true
+    
