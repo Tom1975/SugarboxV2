@@ -24,10 +24,12 @@ before_install:
 
 script:
 - echo 'Generating makefile'
-- cmake . -DCMAKE_BUILD_TYPE=Release
+- mkdir build
+- cd build
+- cmake .. -DCMAKE_BUILD_TYPE=Release
 - make install
 - ls -l
-- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR
+- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR/build
 - ls -l
 
 deploy:
