@@ -24,8 +24,7 @@ before_install:
 
 script:
 - echo 'Generating makefile'
-- cmake . 
-- make all
+- cmake . -DCMAKE_BUILD_TYPE=Release
 - make install
 - ls -l
 - tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR
