@@ -60,5 +60,5 @@ deploy:
   artifact: SugarboxV2_x86.zip,SugarboxV2_x64.zip
   draft: true
   prerelease: true
-  on:
-    APPVEYOR
+on:
+  APPVEYOR_REPO_TAG: true
