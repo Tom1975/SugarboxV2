@@ -47,7 +47,7 @@ after_build:
     set artifact_name=SugarboxV2_%platform%.zip
     dir %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\
     move %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\Sugarbox.exe %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\
-    delete %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%
+    del %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%
     7z a -r -tzip %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\
     appveyor PushArtifact %artifact_name%
 
