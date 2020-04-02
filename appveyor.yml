@@ -34,7 +34,7 @@ before_build:
     
 build_script:
 - cmd : |- 
-    cmake --build . --config %configuration%
+#    cmake --build . --config %configuration%
     cmake --build . --config %configuration% --target INSTALL
 
 only_commits:
@@ -47,12 +47,13 @@ only_commits:
 after_build:
 - cmd : |- 
     set artifact_name=SugarboxV2_%platform%.zip
-    7z a -r -tzip %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\*.*
+    dir %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\
+    7z a -r -tzip %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%
     appveyor PushArtifact %artifact_name%
 
 deploy:
   release: Sugarbox-v2.0.$(appveyor_build_version)
-  description: Sugarbox V2, for Winwods.
+  description: Sugarbox V2, for Windows.
   provider: GitHub
   tag: $(APPVEYOR_REPO_TAG_NAME) 
   auth_token:
