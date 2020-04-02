@@ -352,7 +352,7 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
 
    // Autoload ?
    // todo : skip startup disk inserted ?
-   if (autorun_ && load_ok == 0 )
+   if (autorun_ && load_ok == 0 && drive_number != -1)
    {
       char fileToLoad[16] = { 0 };
       switch (emulator_engine_->GetFDC()->GetAutorun(drive_number, fileToLoad, 16))
