@@ -47,7 +47,7 @@ only_commits:
 after_build:
 - cmd : |- 
     set artifact_name=SugarboxV2_%platform%.zip
-    7z a %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\Sugarbox.exe
+    7z a -r -tzip %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\*.*
     appveyor PushArtifact %artifact_name%
 
 deploy:
@@ -56,7 +56,7 @@ deploy:
   provider: GitHub
   tag: $(APPVEYOR_REPO_TAG_NAME) 
   auth_token:
-    secure: /Nr3QtuzpAw6S9iRX/KJ5f3RGXpx9xiuhrxz+jLV5aVSVrhNPX2ZTFaNn0ToOBDx
+    secure: 3xDp6ujDQwOa9KJgf7AkK+UjFw2FHDRhwf93PwBUqpNUKn7x93L06Yy5N5YnehvF
   artifact: SugarboxV2_x86.zip,SugarboxV2_x64.zip
   draft: true
   prerelease: true
