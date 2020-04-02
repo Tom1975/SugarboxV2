@@ -44,3 +44,21 @@ only_commits:
     - Sugarbox/
     - CPCCore/
 
+after_build:
+- cmd : |- 
+    set artifact_name=SugarboxV2_%platform%.zip
+    7z a %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\Sugarbox.exe
+    appveyor PushArtifact %artifact_name%
+
+deploy:
+  release: Sugarbox-v2.0.$(appveyor_build_version)
+  description: Sugarbox V2, for Winwods.
+  provider: GitHub
+  tag: $(APPVEYOR_REPO_TAG_NAME) 
+  auth_token:
+    secure: /Nr3QtuzpAw6S9iRX/KJ5f3RGXpx9xiuhrxz+jLV5aVSVrhNPX2ZTFaNn0ToOBDx
+  artifact: SugarboxV2_x86.zip,SugarboxV2_x64.zip
+  draft: true
+  prerelease: true
+  on:
+    APPVEYOR
