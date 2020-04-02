@@ -28,8 +28,9 @@ script:
 - cd build
 - cmake .. -DCMAKE_BUILD_TYPE=Release
 - make install
-- ls -l
-- tar -zcf $TRAVIS_BUILD_DIR.tar.gz $TRAVIS_BUILD_DIR/build
+- pwd
+- ls -l $TRAVIS_BUILD_DIR
+- tar -zcf $TRAVIS_BUILD_DIR.tar.gz ./Sugarbox
 - ls -l
 
 deploy:
