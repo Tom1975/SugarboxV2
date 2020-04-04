@@ -26,6 +26,7 @@ public:
       // Control
       FN_CTRL_ONOFF,
       FN_CTRL_PAUSE,
+      FN_CTRL_SET_SPEED_10,
       FN_CTRL_SET_SPEED_50,
       FN_CTRL_SET_SPEED_100,
       FN_CTRL_SET_SPEED_150,
