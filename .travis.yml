@@ -27,16 +27,14 @@ script:
 - mkdir build
 - cd build
 - cmake .. -DCMAKE_BUILD_TYPE=Release
-- make install
-- pwd
-- ls -l $TRAVIS_BUILD_DIR
-- tar -zcf $TRAVIS_BUILD_DIR.tar.gz ./Sugarbox
+- make package
+- export TRAVIS_FILE=$(ls *.tar.gz)
 - ls -l
 
 deploy:
   provider: releases
   token: $GITHUB_API_KEY
-  file: $TRAVIS_BUILD_DIR.tar.gz
+  file: $TRAVIS_FILE
   skip_cleanup: true
   draft: true
   on:
