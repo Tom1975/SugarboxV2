@@ -47,8 +47,7 @@ only_commits:
 after_build:
 - cmd : |- 
     cpack.exe -C Release --config ./CPackConfig.cmake
-    set artifact_name=*.zip
-    appveyor PushArtifact %artifact_name%
+    ps: Get-ChildItem .\*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 
 deploy:
   release: Sugarbox-v2.0.$(appveyor_build_version)
@@ -57,7 +56,7 @@ deploy:
   tag: $(APPVEYOR_REPO_TAG_NAME) 
   auth_token:
     secure: 3xDp6ujDQwOa9KJgf7AkK+UjFw2FHDRhwf93PwBUqpNUKn7x93L06Yy5N5YnehvF
-  artifact: *.zip
+  artifact: /.*\.zip
   draft: true
   prerelease: true
   on:
