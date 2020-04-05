@@ -47,7 +47,6 @@ only_commits:
 after_build:
 - cmd : |- 
     cpack.exe -C Release --config ./CPackConfig.cmake
-    ps: Get-ChildItem .\*.zip | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
 
 deploy:
   release: Sugarbox-v2.0.$(appveyor_build_version)
