@@ -33,23 +33,25 @@ before_build:
     cmake .. -G %CMAKE_GENERATOR%
     
 build_script:
-- cmd :  cmake --build . --config %configuration% --target INSTALL
+- cmd : |-
+    cmake --build . --config %configuration% --target INSTALL
+    cmake --build . --config %configuration% --target PACKAGE
 
 only_commits:
   files:
     - CMakeLists.txt
     - appveyor.yml
-    - Sugarbox/
+    - Sugarbox/c
     - CPCCore/
 
 after_build:
 - cmd : |- 
-    set artifact_name=SugarboxV2_%platform%.zip
-    dir %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\
-    move %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%\Sugarbox.exe %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\
-    del /F /Q %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\%configuration%
-    7z a -r -tzip %artifact_name% %APPVEYOR_BUILD_FOLDER%\build\Sugarbox\
-    appveyor PushArtifact %artifact_name%
+    cpack.exe -C Release --config ./CPackConfig.cmake
+
+artifacts:
+- path: 'build/*.zip'
+  name: Zipfiles
+  type: zip
 
 deploy:
   release: Sugarbox-v2.0.$(appveyor_build_version)
@@ -58,7 +60,7 @@ deploy:
   tag: $(APPVEYOR_REPO_TAG_NAME) 
   auth_token:
     secure: 3xDp6ujDQwOa9KJgf7AkK+UjFw2FHDRhwf93PwBUqpNUKn7x93L06Yy5N5YnehvF
-  artifact: SugarboxV2_x86.zip,SugarboxV2_x64.zip
+  artifact: Zipfiles
   draft: true
   prerelease: true
   on:
