@@ -48,6 +48,11 @@ after_build:
 - cmd : |- 
     cpack.exe -C Release --config ./CPackConfig.cmake
 
+artifacts:
+- path: 'build/*.zip'
+  name: Zipfiles
+  type: zip
+
 deploy:
   release: Sugarbox-v2.0.$(appveyor_build_version)
   description: Sugarbox V2, for Windows.
@@ -55,7 +60,7 @@ deploy:
   tag: $(APPVEYOR_REPO_TAG_NAME) 
   auth_token:
     secure: 3xDp6ujDQwOa9KJgf7AkK+UjFw2FHDRhwf93PwBUqpNUKn7x93L06Yy5N5YnehvF
-  artifact: /.*\.zip
+  artifact: Zipfiles
   draft: true
   prerelease: true
   on:
