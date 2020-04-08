@@ -3,8 +3,8 @@
 #include <functional>
 #include <map>
 
-#include <imgui.h>
-
+#include <QMainWindow>
+#include <QLabel.h>
 
 #include "Emulation.h"
 #include "Display.h"
@@ -21,10 +21,17 @@
 #include "DlgSettings.h"
 #include "SoundControl.h"
 
-class SugarboxApp : public ISoundFactory, public IFunctionInterface
+namespace Ui {
+   class SugarboxApp;
+}
+
+
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface
 {
+   Q_OBJECT
+
 public:
-   SugarboxApp();
+   explicit SugarboxApp(QWidget *parent = 0);
    virtual ~SugarboxApp();
 
    int RunApp();
@@ -96,14 +103,17 @@ protected:
    void DrawPeripherals();
    void DrawStatusBar();
    void DrawOthers();
-   void HandlePopups();
-
+   
    bool AskForSaving(int drive);
    void InsertSelectFile(int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
    bool AskForSavingTape();
    void InsertSelectTape();
 
+   // QT
+   Ui::SugarboxApp *ui;
+
+   
    // Gui related
    enum {
       POPUP_NONE,
@@ -152,7 +162,7 @@ protected:
    Emulation emulation_;
    CDisplay display_;
    ALSoundMixer sound_mixer_;
-   GLFWwindow* window_;
+
    // counters
    char str_speed_[16];
    int counter_;

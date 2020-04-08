@@ -1,16 +1,6 @@
 [submodule "CPCCore"]
 	path = CPCCore
 	url = https://github.com/Tom1975/CPCCore.git
-[submodule "imgui"]
-	path = imgui
-	url = https://github.com/ocornut/imgui
-[submodule "glfw"]
-	path = glfw
-	url = https://github.com/glfw/glfw.git
 [submodule "openal-soft"]
 	path = openal-soft
 	url = https://github.com/kcat/openal-soft.git
-[submodule "ImGuiFileDialog"]
-	path = ImGuiFileDialog
-	url = https://github.com/Tom1975/ImGuiFileDialog.git
-	branch = master

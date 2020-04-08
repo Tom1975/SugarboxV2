@@ -1,10 +1,5 @@
 #include "DlgSettings.h"
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
-
 DlgSettings::DlgSettings(ConfigurationManager* config_manager) : config_manager_(config_manager), engine_(nullptr), seletected_conf_(nullptr)
 {
 }
@@ -38,59 +33,10 @@ void DlgSettings::DisplayConfigCombo()
       current_conf = seletected_conf_->GetShortDescription();
    }
       
-   ImGui::SetNextItemWidth(300.0f);
-   if (ImGui::BeginCombo("##Configuration", current_conf))
-   {
-
-      for (int i = 0; i < nb_conf; i++)
-      {
-         MachineSettings* conf = settings_list_.GetConfiguration(i);
-         if (ImGui::Selectable(conf->GetShortDescription(), seletected_conf_ == conf))
-         {
-            // Set it !
-            conf->Load();
-            engine_->ChangeConfig(conf);
-            engine_->OnOff();
-            seletected_conf_ = conf;
-         }
-      }
-      ImGui::EndCombo();
-   }
 }
 
 void DlgSettings::DisplayMenu()
 {
-   ImGui::Begin("Configuration");
 
-   // Display contents in a scrolling region
-   ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
-   ImGui::BeginChild("Scrolling", ImVec2(250, 0), true);
-   int nb_conf = settings_list_.GetNumberOfConfigurations();
-
-   for (int i = 0; i < nb_conf; i++)
-   {
-      MachineSettings* conf = settings_list_.GetConfiguration(i);
-
-      if (ImGui::Selectable(conf->GetShortDescription(), seletected_conf_ == conf))
-      {
-         // Current setting selection
-         seletected_conf_ = conf;
-      }
-   }
-   ImGui::EndChild();
-   ImGui::SameLine();
-   ImGui::BeginGroup();
-      // Display configuration list
-      if (seletected_conf_ != nullptr)
-      {
-         // Hardware type
-         // CRTC
-         // RAM quatity
-         // ROM /Cartridge
-         // Keyboard type
-      }
-   ImGui::EndGroup();
-
-   ImGui::End();
 
 }

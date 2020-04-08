@@ -1,58 +1,15 @@
 #include "SugarboxApp.h"
+#include "ui_SugarboxApp.h"
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "ImGuiFileDialog/ImGuiFileDialog.h"
-
-#include <GL/gl3w.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <filesystem>
 
-/////////////////////////////////////
-// Generic callbacks
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
-   app->SizeChanged(width, height);
-}
-
-void cursor_enter_callback(GLFWwindow* window, int entered)
-{
-   // Enter ?
-   const char* content_of_clipboard = glfwGetClipboardString(window);
-}
-
-void joystick_callback(int jid, int event)
-{
-   if (event == GLFW_CONNECTED)
-   {
-      // The joystick was connected
-   }
-   else if (event == GLFW_DISCONNECTED)
-   {
-      // The joystick was disconnected
-   }
-}
-
-void DropCallback(GLFWwindow* window, int count, const char** paths)
-{
-   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
-   app->Drop(count, paths);
-}
-
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-   SugarboxApp* app = (SugarboxApp*)glfwGetWindowUserPointer(window);
-   app->KeyboardHandler(key, scancode, action, mods);
-}
 
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp() : counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)
+SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
+dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false),
+ui(new Ui::SugarboxApp)
 {
   
 }
@@ -105,52 +62,11 @@ int SugarboxApp::RunApp()
    // Generic init
    InitMenu();
 
-   // GLFW iniut
-   if (!glfwInit())
-   {
-      // Initialization failed
-      return -1; 
-   }
-   glfwSetErrorCallback(error_callback);
-
-   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
-   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
-   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
-
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
    window_height_ = main_display_height + toolbar_height + status_height;
 
-   // Window creation
-   window_ = glfwCreateWindow(window_width_, window_height_, "Sugarbox", NULL, NULL);
 
-   if (!window_)
-   {
-      // Window or OpenGL context creation failed
-      return -1;
-   }
-   glfwSetWindowUserPointer(window_, (void*)this);
-   glfwMakeContextCurrent(window_);
-
-   glfwSetKeyCallback(window_, KeyCallback);
-   glfwSetDropCallback(window_, DropCallback);
-   glfwSetJoystickCallback(joystick_callback);
-   glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
-   glfwSetCursorEnterCallback(window_, cursor_enter_callback);
-
-   bool err = gl3wInit() != 0;
-
-   // Init sound
-   // TODO
-   
-   // Init Gui
-   ImGui::CreateContext();
-   ImGui_ImplGlfw_InitForOpenGL(window_, true);
-   const char* glsl_version = "#version 130";
-   ImGui_ImplOpenGL3_Init(glsl_version);
-   
    // Init display
    SizeChanged(window_width_, window_height_);
 
@@ -269,10 +185,7 @@ int SugarboxApp::RunApp()
    */
 
    // Run main loop
-   RunMainLoop();
-
-   glfwDestroyWindow(window_);
-   glfwTerminate();
+   //RunMainLoop();
 
    return 0;
 }
@@ -281,67 +194,16 @@ static bool test = false;
 
 void SugarboxApp::RunMainLoop()
 {
-   while (!glfwWindowShouldClose(window_))
+   while (true)
    {
-      glfwPollEvents();
-
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplGlfw_NewFrame();
-
-      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
       DrawMainWindow();
 
-      ImGui::NewFrame();
       DrawMenu();
       DrawPeripherals();
       DrawStatusBar();
       DrawOthers();
 
-      if (ImGuiFileDialog::Instance()->FileDialog("SaveAs"))
-      {
-         ImGuiFileDialog* imgui_fd = ImGuiFileDialog::Instance();
-         switch (file_dialog_type_)
-         {
-         case FD_SAVE_AS:
-            emulation_.SaveDiskAs(0, imgui_fd->GetFilepathName().c_str(), format_ext_map_[imgui_fd->GetCurrentFilter()]);
-            break;
-         case FD_INSERT:
-            emulation_.LoadDisk( imgui_fd->GetFilepathName().c_str(), 0);
-            break;
-         case FD_INSERT_TAPE:
-            emulation_.LoadTape(imgui_fd->GetFilepathName().c_str());
-            break;
-         case FD_SAVE_TAPE_AS:
-            emulation_.SaveTapeAs(imgui_fd->GetFilepathName().c_str(), format_);
-            break;
-         case FD_INSERT_SNA:
-            emulation_.LoadSnapshot(imgui_fd->GetFilepathName().c_str());
-            break;
-         case FD_SAVE_SNA:
-            emulation_.SaveSnapshot(imgui_fd->GetFilepathName().c_str());
-            break;
-         case FD_LOAD_SNR:
-            emulation_.LoadSnr(imgui_fd->GetFilepathName().c_str());
-            break;
-         case FD_RECORD_SNR:
-            emulation_.RecordSnr(imgui_fd->GetFilepathName().c_str());
-            break;
-         case FD_LOAD_CPR:
-            emulation_.LoadCpr(imgui_fd->GetFilepathName().c_str());
-            break;
-         }
-         ImGuiFileDialog::Instance()->CloseDialog("SaveAs");
-      }
 
-      HandlePopups();
-
-      ImGui::Render();
-      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-      
-      // Keep running
-      glfwSwapBuffers(window_);
    }
 
    emulation_.Stop();
@@ -357,87 +219,38 @@ void SugarboxApp::DrawSubMenu(Function* submenu)
 {
    if (submenu->IsNode())
    {
-      if (ImGui::BeginMenu(submenu->GetLabel()))
+      for (unsigned int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
       {
-         for (unsigned int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
-         {
-            DrawSubMenu(submenu->GetMenu(submenu_index));
-         }
-         ImGui::EndMenu();
+         DrawSubMenu(submenu->GetMenu(submenu_index));
       }
    }
    else
    {
-      if (ImGui::MenuItem(
-         submenu->GetLabel(),
-         submenu->GetShortcut(),
-         submenu->IsSelected(),
-         submenu->IsAvailable()))
-      {
-         submenu->Call();
-      }
-
    }
 }
 
 void SugarboxApp::DrawMenu()
 {
-   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-   ImGui::SetNextWindowSize(ImVec2(window_width_, toolbar_height), ImGuiCond_Always);
 
-   ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
-   if (ImGui::BeginMenuBar())
-   {
-      for (unsigned int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
-      {
-         if (functions_list_.GetMenu(menu_index)->IsAvailable())
-         {
-            DrawSubMenu(functions_list_.GetMenu(menu_index));
-         }
-      }
-      ImGui::EndMenuBar();
-   }
-
-   // Toolbar : Add configs
-   dlg_settings_.DisplayConfigCombo();
-
-   ImGui::End();
 }
 
 void SugarboxApp::DrawPeripherals()
 {
-   ImGui::SetNextWindowPos(ImVec2(main_display_width, toolbar_height), ImGuiCond_Always);
-   ImGui::SetNextWindowSize(ImVec2(peripherals_width, main_display_height), ImGuiCond_Always);
-   ImGui::Begin("Peripherals", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
-   // Disk drives
-   // Tape
-
-   ImGui::End();
 }
 
 void SugarboxApp::DrawStatusBar()
 {
-   ImGui::SetNextWindowPos(ImVec2(0, window_height_ - status_height), ImGuiCond_Always);
-   ImGui::SetNextWindowSize(ImVec2(window_width_, status_height), ImGuiCond_Always);
-   ImGui::Begin("Status bar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+   // Speed of emulation : only 1 every 50 frames
+   counter_++;
 
-      // Speed of emulation : only 1 every 50 frames
-      counter_++;
-
-      if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
-      {
-         // Update
-      
-         sprintf(str_speed_, "%i %%%%", emulation_.GetSpeed());
-         counter_ = 0;
-      }
-      ImGui::Text(str_speed_);
-
-      // Sound control
-      ImGui::SameLine();
-      sound_control_.DrawSoundVolume();
-
-   ImGui::End();
+   if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
+   {
+      // Update
+   
+      sprintf(str_speed_, "%i %%%%", emulation_.GetSpeed());
+      counter_ = 0;
+   }
+   sound_control_.DrawSoundVolume();
 }
 
 void SugarboxApp::DrawOthers()
@@ -450,41 +263,9 @@ void SugarboxApp::DrawOthers()
    }
 }
 
-void SugarboxApp::HandlePopups()
-{
-   switch (PopupType)
-   {
-      case POPUP_ASK_SAVE:
-      {
-         char buffer[128];
-         sprintf(buffer, "Disk %c has changed ! Do you want to save it ?", (PopupArg == 0) ? 'A' : 'B');
-         ImGui::OpenPopup(buffer);
-         if (ImGui::BeginPopupModal(buffer, NULL)) {
-            if (ImGui::Button("Yes"))
-            {
-               emulation_.GetEngine()->SaveDisk(PopupArg);
-               PopupType = POPUP_NONE;
-               popup_associated_function_();
-            }
-            if (ImGui::Button("No"))
-            {
-               emulation_.GetEngine()->SaveDisk(PopupArg);
-               PopupType = POPUP_NONE;
-               popup_associated_function_();
-            }
-            // Call associated function
-            ImGui::EndPopup();
-         }
-         break;
-      }
-   }
-
-}
-
-
 void SugarboxApp::SizeChanged(int width, int height)
 {
-   glViewport(0, height - toolbar_height - main_display_height, main_display_width, main_display_height);
+   //glViewport(0, height - toolbar_height - main_display_height, main_display_width, main_display_height);
 }
 
 void SugarboxApp::Drop(int count, const char** paths)
@@ -562,12 +343,12 @@ void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
    // Handle shortcuts
 
    // Send scancode to emulation
-   if (action == GLFW_PRESS)
+   //if (action == GLFW_PRESS)
    {
       emulation_.GetKeyboardHandler()->SendScanCode(key, true);
    }
 
-   if (action == GLFW_RELEASE)
+   //if (action == GLFW_RELEASE)
    {
       emulation_.GetKeyboardHandler()->SendScanCode(key, false);
    }
@@ -595,7 +376,7 @@ bool SugarboxApp::AskForSavingTape()
 
 void SugarboxApp::Exit()
 {
-   glfwSetWindowShouldClose(window_, true);
+   
 }
 
 bool SugarboxApp::PauseEnabled()
@@ -690,7 +471,6 @@ bool SugarboxApp::DiskPresent(int drive)
 void SugarboxApp::SaveAs(int drive)
 {
    // Todo : Generic types, multilanguage, etc.
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save as...", write_disk_extension_, ".");
    file_dialog_type_ = FD_SAVE_AS;
 }
 
@@ -708,13 +488,13 @@ void SugarboxApp::Flip(int drive)
 
 void SugarboxApp::InsertSelectFile(int drive)
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert disk...", load_disk_extension_, ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert disk...", load_disk_extension_, ".");
    file_dialog_type_ = FD_INSERT;
 }
 
 void SugarboxApp::InsertSelectTape()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert tape...", load_tape_extension_, ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert tape...", load_tape_extension_, ".");
    file_dialog_type_ = FD_INSERT_TAPE;
 }
 
@@ -791,7 +571,7 @@ void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
       break;
    }
 
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
    file_dialog_type_ = FD_SAVE_TAPE_AS;
    format_ = format;
 }
@@ -803,13 +583,13 @@ bool SugarboxApp::IsQuickSnapAvailable()
 
 void SugarboxApp::SnaLoad()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
    file_dialog_type_ = FD_INSERT_SNA;
 }
 
 void SugarboxApp::SnaSave()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save snapshot", ".sna\0", ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save snapshot", ".sna\0", ".");
    file_dialog_type_ = FD_SAVE_SNA;
 }
 
@@ -825,13 +605,13 @@ void SugarboxApp::SnaQuickSave()
 
 void SugarboxApp::SnrLoad()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load SNR", ".snr\0", ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load SNR", ".snr\0", ".");
    file_dialog_type_ = FD_LOAD_SNR;
 }
 
 void SugarboxApp::SnrRecord()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
    file_dialog_type_ = FD_RECORD_SNR;
 }
 
@@ -857,7 +637,7 @@ void SugarboxApp::SnrStopPlayback()
 
 void SugarboxApp::CprLoad()
 {
-   ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
+   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
    file_dialog_type_ = FD_LOAD_CPR;
 }
 
@@ -889,11 +669,12 @@ void SugarboxApp::ToggleAutoload()
 
 bool SugarboxApp::IsSomethingInClipboard()
 {
-   const char* clipdata = glfwGetClipboardString(window_);
-   return (clipdata != nullptr && strlen( glfwGetClipboardString(window_) ) > 0);
+   /*const char* clipdata = glfwGetClipboardString(window_);
+   return (clipdata != nullptr && strlen( glfwGetClipboardString(window_) ) > 0);*/
+   return false;
 }
 
 void SugarboxApp::AutoType()
 {
-   emulation_.AutoType(glfwGetClipboardString(window_));
+   //emulation_.AutoType(glfwGetClipboardString(window_));
 }
