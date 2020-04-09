@@ -5,15 +5,22 @@
 #include <string>
 #include <memory.h>
 
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
+
 #include "Screen.h"
+
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram);
+QT_FORWARD_DECLARE_CLASS(QOpenGLTexture)
 
 #define NB_FRAMES 3
 
 // Display
-class CDisplay : public IDisplay
+class CDisplay : public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
 {
 public :
-   CDisplay ();
+   explicit CDisplay(QWidget *parent = 0);
    virtual ~CDisplay ();
 
    void Init();
@@ -60,6 +67,10 @@ public :
    virtual int GetDnDPart () { return 0;};
 
 protected:
+   void initializeGL() override;
+   void paintGL() override;
+
+protected:
 
    // Displayed window : 
    int m_X, m_Y;
@@ -78,5 +89,12 @@ protected:
    int current_texture_;
 
    // Open gl stuff
-
+   QColor clearColor;
+   QPoint lastPos;
+   int xRot;
+   int yRot;
+   int zRot;
+   QOpenGLTexture *textures[1];
+   QOpenGLShaderProgram *program;
+   QOpenGLBuffer vbo;
 };

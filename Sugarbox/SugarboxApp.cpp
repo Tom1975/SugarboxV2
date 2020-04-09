@@ -2,16 +2,23 @@
 #include "ui_SugarboxApp.h"
 
 #include <filesystem>
-
+#include <QtWidgets>
 
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false),
-ui(new Ui::SugarboxApp)
+SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), 
+load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
+dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)/*,
+ui(new Ui::SugarboxApp)*/
 {
-  
+   QWidget *widget = new QWidget();
+
+   QGridLayout *mainLayout = new QGridLayout;
+   mainLayout->addWidget(&display_, 0, 0);
+   setCentralWidget(widget);
+   widget->setLayout(mainLayout);
+   setWindowTitle(tr("SugarboxV2"));
 }
 
 SugarboxApp::~SugarboxApp()
@@ -65,7 +72,6 @@ int SugarboxApp::RunApp()
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
    window_height_ = main_display_height + toolbar_height + status_height;
-
 
    // Init display
    SizeChanged(window_width_, window_height_);
