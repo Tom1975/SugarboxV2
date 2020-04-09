@@ -79,8 +79,11 @@ void CDisplay::initializeGL()
 
    initializeOpenGLFunctions();
 
-   static const int coords[4][3] = {
-          { +1, -1, -1 }, { -1, -1, -1 }, { -1, +1, -1 }, { +1, +1, -1 },
+   static const int coords[4][2] = {
+      { +1, -1/*, -1*/ }, 
+      { -1, -1/*, -1*/ }, 
+      { -1, +1/*, -1*/ },
+      { +1, +1/*, -1*/ },
    };
 
    //QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, 1024*4, QImage::Format_ARGB32);
@@ -93,12 +96,14 @@ void CDisplay::initializeGL()
    textures[0]->setFormat(QOpenGLTexture::RGBA8_UNorm);
    textures[0]->allocateStorage();
 
+
+
    QVector<GLfloat> vertData;
    for (int j = 0; j < 4; ++j) {
       // vertex position
-      vertData.append(0.2 * coords[j][0]);
-      vertData.append(0.2 * coords[j][1]);
-      vertData.append(0.2 * coords[j][2]);
+      vertData.append(/*0.2 **/ coords[j][0]);
+      vertData.append(/*0.2 **/ coords[j][1]);
+      //vertData.append(0.2 * coords[j][2]);
       // texture coordinate
       vertData.append(j == 0 || j == 3);
       vertData.append(j == 0 || j == 1);
@@ -108,11 +113,26 @@ void CDisplay::initializeGL()
    vbo.bind();
    vbo.allocate(vertData.constData(), vertData.count() * sizeof(GLfloat));
 
-   glEnable(GL_DEPTH_TEST);
-   glEnable(GL_CULL_FACE);
-
 #define PROGRAM_VERTEX_ATTRIBUTE 0
 #define PROGRAM_TEXCOORD_ATTRIBUTE 1
+
+   QString vertexShader =
+      "attribute vec4 aPosition;\n"
+      "attribute vec2 aTexCoord;\n"
+      "varying vec2 vTexCoord;\n"
+      "void main()\n"
+      "{\n"
+      "   gl_Position = aPosition;\n"
+      "   vTexCoord = aTexCoord;\n"
+      "}";
+
+   QString fragmentShader =
+      "uniform sampler2D texture;\n"
+      "varying vec2 vTexCoord;\n"
+      "void main()\n"
+      "{\n"
+      "   gl_FragColor = texture2D(texture, vTexCoord);\n"
+      "}";
 
    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
    const char *vsrc =
@@ -125,7 +145,7 @@ void CDisplay::initializeGL()
       "    gl_Position = matrix * vertex;\n"
       "    texc = texCoord;\n"
       "}\n";
-   vshader->compileSourceCode(vsrc);
+   vshader->compileSourceCode(vertexShader);
 
    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
    const char *fsrc =
@@ -135,13 +155,15 @@ void CDisplay::initializeGL()
       "{\n"
       "    gl_FragColor = texture2D(texture, texc.st);\n"
       "}\n";
-   fshader->compileSourceCode(fsrc);
+
+
+   fshader->compileSourceCode(fragmentShader);
 
    program = new QOpenGLShaderProgram;
    program->addShader(vshader);
    program->addShader(fshader);
-   program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
-   program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
+   program->bindAttributeLocation("aPosition", PROGRAM_VERTEX_ATTRIBUTE);
+   program->bindAttributeLocation("aTexCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
    program->link();
 
    program->bind();
@@ -192,18 +214,18 @@ void CDisplay::paintGL()
 
    QMatrix4x4 m;
    //m.ortho(-0.5f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
-   m.ortho(-0.0f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
+   /*m.ortho(-0.0f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
 
    m.translate(0.0f, 0.0f, -8.0f);
    /*m.rotate(xRot / 16.0f, 1.0f, 0.0f, 0.0f);
    m.rotate(yRot / 16.0f, 0.0f, 1.0f, 0.0f);
    m.rotate(zRot / 16.0f, 0.0f, 0.0f, 1.0f);*/
 
-   program->setUniformValue("matrix", m);
+   //program->setUniformValue("matrix", m);
    program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
    program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-   program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
-   program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
+   program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2, 4 * sizeof(GLfloat));
+   program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 2 * sizeof(GLfloat), 2, 4 * sizeof(GLfloat));
 
    textures[0]->bind();
    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
