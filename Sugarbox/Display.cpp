@@ -111,11 +111,11 @@ void CDisplay::initializeGL()
       vertData.append(j == 0 || j == 3);
       vertData.append(j == 0 || j == 1);
       // Origin
-      /*vertData.append(ORIGIN_X / 1024 * ratiox);
+      vertData.append(ORIGIN_X / 1024 * ratiox);
       vertData.append(ORIGIN_Y / 1024 * ratioy);
       // Ratio
       vertData.append(ratiox);
-      vertData.append(ratioy);*/
+      vertData.append(ratioy);
    }
 
    vbo.create();
@@ -128,23 +128,32 @@ void CDisplay::initializeGL()
    QString vertexShader =
       "attribute vec4 aPosition;\n"
       "attribute vec2 aTexCoord;\n"
+      "attribute vec2 origin;\n"
+      "attribute vec2 ratio;\n"
       "varying vec2 vTexCoord;\n"
+      "varying vec2 vorigin;\n"
+      "varying vec2 vratio;\n"
+
       "void main()\n"
       "{\n"
       "   gl_Position = aPosition;\n"
-      "   vTexCoord = aTexCoord;\n"
+      "   gl_Position.y = gl_Position.y;\n"
+      "   vTexCoord.x = aTexCoord.x;\n"
+      "   vTexCoord.y = aTexCoord.y/2.0;\n"
+      "   vorigin = origin;\n"
+      "   vratio = ratio;\n"
       "}";
 
    QString fragmentShader =
       "uniform sampler2D texture;\n"
       "varying vec2 vTexCoord;\n"
-      //"uniform vec2 origin;\n"
-      //"uniform vec2 ratio;\n"
+      "varying vec2 vorigin;\n"
+      "varying vec2 vratio;\n"
       "void main()\n"
       "{\n"
       "   vec2 origin = vec2(0.0, 0.0);"
-      "   vec2 ratio = vec2(1.0, 1.0);"
-      "   vec2 coord = vec2( vTexCoord.x *ratio.x + origin.x, vTexCoord.y*ratio.y + origin.y);\n"
+      "   vec2 ratio = vec2(0.75, 0.53125/2);"
+      "   vec2 coord = vec2( vTexCoord.x *vratio.x + vorigin.x, vTexCoord.y*vratio.y + vorigin.y);\n"
       "   gl_FragColor = texture2D(texture, coord);\n"
       "}";
 
@@ -159,8 +168,8 @@ void CDisplay::initializeGL()
    program->addShader(fshader);
    program->bindAttributeLocation("aPosition", 0);
    program->bindAttributeLocation("aTexCoord", 1);
-   //program->bindAttributeLocation("origin", 2);
-   //program->bindAttributeLocation("ratio", 3);
+   program->bindAttributeLocation("origin", 2);
+   program->bindAttributeLocation("ratio", 3);
 
    program->link();
 
@@ -192,8 +201,6 @@ void CDisplay::Display()
 {
    if (number_of_frame_to_display_ > 0)
    {
-      //QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, 1024 * 4, QImage::Format_ARGB32);
-      //textures[0] = new QOpenGLTexture(img);
       textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
    }
 
@@ -222,13 +229,15 @@ void CDisplay::paintGL()
    //program->setUniformValue("matrix", m);
    program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
    program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-   program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2, 4 * sizeof(GLfloat));
-   program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 2 * sizeof(GLfloat), 2, 4 * sizeof(GLfloat));
+   program->enableAttributeArray(2);
+   program->enableAttributeArray(3);
+   program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2, 8 * sizeof(GLfloat));
+   program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 2 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
    // origin
-   /*program->setAttributeBuffer(2, GL_FLOAT, 4 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
+   program->setAttributeBuffer(2, GL_FLOAT, 4 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
    // ratio
    program->setAttributeBuffer(3, GL_FLOAT, 6 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
-   */
+   
    textures[0]->bind();
    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
