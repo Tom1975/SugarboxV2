@@ -75,7 +75,7 @@ ENDIF(MSVC)
 
 if(CMAKE_COMPILER_IS_GNUCC )
 	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a stdc++fs GLEW GL )
+   set ( LIBZA libz.a stdc++fs )
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -90,10 +90,10 @@ IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
-add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} ${UIS} ${QRCS})
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets  )
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets pthread )
 
 if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")

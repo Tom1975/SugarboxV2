@@ -6,7 +6,7 @@
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), write_disk_extension_(nullptr), 
+SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), write_disk_extension_(nullptr),
 load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)/*,
 ui(new Ui::SugarboxApp)*/
@@ -57,7 +57,7 @@ void SugarboxApp::createMenus ()
          menu_list_.push_back(menu);
          DrawSubMenu(menu, functions_list_.GetMenu(menu_index), true);
       }
-   }   
+   }
 }
 
 void SugarboxApp::DrawSubMenu(QMenu* menu, Function* function, bool toplevel)
@@ -132,7 +132,7 @@ int SugarboxApp::RunApp()
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
-   
+
    // Get current directory, and add the CONF to it
    current_path_exe /= "CONF";
    dlg_settings_.Refresh(current_path_exe.string().c_str());
@@ -184,7 +184,7 @@ int SugarboxApp::RunApp()
                sprintf(buffer, "%i", value_key);
                key_mgr_out.SetConfiguration(section, key, buffer);
 
-               // Also, get the other keys : 
+               // Also, get the other keys :
                char char_buffer[16];
                memset(char_buffer, 0, sizeof(char_buffer));
                char base_key[32];
@@ -192,7 +192,7 @@ int SugarboxApp::RunApp()
                strncpy(base_key, key, 4);
 
                // char, uchar, charctrl, ucharctrl
-               strcpy(&base_key[4], "char"); 
+               strcpy(&base_key[4], "char");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
@@ -219,7 +219,7 @@ int SugarboxApp::RunApp()
                strcpy(&base_key[4], "UCHAR_value_Alt");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
-               
+
                strcpy(&base_key[4], "charCtrl");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
@@ -227,7 +227,7 @@ int SugarboxApp::RunApp()
                strcpy(&base_key[4], "charCtrl_value");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
-               
+
                strcpy(&base_key[4], "UCHARCTRL");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
@@ -235,7 +235,7 @@ int SugarboxApp::RunApp()
                strcpy(&base_key[4], "UCHARCTRL_value");
                key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
                key_mgr_out.SetConfiguration(section, base_key, char_buffer);
-               
+
             }
          }
 
@@ -305,7 +305,7 @@ void SugarboxApp::DrawStatusBar()
    if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
    {
       // Update
-   
+
       sprintf(str_speed_, "%i %%%%", emulation_->GetSpeed());
       counter_ = 0;
    }
@@ -315,7 +315,7 @@ void SugarboxApp::DrawStatusBar()
 void SugarboxApp::DrawOthers()
 {
    // Configuration ?
-   
+
    if (configuration_settings_)
    {
       dlg_settings_.DisplayMenu();
@@ -439,7 +439,7 @@ bool SugarboxApp::AskForSavingTape()
 
 void SugarboxApp::Exit()
 {
-   
+
 }
 
 bool SugarboxApp::PauseEnabled()
@@ -489,7 +489,7 @@ void SugarboxApp::InitFileDialogs()
    char* ptr = write_disk_extension_;
    for (auto it2 : list_format_ext_str)
    {
-      
+
       ptr = strcat (ptr, it2.c_str());
       unsigned int size_ext = strlen(ptr);
       ptr[size_ext] = '\0';
@@ -745,7 +745,7 @@ void SugarboxApp::AutoType()
 
 IFunctionInterface::Action* SugarboxApp::AddAction (IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id)
 {
-   
+
    Action* new_act = new Action;
    new_act ->action = new QAction(tr(""), this);
    new_act->label_id = label_id;
@@ -850,12 +850,12 @@ void SugarboxApp::clear()
 
 void SugarboxApp::dragEnterEvent(QDragEnterEvent *event)
 {
-   if (event->mimeData()->hasUrls()) 
+   if (event->mimeData()->hasUrls())
    {
       setBackgroundRole(QPalette::Highlight);
       event->acceptProposedAction();
       emit changed(event->mimeData());
-   }   
+   }
 }
 
 void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)

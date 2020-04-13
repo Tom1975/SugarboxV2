@@ -5,7 +5,6 @@
 
 #include <QMainWindow>
 #include <QtWidgets>
-#include <QLabel.h>
 
 #include "Emulation.h"
 #include "Display.h"
@@ -92,7 +91,7 @@ public:
 
    virtual const char* GetFirstSoundName();
    virtual const char* GetNextSoundName();
-   
+
    // Events
    void SizeChanged(int width, int height);
    void KeyboardHandler( int key, int scancode, int action, int mods);
@@ -129,7 +128,7 @@ protected:
    void DrawPeripherals();
    void DrawStatusBar();
    void DrawOthers();
-   
+
    bool AskForSaving(int drive);
    void InsertSelectFile(int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
@@ -155,7 +154,7 @@ protected:
    } PopupType;
    unsigned int PopupArg;
    std::function<void()> popup_associated_function_;
-   
+
 
    //////////////
    // File dialogs
@@ -191,7 +190,7 @@ protected:
    float window_width_;
    float window_height_;
 
-   // Emulation and so on 
+   // Emulation and so on
    ConfigurationManager config_manager_;
    Emulation* emulation_;
    CDisplay display_;

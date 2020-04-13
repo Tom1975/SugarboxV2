@@ -145,8 +145,6 @@ void CDisplay::initializeGL()
       "varying vec2 vratio;\n"
       "void main()\n"
       "{\n"
-      "   vec2 origin = vec2(0.0, 0.0);"
-      "   vec2 ratio = vec2(0.75, 0.53125/2);"
       "   vec2 coord = vec2( vTexCoord.x *vratio.x + vorigin.x, vTexCoord.y*vratio.y + vorigin.y);\n"
       "   gl_FragColor = texture2D(texture, coord);\n"
       "}";
