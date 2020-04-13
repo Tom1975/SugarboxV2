@@ -151,10 +151,10 @@ void CDisplay::initializeGL()
       "   gl_FragColor = texture2D(texture, coord);\n"
       "}";
 
-   QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+   QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex);
    vshader->compileSourceCode(vertexShader);
 
-   QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+   QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment);
    fshader->compileSourceCode(fragmentShader);
 
    program = new QOpenGLShaderProgram;
