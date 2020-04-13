@@ -95,10 +95,28 @@ public:
    
    // Events
    void SizeChanged(int width, int height);
-   void Drop( int count, const char** paths);
    void KeyboardHandler( int key, int scancode, int action, int mods);
 
+   // Keyboard
+   virtual void keyPressEvent(QKeyEvent * event_keyboard);
+   void keyReleaseEvent(QKeyEvent *event_keyboard);
+
+public slots:
+   void clear();
+
+signals:
+   void changed(const QMimeData *mimeData = nullptr);
+
 protected:
+
+   // Drag'n'drop
+   void Drop(int count, const char** paths);
+   void Drop(const char* paths);
+   void dragEnterEvent(QDragEnterEvent *event) override;
+   void dragMoveEvent(QDragMoveEvent *event) override;
+   void dragLeaveEvent(QDragLeaveEvent *event) override;
+   void dropEvent(QDropEvent *event) override;
+
    // Menu init
    void InitMenu();
    void InitFileDialogs();

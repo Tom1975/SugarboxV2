@@ -31,6 +31,10 @@ ui(new Ui::SugarboxApp)*/
 
    setMinimumSize(160, 160);
    resize(800, 600);
+
+   setAcceptDrops(true);
+   setAutoFillBackground(true);
+   clear();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -267,6 +271,17 @@ void SugarboxApp::RunMainLoop()
    emulation_->Stop();
 }
 
+void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
+{
+   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+}
+
+void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
+{
+   keyboard_handler_->SendScanCode(event_keyboard->key(), false);
+}
+
+
 void SugarboxApp::DrawMainWindow()
 {
    // Draw texture
@@ -317,69 +332,73 @@ void SugarboxApp::Drop(int count, const char** paths)
    // Check for headers :
    for (int i = 0; i < 4 && i < count; i++)
    {
-      DataContainer* dnd_container = emulation_->CanLoad(paths[i]);
+      Drop(paths[i]);
+   }
+}
 
+void SugarboxApp::Drop(const char* paths)
+{
+   DataContainer* dnd_container = emulation_->CanLoad(paths);
+
+   MediaManager mediaMgr(dnd_container);
+   std::vector<MediaManager::MediaType> list_of_types;
+   list_of_types.push_back(MediaManager::MEDIA_DISK);
+   list_of_types.push_back(MediaManager::MEDIA_SNA);
+   list_of_types.push_back(MediaManager::MEDIA_SNR);
+   list_of_types.push_back(MediaManager::MEDIA_TAPE);
+   list_of_types.push_back(MediaManager::MEDIA_BIN);
+   list_of_types.push_back(MediaManager::MEDIA_CPR);
+
+   int media_type = mediaMgr.GetType(list_of_types);
+
+   switch (media_type)
+   {
+      // Test : Is it SNA?
+   case 1:
+      emulation_->LoadSnapshot(paths);
+      break;
+   case 2:
+      // Set ROM : TODO
+      break;
+   case 3:
+   {
+      test = true;
+      auto fn = [](Emulation* emulation, DataContainer* dnd_container) { emulation->LoadDisk(dnd_container, 0); };
+      popup_associated_function_ = std::bind(fn, emulation_, dnd_container);
+      AskForSaving(0);
+      /*if (!AskForSaving(0))
+      {
+         emulation_->LoadDisk(dnd_container, 0);
+      }*/
+      break;
+      // Tape - TODO
+   }
+   case 4:
+      // TODO : Ask for tape saving ?
+
+      // Load first element of the container
+      //m_pMachine->LoadTape(m_DragFiles[0]);
+   {
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
-      list_of_types.push_back(MediaManager::MEDIA_DISK);
-      list_of_types.push_back(MediaManager::MEDIA_SNA);
-      list_of_types.push_back(MediaManager::MEDIA_SNR);
       list_of_types.push_back(MediaManager::MEDIA_TAPE);
-      list_of_types.push_back(MediaManager::MEDIA_BIN);
-      list_of_types.push_back(MediaManager::MEDIA_CPR);
-
-      int media_type = mediaMgr.GetType(list_of_types);
-
-      switch (media_type)
-      {
-         // Test : Is it SNA?
-      case 1:
-         emulation_->LoadSnapshot(paths[0]);
-         break;
-      case 2:
-         // Set ROM : TODO
-         break;
-      case 3:
-      {
-         test = true;
-         auto fn = [](Emulation* emulation, DataContainer* dnd_container) { emulation->LoadDisk(dnd_container, 0); };
-         popup_associated_function_ = std::bind(fn, emulation_, dnd_container);
-         AskForSaving(0);
-         /*if (!AskForSaving(0))
-         {
-            emulation_->LoadDisk(dnd_container, 0);
-         }*/
-         break;
-         // Tape - TODO
-      }
-      case 4:
-         // TODO : Ask for tape saving ?
-
-         // Load first element of the container
-         //m_pMachine->LoadTape(m_DragFiles[0]);
-      {
-         MediaManager mediaMgr(dnd_container);
-         std::vector<MediaManager::MediaType> list_of_types;
-         list_of_types.push_back(MediaManager::MEDIA_TAPE);
-         auto list = dnd_container->GetFileList();
+      auto list = dnd_container->GetFileList();
 
 
-         emulation_->LoadTape(list[0]);
-         //UpdateStatusBar();
-         break;
-      }
-      case 5:
-         emulation_->LoadSnr(paths[0]);
-         break;
-      case 6:
-         emulation_->LoadBin(paths[0]);
-         break;
-      case 8:
-         emulation_->LoadCpr(paths[0]);
-         break;
-      }
+      emulation_->LoadTape(list[0]);
+      //UpdateStatusBar();
+      break;
    }
-   
+   case 5:
+      emulation_->LoadSnr(paths);
+      break;
+   case 6:
+      emulation_->LoadBin(paths);
+      break;
+   case 8:
+      emulation_->LoadCpr(paths);
+      break;
+   }
 }
 
 void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
@@ -820,4 +839,41 @@ IFunctionInterface::Action* SugarboxApp::GetNextAction(FunctionType& func_type)
       return it_->second;
    }
    return nullptr;
+}
+
+void SugarboxApp::clear()
+{
+   setBackgroundRole(QPalette::Dark);
+
+   emit changed();
+}
+
+void SugarboxApp::dragEnterEvent(QDragEnterEvent *event)
+{
+   if (event->mimeData()->hasUrls()) 
+   {
+      setBackgroundRole(QPalette::Highlight);
+      event->acceptProposedAction();
+      emit changed(event->mimeData());
+   }   
+}
+
+void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)
+{
+   event->acceptProposedAction();
+}
+
+void SugarboxApp::dropEvent(QDropEvent *event)
+{
+   foreach(const QUrl &url, event->mimeData()->urls())
+   {
+      QString fileName = url.toLocalFile();
+      Drop(fileName.toUtf8());
+   }
+}
+
+void SugarboxApp::dragLeaveEvent(QDragLeaveEvent *event)
+{
+   clear();
+   event->accept();
 }
