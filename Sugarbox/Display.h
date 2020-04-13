@@ -17,15 +17,16 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLTexture)
 #define NB_FRAMES 3
 
 // Display
-class CDisplay : public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
+class CDisplay : public QObject, public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
 {
+   Q_OBJECT
+
 public :
    explicit CDisplay(QWidget *parent = 0);
    virtual ~CDisplay ();
 
    void Init();
    void Show(bool bShow);
-   void Display();
 
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
@@ -65,6 +66,12 @@ public :
    virtual void SetDragnDropDisplay  ( int type ){};
    virtual void SetCurrentPart (int x, int y ){};
    virtual int GetDnDPart () { return 0;};
+
+signals:
+   void FrameIsReady();
+
+public slots:
+   void Display();
 
 protected:
    void initializeGL() override;

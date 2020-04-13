@@ -183,21 +183,19 @@ void CDisplay::StartSync()
 void CDisplay::VSync (bool bDbg)
 {
    // Add a frame to display, if display buffer is not full !
-   //if (number_of_frame_to_display_ < NB_FRAMES)
+   if (number_of_frame_to_display_ < NB_FRAMES)
    {
-      index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
+      //index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
+      index_to_display_[0] = current_texture_;
       //current_texture_ = (current_texture_ + 1) % NB_FRAMES;
-      number_of_frame_to_display_++;
+      number_of_frame_to_display_=1;
+      emit FrameIsReady();
    }
 }
 
 void CDisplay::Display()
 {
-   if (number_of_frame_to_display_ > 0)
-   {
-      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
-   }
-
+   update();
 }
 
 void CDisplay::WaitVbl ()
@@ -206,32 +204,26 @@ void CDisplay::WaitVbl ()
 
 void CDisplay::paintGL()
 {
-   Display();
+   if (number_of_frame_to_display_ > 0)
+   {
+      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
 
-   glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-   QMatrix4x4 m;
-   //m.ortho(-0.5f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
-   /*m.ortho(-0.0f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
+      //program->setUniformValue("matrix", m);
+      program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+      program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+      program->enableAttributeArray(2);
+      program->enableAttributeArray(3);
+      program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2, 8 * sizeof(GLfloat));
+      program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 2 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
+      // origin
+      program->setAttributeBuffer(2, GL_FLOAT, 4 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
+      // ratio
+      program->setAttributeBuffer(3, GL_FLOAT, 6 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
 
-   m.translate(0.0f, 0.0f, -8.0f);
-   /*m.rotate(xRot / 16.0f, 1.0f, 0.0f, 0.0f);
-   m.rotate(yRot / 16.0f, 0.0f, 1.0f, 0.0f);
-   m.rotate(zRot / 16.0f, 0.0f, 0.0f, 1.0f);*/
-
-   //program->setUniformValue("matrix", m);
-   program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
-   program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-   program->enableAttributeArray(2);
-   program->enableAttributeArray(3);
-   program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2, 8 * sizeof(GLfloat));
-   program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 2 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
-   // origin
-   program->setAttributeBuffer(2, GL_FLOAT, 4 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
-   // ratio
-   program->setAttributeBuffer(3, GL_FLOAT, 6 * sizeof(GLfloat), 2, 8 * sizeof(GLfloat));
-   
-   textures[0]->bind();
-   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+      textures[0]->bind();
+      glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+   }
 }

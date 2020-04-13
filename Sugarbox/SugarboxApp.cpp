@@ -24,6 +24,7 @@ ui(new Ui::SugarboxApp)*/
    mainLayout_->addWidget(&display_);
    //mainLayout_->addWidget(bottom_filler);
 
+   connect(&display_, &CDisplay::FrameIsReady, &display_, &CDisplay::Display);
 
    widget_->setLayout(mainLayout_);
    setWindowTitle(tr("SugarboxV2"));
