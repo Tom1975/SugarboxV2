@@ -2,7 +2,6 @@
 #include "ui_SugarboxApp.h"
 
 #include <filesystem>
-#include <QtWidgets>
 
 /////////////////////////////////////
 // SugarbonApp
@@ -12,26 +11,76 @@ load_disk_extension_(nullptr), keyboard_handler_(nullptr), language_(), function
 dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)/*,
 ui(new Ui::SugarboxApp)*/
 {
-   QWidget *widget = new QWidget();
 
-   QGridLayout *mainLayout = new QGridLayout;
-   mainLayout->addWidget(&display_, 0, 0);
-   setCentralWidget(widget);
-   widget->setLayout(mainLayout);
+   emulation_ = new Emulation();
+   widget_ = new QWidget();
+   setCentralWidget(widget_);
+
+   mainLayout_ = new QVBoxLayout();
+
+   QWidget *top_filler = new QWidget;
+   QWidget *bottom_filler = new QWidget;
+   //mainLayout_->addWidget(top_filler);
+   mainLayout_->addWidget(&display_);
+   //mainLayout_->addWidget(bottom_filler);
+
+
+   widget_->setLayout(mainLayout_);
    setWindowTitle(tr("SugarboxV2"));
+
+   setMinimumSize(160, 160);
+   resize(800, 600);
 }
 
 SugarboxApp::~SugarboxApp()
 {
+   delete emulation_;
    delete[]write_disk_extension_;
    delete[]load_disk_extension_;
 }
 
-void error_callback(int error, const char* description)
+//////////////////////////////////////////////
+// QT functions
+void SugarboxApp::createMenus ()
 {
-   fprintf(stderr, "Error: %s\n", description);
+   menu_list_.clear();
+   for (unsigned int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
+   {
+      if (functions_list_.GetMenu(menu_index)->IsAvailable())
+      {
+         QMenu* menu = menuBar()->addMenu(tr(functions_list_.GetMenu(menu_index)->GetLabel()));
+         menu_list_.push_back(menu);
+         DrawSubMenu(menu, functions_list_.GetMenu(menu_index), true);
+      }
+   }   
 }
 
+void SugarboxApp::DrawSubMenu(QMenu* menu, Function* function, bool toplevel)
+{
+   if (function->IsNode())
+   {
+      QMenu* submenu;
+      if (toplevel)
+      {
+         submenu = menu;
+      }
+      else
+      {
+         submenu = menu->addMenu(tr(function->GetLabel()));
+         menu_list_.push_back(submenu);
+      }
+      for (unsigned int submenu_index = 0; submenu_index < function->NbSubMenu(); submenu_index++)
+      {
+         Function* subfunction = function->GetMenu(submenu_index);
+         DrawSubMenu(submenu, function->GetMenu(submenu_index));
+      }
+   }
+   else
+   {
+      // Item
+      menu->addAction(function->GetAction());
+   }
+}
 //////////////////////////////////////////////
 /// ISoundFactory interface
 ISound* SugarboxApp::GetSound(const char* name)
@@ -56,18 +105,16 @@ const char* SugarboxApp::GetNextSoundName()
 
 void SugarboxApp::InitMenu()
 {
+   InitAllActions();
    functions_list_.InitFunctions(this);
    language_.Init("Resources/labels.ini");
-
+   functions_list_.UpdateLanguage();
    InitFileDialogs();
 }
 
 int SugarboxApp::RunApp()
 {
    std::filesystem::path current_path_exe = std::filesystem::current_path();
-
-   // Generic init
-   InitMenu();
 
    // Create the main window
    window_width_ = main_display_width + peripherals_width;
@@ -77,13 +124,17 @@ int SugarboxApp::RunApp()
    SizeChanged(window_width_, window_height_);
 
    display_.Init();
-   emulation_.Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
-   dlg_settings_.Init(emulation_.GetEngine());
-   keyboard_handler_ = emulation_.GetKeyboardHandler();
+   emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
+   dlg_settings_.Init(emulation_->GetEngine());
+   keyboard_handler_ = emulation_->GetKeyboardHandler();
    
    // Get current directory, and add the CONF to it
    current_path_exe /= "CONF";
    dlg_settings_.Refresh(current_path_exe.string().c_str());
+
+   InitMenu();
+   createMenus();
+
 
    /*
 
@@ -212,27 +263,13 @@ void SugarboxApp::RunMainLoop()
 
    }
 
-   emulation_.Stop();
+   emulation_->Stop();
 }
 
 void SugarboxApp::DrawMainWindow()
 {
    // Draw texture
    display_.Display();
-}
-
-void SugarboxApp::DrawSubMenu(Function* submenu)
-{
-   if (submenu->IsNode())
-   {
-      for (unsigned int submenu_index = 0; submenu_index < submenu->NbSubMenu(); submenu_index++)
-      {
-         DrawSubMenu(submenu->GetMenu(submenu_index));
-      }
-   }
-   else
-   {
-   }
 }
 
 void SugarboxApp::DrawMenu()
@@ -253,7 +290,7 @@ void SugarboxApp::DrawStatusBar()
    {
       // Update
    
-      sprintf(str_speed_, "%i %%%%", emulation_.GetSpeed());
+      sprintf(str_speed_, "%i %%%%", emulation_->GetSpeed());
       counter_ = 0;
    }
    sound_control_.DrawSoundVolume();
@@ -279,7 +316,7 @@ void SugarboxApp::Drop(int count, const char** paths)
    // Check for headers :
    for (int i = 0; i < 4 && i < count; i++)
    {
-      DataContainer* dnd_container = emulation_.CanLoad(paths[i]);
+      DataContainer* dnd_container = emulation_->CanLoad(paths[i]);
 
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
@@ -296,7 +333,7 @@ void SugarboxApp::Drop(int count, const char** paths)
       {
          // Test : Is it SNA?
       case 1:
-         emulation_.LoadSnapshot(paths[0]);
+         emulation_->LoadSnapshot(paths[0]);
          break;
       case 2:
          // Set ROM : TODO
@@ -305,11 +342,11 @@ void SugarboxApp::Drop(int count, const char** paths)
       {
          test = true;
          auto fn = [](Emulation* emulation, DataContainer* dnd_container) { emulation->LoadDisk(dnd_container, 0); };
-         popup_associated_function_ = std::bind(fn, &emulation_, dnd_container);
+         popup_associated_function_ = std::bind(fn, emulation_, dnd_container);
          AskForSaving(0);
          /*if (!AskForSaving(0))
          {
-            emulation_.LoadDisk(dnd_container, 0);
+            emulation_->LoadDisk(dnd_container, 0);
          }*/
          break;
          // Tape - TODO
@@ -326,18 +363,18 @@ void SugarboxApp::Drop(int count, const char** paths)
          auto list = dnd_container->GetFileList();
 
 
-         emulation_.LoadTape(list[0]);
+         emulation_->LoadTape(list[0]);
          //UpdateStatusBar();
          break;
       }
       case 5:
-         emulation_.LoadSnr(paths[0]);
+         emulation_->LoadSnr(paths[0]);
          break;
       case 6:
-         emulation_.LoadBin(paths[0]);
+         emulation_->LoadBin(paths[0]);
          break;
       case 8:
-         emulation_.LoadCpr(paths[0]);
+         emulation_->LoadCpr(paths[0]);
          break;
       }
    }
@@ -351,18 +388,18 @@ void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
    // Send scancode to emulation
    //if (action == GLFW_PRESS)
    {
-      emulation_.GetKeyboardHandler()->SendScanCode(key, true);
+      emulation_->GetKeyboardHandler()->SendScanCode(key, true);
    }
 
    //if (action == GLFW_RELEASE)
    {
-      emulation_.GetKeyboardHandler()->SendScanCode(key, false);
+      emulation_->GetKeyboardHandler()->SendScanCode(key, false);
    }
 }
 
 bool SugarboxApp::AskForSaving(int drive)
 {
-   if (emulation_.GetEngine()->IsDiskModified(drive))
+   if (emulation_->GetEngine()->IsDiskModified(drive))
    {
       PopupType = POPUP_ASK_SAVE;
       PopupArg = drive;
@@ -387,22 +424,22 @@ void SugarboxApp::Exit()
 
 bool SugarboxApp::PauseEnabled()
 {
-   return emulation_.EmulationRun() == false;
+   return emulation_->EmulationRun() == false;
 }
 
 void SugarboxApp::Pause()
 {
-   emulation_.Pause( );
+   emulation_->Pause( );
 }
 
 void SugarboxApp::SetSpeed(int speedlimit)
 {
-   emulation_.GetEngine()->SetSpeed(speedlimit);
+   emulation_->GetEngine()->SetSpeed(speedlimit);
 }
 
 void SugarboxApp::HardReset()
 {
-   emulation_.HardReset();
+   emulation_->HardReset();
 }
 
 void SugarboxApp::ConfigurationSettings()
@@ -471,7 +508,7 @@ void SugarboxApp::InitFileDialogs()
 
 bool SugarboxApp::DiskPresent(int drive)
 {
-   return emulation_.IsDiskPresent(drive);
+   return emulation_->IsDiskPresent(drive);
 }
 
 void SugarboxApp::SaveAs(int drive)
@@ -483,13 +520,13 @@ void SugarboxApp::SaveAs(int drive)
 void SugarboxApp::Eject(int drive)
 {
    // save ?
-   popup_associated_function_ = std::bind (&EmulatorEngine::Eject, emulation_.GetEngine(), drive);
+   popup_associated_function_ = std::bind (&EmulatorEngine::Eject, emulation_->GetEngine(), drive);
    AskForSaving(drive);
 }
 
 void SugarboxApp::Flip(int drive)
 {
-   emulation_.GetEngine()->FlipDisk(drive);
+   emulation_->GetEngine()->FlipDisk(drive);
 }
 
 void SugarboxApp::InsertSelectFile(int drive)
@@ -512,7 +549,7 @@ void SugarboxApp::Insert(int drive)
 
 void SugarboxApp::InsertBlankDisk(int drive, IDisk::DiskType type)
 {
-   emulation_.InsertBlankDisk(drive, type);
+   emulation_->InsertBlankDisk(drive, type);
 }
 
 void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
@@ -524,32 +561,32 @@ void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
 
 void SugarboxApp::TapeRecord()
 {
-   emulation_.TapeRecord();
+   emulation_->TapeRecord();
 }
 
 void SugarboxApp::TapePlay()
 {
-   emulation_.TapePlay();
+   emulation_->TapePlay();
 }
 
 void SugarboxApp::TapeFastForward()
 {
-   emulation_.TapeFastForward();
+   emulation_->TapeFastForward();
 }
 
 void SugarboxApp::TapeRewind()
 {
-   emulation_.TapeRewind();
+   emulation_->TapeRewind();
 }
 
 void SugarboxApp::TapePause()
 {
-   emulation_.TapePause();
+   emulation_->TapePause();
 }
 
 void SugarboxApp::TapeStop()
 {
-   emulation_.TapeStop();
+   emulation_->TapeStop();
 }
 
 void SugarboxApp::TapeInsert()
@@ -584,7 +621,7 @@ void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
 
 bool SugarboxApp::IsQuickSnapAvailable()
 {
-   return emulation_.GetEngine()->IsQuickSnapAvailable();
+   return emulation_->GetEngine()->IsQuickSnapAvailable();
 }
 
 void SugarboxApp::SnaLoad()
@@ -601,12 +638,12 @@ void SugarboxApp::SnaSave()
 
 void SugarboxApp::SnaQuickLoad()
 {
-   emulation_.QuickLoadsnapshot();
+   emulation_->QuickLoadsnapshot();
 }
 
 void SugarboxApp::SnaQuickSave()
 {
-   emulation_.QuickSavesnapshot();
+   emulation_->QuickSavesnapshot();
 }
 
 void SugarboxApp::SnrLoad()
@@ -623,22 +660,22 @@ void SugarboxApp::SnrRecord()
 
 bool SugarboxApp::SnrIsRecording()
 {
-   return emulation_.GetEngine()->IsSnrRecording();
+   return emulation_->GetEngine()->IsSnrRecording();
 }
 
 bool SugarboxApp::SnrIsReplaying()
 {
-   return emulation_.GetEngine()->IsSnrReplaying();
+   return emulation_->GetEngine()->IsSnrReplaying();
 }
 
 void SugarboxApp::SnrStopRecord()
 {
-   emulation_.GetEngine()->StopRecord();
+   emulation_->GetEngine()->StopRecord();
 }
 
 void SugarboxApp::SnrStopPlayback()
 {
-   emulation_.GetEngine()->StopPlayback();
+   emulation_->GetEngine()->StopPlayback();
 }
 
 void SugarboxApp::CprLoad()
@@ -649,12 +686,12 @@ void SugarboxApp::CprLoad()
 
 bool SugarboxApp::PlusEnabled()
 {
-   return emulation_.GetEngine()->IsPLUS();
+   return emulation_->GetEngine()->IsPLUS();
 }
 
 bool SugarboxApp::FdcPresent()
 {
-   return emulation_.GetEngine()->GetSettings()->FDCPlugged();
+   return emulation_->GetEngine()->GetSettings()->FDCPlugged();
 }
 
 bool SugarboxApp::TapePresent()
@@ -665,12 +702,13 @@ bool SugarboxApp::TapePresent()
 
 bool SugarboxApp::IsAutoloadEnabled()
 {
-   return emulation_.IsAutoloadEnabled();
+   return emulation_->IsAutoloadEnabled();
 }
 
 void SugarboxApp::ToggleAutoload()
 {
-   emulation_.ToggleAutoload();
+   action_list_[IFunctionInterface::FN_AUTOLOAD]->action->toggle();
+   emulation_->ToggleAutoload();
 }
 
 bool SugarboxApp::IsSomethingInClipboard()
@@ -682,5 +720,103 @@ bool SugarboxApp::IsSomethingInClipboard()
 
 void SugarboxApp::AutoType()
 {
-   //emulation_.AutoType(glfwGetClipboardString(window_));
+   //emulation_->AutoType(glfwGetClipboardString(window_));
+}
+
+IFunctionInterface::Action* SugarboxApp::AddAction (IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id)
+{
+   
+   Action* new_act = new Action;
+   new_act ->action = new QAction(tr(""), this);
+   new_act->label_id = label_id;
+
+   connect(new_act->action, &QAction::triggered, this, fn);
+   action_list_[id] = new_act;
+   return new_act;
+}
+
+void SugarboxApp::InitAllActions()
+{
+   AddAction(IFunctionInterface::FN_EXIT, std::bind(&IFunctionInterface::Exit, this), "L_FILE_EXIT");
+   AddAction(IFunctionInterface::FN_AUTOLOAD, std::bind(&IFunctionInterface::ToggleAutoload, this), "L_FN_AUTOLOAD")->action->setCheckable(true);
+   AddAction(IFunctionInterface::FN_AUTOTYPE, std::bind(&IFunctionInterface::AutoType, this), "L_FN_AUTOTYPE");
+   AddAction(IFunctionInterface::FN_CTRL_ONOFF, std::bind(&IFunctionInterface::HardReset, this), "L_CONTROL_ONOFF");
+   AddAction(IFunctionInterface::FN_CTRL_PAUSE, std::bind(&IFunctionInterface::Pause, this), "L_CONTROL_PAUSE");
+
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_10, std::bind(&IFunctionInterface::SetSpeed, this, 10), "L_CONTROL_SPEED_10");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_50, std::bind(&IFunctionInterface::SetSpeed, this, 50), "L_CONTROL_SPEED_50");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_100, std::bind(&IFunctionInterface::SetSpeed, this, 100), "L_CONTROL_SPEED_100");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_150, std::bind(&IFunctionInterface::SetSpeed, this, 150), "L_CONTROL_SPEED_150");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_200, std::bind(&IFunctionInterface::SetSpeed, this, 200), "L_CONTROL_SPEED_200");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_400, std::bind(&IFunctionInterface::SetSpeed, this, 400), "L_CONTROL_SPEED_400");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, std::bind(&IFunctionInterface::SetSpeed, this, -1), "L_CONTROL_SPEED_VSYNC");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&IFunctionInterface::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX");
+
+   AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&IFunctionInterface::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
+
+   AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS");
+   AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&IFunctionInterface::Eject, this, 0), "L_FN_DISK_1_EJECT");
+   AddAction(IFunctionInterface::FN_DISK_1_FLIP, std::bind(&IFunctionInterface::Flip, this, 0), "L_FN_DISK_1_FLIP");
+   AddAction(IFunctionInterface::FN_DISK_1_INSERT, std::bind(&IFunctionInterface::Insert, this, 0), "L_FN_DISK_1_INSERT");
+   AddAction(IFunctionInterface::FN_DISK_1_INSERT_BLANK_VENDOR, std::bind(&IFunctionInterface::InsertBlank, this, 0, IDisk::VENDOR), "L_FN_DISK_1_INSERT_BLANK_VENDOR");
+   AddAction(IFunctionInterface::FN_DISK_1_INSERT_BLANK_DATA, std::bind(&IFunctionInterface::InsertBlank, this, 0, IDisk::DATA), "L_FN_DISK_1_INSERT_BLANK_DATA");
+   AddAction(IFunctionInterface::FN_DISK_2_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 1), "L_FN_DISK_2_SAVE_AS");
+   AddAction(IFunctionInterface::FN_DISK_2_EJECT, std::bind(&IFunctionInterface::Eject, this, 1), "L_FN_DISK_2_EJECT");
+   AddAction(IFunctionInterface::FN_DISK_2_FLIP, std::bind(&IFunctionInterface::Flip, this, 1), "L_FN_DISK_2_FLIP");
+   AddAction(IFunctionInterface::FN_DISK_2_INSERT, std::bind(&IFunctionInterface::Insert, this, 1), "L_FN_DISK_2_INSERT");
+   AddAction(IFunctionInterface::FN_DISK_2_INSERT_BLANK_VENDOR, std::bind(&IFunctionInterface::InsertBlank, this, 1, IDisk::VENDOR), "L_FN_DISK_2_INSERT_BLANK_VENDOR");
+   AddAction(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA, std::bind(&IFunctionInterface::InsertBlank, this, 1, IDisk::DATA), "L_FN_DISK_2_INSERT_BLANK_DATA");
+
+   AddAction(IFunctionInterface::FN_TAPE_RECORD, std::bind(&IFunctionInterface::TapeRecord, this), "L_FN_TAPE_RECORD");
+   AddAction(IFunctionInterface::FN_TAPE_PLAY, std::bind(&IFunctionInterface::TapePlay, this), "L_FN_TAPE_PLAY");
+   AddAction(IFunctionInterface::FN_TAPE_FASTFORWARD, std::bind(&IFunctionInterface::TapeFastForward, this), "L_FN_TAPE_FASTFORWARD");
+   AddAction(IFunctionInterface::FN_TAPE_REWIND, std::bind(&IFunctionInterface::TapeRewind, this), "L_FN_TAPE_REWIND");
+   AddAction(IFunctionInterface::FN_TAPE_PAUSE, std::bind(&IFunctionInterface::TapePause, this), "L_FN_TAPE_PAUSE");
+   AddAction(IFunctionInterface::FN_TAPE_STOP, std::bind(&IFunctionInterface::TapeStop, this), "L_FN_TAPE_STOP");
+   AddAction(IFunctionInterface::FN_TAPE_INSERT, std::bind(&IFunctionInterface::TapeInsert, this), "L_FN_TAPE_INSERT");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_WAV, std::bind(&IFunctionInterface::TapeSaveAs, this, Emulation::TAPE_WAV), "L_FN_TAPE_SAVE_AS_WAV");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_DRB, std::bind(&IFunctionInterface::TapeSaveAs, this, Emulation::TAPE_CDT_DRB), "L_FN_TAPE_SAVE_AS_CDT_DRB");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW, std::bind(&IFunctionInterface::TapeSaveAs, this, Emulation::TAPE_CDT_CSW), "L_FN_TAPE_SAVE_AS_CDT_CSW");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11, std::bind(&IFunctionInterface::TapeSaveAs, this, Emulation::TAPE_CSW11), "L_FN_TAPE_SAVE_AS_CSW11");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20, std::bind(&IFunctionInterface::TapeSaveAs, this, Emulation::TAPE_CSW20), "L_FN_TAPE_SAVE_AS_CSW20");
+
+   AddAction(IFunctionInterface::FN_SNA_LOAD, std::bind(&IFunctionInterface::SnaLoad, this), "L_FN_LOAD_SNA");
+   AddAction(IFunctionInterface::FN_SNA_QUICK_LOAD, std::bind(&IFunctionInterface::SnaQuickLoad, this), "L_FN_QUICK_LOAD_SNA");
+   AddAction(IFunctionInterface::FN_SNA_SAVE, std::bind(&IFunctionInterface::SnaSave, this), "L_FN_SAVE_SNA");
+   AddAction(IFunctionInterface::FN_SNA_QUICK_SAVE, std::bind(&IFunctionInterface::SnaQuickSave, this), "L_FN_QUICK_SAVE_SNA");
+   AddAction(IFunctionInterface::FN_SNR_LOAD, std::bind(&IFunctionInterface::SnrLoad, this), "L_FN_LOAD_SNR");
+   AddAction(IFunctionInterface::FN_SNR_RECORD, std::bind(&IFunctionInterface::SnrRecord, this), "L_FN_RECORD_SNR");
+   AddAction(IFunctionInterface::FN_SNR_STOP_PLAYING, std::bind(&IFunctionInterface::SnrStopPlayback, this), "L_FN_STOP_PLAYBACK_SNR");
+   AddAction(IFunctionInterface::FN_SNR_STOP_RECORD, std::bind(&IFunctionInterface::SnrStopRecord, this), "L_FN_STOP_RECORD_SNR");
+
+   AddAction(IFunctionInterface::FN_CPR_LOAD, std::bind(&IFunctionInterface::CprLoad, this), "L_FN_CPR_LOAD");
+}
+
+QAction* SugarboxApp::GiveAction(FunctionType func_type)
+{
+   // Get action
+   QAction* action = action_list_[func_type]->action;
+   return action;
+}
+
+IFunctionInterface::Action* SugarboxApp::GetFirstAction(FunctionType& func_type)
+{
+   it_ = action_list_.begin();
+   if (it_ != action_list_.end())
+   {
+      func_type = it_->first;
+      return it_->second;
+   }
+   return nullptr;
+}
+
+IFunctionInterface::Action* SugarboxApp::GetNextAction(FunctionType& func_type)
+{
+   ++it_;
+   if (it_ != action_list_.end())
+   {
+      func_type = it_->first;
+      return it_->second;
+   }
+   return nullptr;
 }

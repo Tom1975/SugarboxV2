@@ -4,6 +4,7 @@
 #include <map>
 
 #include <QMainWindow>
+#include <QtWidgets>
 #include <QLabel.h>
 
 #include "Emulation.h"
@@ -35,8 +36,15 @@ public:
    virtual ~SugarboxApp();
 
    int RunApp();
+   void InitAllActions();
+   IFunctionInterface::Action* AddAction(IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id);
 
    // IFunctionInterface interface
+   virtual QAction* GiveAction(FunctionType func_type);
+
+   Action* GetFirstAction(FunctionType&);
+   Action* GetNextAction(FunctionType&);
+
    virtual bool PlusEnabled();
    virtual bool FdcPresent();
    virtual bool TapePresent();
@@ -99,7 +107,7 @@ protected:
    void RunMainLoop();
    void DrawMainWindow();
    void DrawMenu();
-   void DrawSubMenu(Function*);
+   void DrawSubMenu(QMenu*, Function*, bool toplevel=false);
    void DrawPeripherals();
    void DrawStatusBar();
    void DrawOthers();
@@ -110,10 +118,18 @@ protected:
    bool AskForSavingTape();
    void InsertSelectTape();
 
-   // QT
-   Ui::SugarboxApp *ui;
+   // Actions
+   std::map<IFunctionInterface::FunctionType, Action*> action_list_;
+   std::map<IFunctionInterface::FunctionType, Action*>::iterator it_;
 
-   
+   // QT
+   void createMenus();
+
+   Ui::SugarboxApp *ui;
+   QWidget *widget_;
+   QVBoxLayout  *mainLayout_;
+   QMenuBar *menubar_;
+   std::vector<QMenu *> menu_list_;
    // Gui related
    enum {
       POPUP_NONE,
@@ -159,7 +175,7 @@ protected:
 
    // Emulation and so on 
    ConfigurationManager config_manager_;
-   Emulation emulation_;
+   Emulation* emulation_;
    CDisplay display_;
    ALSoundMixer sound_mixer_;
 

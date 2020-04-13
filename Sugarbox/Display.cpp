@@ -64,19 +64,14 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init()
 {
-
-
-
-}
-
-void CDisplay::initializeGL()
-{
-   char log[256];
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024 * 1024];
    }
+}
 
+void CDisplay::initializeGL()
+{
    initializeOpenGLFunctions();
 
    static const int coords[4][2] = {
@@ -86,7 +81,6 @@ void CDisplay::initializeGL()
       { +1, +1/*, -1*/ },
    };
 
-   //QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, 1024*4, QImage::Format_ARGB32);
    textures[0] = new QOpenGLTexture(QOpenGLTexture::Target2D);
    textures[0]->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
    textures[0]->create();

@@ -23,12 +23,15 @@ Emulation::Emulation() :
    worker_thread_(nullptr),
    command_waiting_(false),
    sound_mixer_(nullptr),
-   autorun_(true)
+   autorun_(true),
+   emulation_stopped_(false)
 {
 }
 
 Emulation::~Emulation()
 {
+   // End emulation
+   Stop();
    delete motherboard_;
 }
 
@@ -122,6 +125,7 @@ void Emulation::EmulationLoop()
       }
    }
    emulator_engine_->Stop();
+   emulation_stopped_ = true;
 }
 
 void Emulation::Pause()

@@ -1,13 +1,26 @@
 #pragma once
 #include <functional>
 #include <map>
+
+#include <QAction>
+
 #include "MultiLanguage.h"
 #include "Emulation.h"
 #include "IDisk.h"
 
+
 class IFunctionInterface
 {
 public:
+
+   class Action
+   {
+   public:
+      QAction* action;
+      std::string label_id;
+   };
+
+
    typedef enum
    {
       // File
@@ -71,9 +84,14 @@ public:
       FN_AUTOTYPE,
       // DISPLAY
       // DEBUGER
-
-
    }FunctionType;
+
+   // Get all action
+   virtual Action* GetFirstAction(FunctionType&) = 0;
+   virtual Action* GetNextAction(FunctionType&) = 0;
+
+   // Action creator
+   virtual QAction * GiveAction(FunctionType func_type) = 0;
 
    // Machine state and components
    virtual bool PlusEnabled() = 0;
@@ -137,7 +155,7 @@ class Function
 {
 public:
    Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available);
-   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available, std::function<bool()> selected );
+   Function(QAction* action, MultiLanguage* multilanguage, std::string id_label );
    virtual ~Function();
 
    // Node access
@@ -145,13 +163,13 @@ public:
    // Function access
    const char* GetLabel();
    const char* GetShortcut();
-   bool IsSelected();
    bool IsAvailable();
-   void Call();
+   QAction* GetAction();
 
    unsigned int NbSubMenu();
 
    Function* GetMenu(int index_menu);
+   void UpdateLanguage();
    
    const char* GetSubMenuLabel(int index_submenu);
    const char* GetSubMenuShortcut(int index_submenu);
@@ -160,13 +178,13 @@ public:
    bool IsSelected(int index_submenu);
 
 protected:
+   // QT Action
+   QAction* action_;
+
    bool node_;
    std::vector<Function*> submenu_list_;
-
    std::string id_label_;
-   std::function<void()> function_;
    std::function<bool()> available_;
-   std::function<bool()> selected_;
    MultiLanguage* multilanguage_;
 };
 
@@ -180,7 +198,7 @@ public:
 
    // Function Initialization
    void InitFunctions(IFunctionInterface* function_handler);
-
+   void UpdateLanguage();
    // Function Organization (menus / toolbar)
 
    // Function Access

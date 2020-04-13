@@ -100,6 +100,7 @@ protected:
 
    std::thread* worker_thread_;
    bool running_thread_;
+   bool emulation_stopped_;
 
    // Thread synchronisation
    bool command_waiting_;
