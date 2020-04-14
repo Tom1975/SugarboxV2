@@ -4,14 +4,13 @@ project(Sugarbox)
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CMAKE_CXX_STANDARD 17)
+
+
 # Turn on automatic invocation of the MOC
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-
-
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-qt5_add_resources(QRCS resources.qrc)
 
 set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -23,6 +22,9 @@ set(CompilerFlags
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
+
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+qt5_add_resources(QRCS resources.qrc)
 
 file(GLOB HEADERS
     *.h
@@ -72,19 +74,15 @@ IF(MSVC)
    endif()
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")  
 ENDIF(MSVC)
-
-if(CMAKE_COMPILER_IS_GNUCC )
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a stdc++fs pthread)
+if(CMAKE_COMPILER_IS_GNUCC)
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
+   set ( LIB_EXT pthread stdc++fs)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a )
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
+   set ( LIBZA libz.a pthread stdc++fs)
 endif()
-
-set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
-set ( CMAKE_CXX_STANDARD 17 )
 
 IF(WIN32)
    set (OPENGL_LINK opengl32)
@@ -93,7 +91,7 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets )
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets ${LIB_EXT})
 
 if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")
