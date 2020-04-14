@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
    parser.process(app);
 
    SugarboxApp mainWin;
+
+
    mainWin.show();
    mainWin.RunApp();
    

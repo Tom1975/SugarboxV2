@@ -21,7 +21,9 @@
 
 CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
+   
    memset(index_to_display_, 0, sizeof index_to_display_);
+   setAutoFillBackground(false);
 }
 
 CDisplay::~CDisplay()
@@ -74,6 +76,15 @@ void CDisplay::initializeGL()
 {
    initializeOpenGLFunctions();
 
+   glDisable(GL_MULTISAMPLE);
+
+   QSurfaceFormat fm = format();
+   int s = fm .samples();
+   fm.setSamples(0);
+   setFormat(fm);
+   fm = format();
+   s = fm.samples();
+
    static const int coords[4][2] = {
       { +1, -1/*, -1*/ }, 
       { -1, -1/*, -1*/ }, 
@@ -82,7 +93,7 @@ void CDisplay::initializeGL()
    };
 
    textures[0] = new QOpenGLTexture(QOpenGLTexture::Target2D);
-   textures[0]->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
+   textures[0]->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
    textures[0]->create();
 
    // given some `width`, `height` and `data_ptr`
@@ -202,10 +213,12 @@ void CDisplay::WaitVbl ()
 
 void CDisplay::paintGL()
 {
+
    if (number_of_frame_to_display_ > 0)
    {
       textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
-
+      
+      glDisable(GL_MULTISAMPLE);
       glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

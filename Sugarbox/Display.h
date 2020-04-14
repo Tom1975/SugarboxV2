@@ -17,7 +17,7 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLTexture)
 #define NB_FRAMES 3
 
 // Display
-class CDisplay : /*public QObject, */public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
+class CDisplay : public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
 {
    Q_OBJECT
 

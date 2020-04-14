@@ -273,7 +273,26 @@ void SugarboxApp::RunMainLoop()
 
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
-   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   if (event_keyboard->nativeScanCode() == 0x57)
+   {
+      static bool fs = false;
+
+      if (fs)
+      {
+         showNormal();
+      }
+      else
+      {
+         // Toggle fullscreen
+         setWindowState(Qt::WindowFullScreen);
+         showFullScreen();
+      }
+      fs = !fs;
+   }
+   else
+   {
+      keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   }
 }
 
 void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
