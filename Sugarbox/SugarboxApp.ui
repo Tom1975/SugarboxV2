@@ -93,7 +93,7 @@
   <customwidget>
    <class>Display</class>
    <extends>QWidget</extends>
-   <header>display.h</header>
+   <header>Display.h</header>
    <slots>
     <signal>signal1()</signal>
     <slot>Update()</slot>
