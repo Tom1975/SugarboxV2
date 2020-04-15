@@ -83,6 +83,7 @@ public:
       // AutoType
       FN_AUTOTYPE,
       // DISPLAY
+      FN_DIS_FULLSCREEN,
       // DEBUGER
    }FunctionType;
 

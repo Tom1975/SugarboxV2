@@ -275,19 +275,7 @@ void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
    if (event_keyboard->nativeScanCode() == 0x57)
    {
-      static bool fs = false;
-
-      if (fs)
-      {
-         showNormal();
-      }
-      else
-      {
-         // Toggle fullscreen
-         setWindowState(Qt::WindowFullScreen);
-         showFullScreen();
-      }
-      fs = !fs;
+      FullScreenToggle();
    }
    else
    {
@@ -598,6 +586,23 @@ void SugarboxApp::InsertBlank(int drive, IDisk::DiskType type)
 
 }
 
+void SugarboxApp::FullScreenToggle ()
+{
+   static bool fs = false;
+
+   if (fs)
+   {
+      showNormal();
+   }
+   else
+   {
+      // Toggle fullscreen
+      setWindowState(Qt::WindowFullScreen);
+      showFullScreen();
+   }
+   fs = !fs;
+}
+
 void SugarboxApp::TapeRecord()
 {
    emulation_->TapeRecord();
@@ -829,6 +834,11 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_SNR_STOP_RECORD, std::bind(&IFunctionInterface::SnrStopRecord, this), "L_FN_STOP_RECORD_SNR");
 
    AddAction(IFunctionInterface::FN_CPR_LOAD, std::bind(&IFunctionInterface::CprLoad, this), "L_FN_CPR_LOAD");
+
+   // Display
+   Action * act = AddAction(IFunctionInterface::FN_DIS_FULLSCREEN, std::bind(&SugarboxApp::FullScreenToggle, this), "L_FN_CPR_LOAD");
+   act->action->setShortcut(Qt::Key_F1);
+   addAction(act->action);
 }
 
 QAction* SugarboxApp::GiveAction(FunctionType func_type)

@@ -100,6 +100,8 @@ public:
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
    void keyReleaseEvent(QKeyEvent *event_keyboard);
 
+   // Display
+   void FullScreenToggle();
 public slots:
    void clear();
 
