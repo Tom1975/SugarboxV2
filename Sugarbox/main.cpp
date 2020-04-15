@@ -26,11 +26,8 @@ int main(int argc, char *argv[])
 
    SugarboxApp mainWin;
 
-
    mainWin.show();
    mainWin.RunApp();
    
-
    return app.exec();
 }
-
