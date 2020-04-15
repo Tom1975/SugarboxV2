@@ -14,11 +14,12 @@ git:
 
 
 before_install:
+# osx
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                             ; fi
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install openal-soft                ; fi
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5                        ; fi
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export Qt5_DIR=$(brew --prefix)/opt/qt5 ; fi
-#g++ 8
+# linux
 -| if [ "$TRAVIS_OS_NAME" = "linux" ]; then
    echo 'Installing G++ 8'
    sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
@@ -33,11 +34,6 @@ before_install:
    sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev
    sudo apt-get install libgconf2-dev
    fi
-# MacOS install : 
-# brew install openal-soft
-# brew install qt5
-# export Qt5_DIR=$(brew --prefix)/opt/qt5
-
 
 script:
 - echo 'Generating makefile'
