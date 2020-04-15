@@ -19,20 +19,18 @@ before_install:
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5                        ; fi
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export Qt5_DIR=$(brew --prefix)/opt/qt5 ; fi
 #g++ 8
-- if [ "$TRAVIS_OS_NAME" = "linux" ];
-- echo 'Installing G++ 8'
-- sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-- sudo apt-get update -qq
-- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi
-- if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
-- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50
-- sudo apt install qtbase5-dev
-- sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev
-- sudo apt-get install libxinerama-dev libxcursor-dev 
-- sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev
-- sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev
-- sudo apt-get install libgconf2-dev
-- fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; echo 'Installing G++ 8';fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get update -qq;fi
+- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8;fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8";fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt install qtbase5-dev;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install libxinerama-dev libxcursor-dev ;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev;fi
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install libgconf2-dev;fi
 # MacOS install : 
 # brew install openal-soft
 # brew install qt5
