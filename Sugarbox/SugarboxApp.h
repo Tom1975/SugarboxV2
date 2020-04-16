@@ -39,7 +39,7 @@ public:
    IFunctionInterface::Action* AddAction(IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id);
 
    // IFunctionInterface interface
-   virtual QAction* GiveAction(FunctionType func_type);
+   virtual QAction* GetAction(FunctionType func_type);
 
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
@@ -160,18 +160,6 @@ protected:
 
    //////////////
    // File dialogs
-   enum {
-      FD_SAVE_AS,
-      FD_INSERT,
-      FD_INSERT_TAPE,
-      FD_SAVE_TAPE_AS,
-      FD_INSERT_SNA,
-      FD_SAVE_SNA,
-      FD_LOAD_SNR,
-      FD_RECORD_SNR,
-      FD_LOAD_CPR
-   } file_dialog_type_;
-
    std::map<std::string, const FormatType*> format_ext_map_;
    std::map<std::string, const FormatType*> format_ext_map_read_;
    char* write_disk_extension_;

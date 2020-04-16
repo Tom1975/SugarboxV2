@@ -428,12 +428,31 @@ bool SugarboxApp::AskForSaving(int drive)
 {
    if (emulation_->GetEngine()->IsDiskModified(drive))
    {
-      PopupType = POPUP_ASK_SAVE;
-      PopupArg = drive;
+      QMessageBox msgBox;
+      msgBox.setText("The document has been modified.");
+      msgBox.setInformativeText("Do you want to save your changes?");
+      msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+      msgBox.setDefaultButton(QMessageBox::Save);
+      int ret = msgBox.exec();
+      switch (ret)
+      {
+      case QMessageBox::Save:
+
+         return true;
+         break;
+      case QMessageBox::Discard:
+         return true;
+         break;
+      case QMessageBox::Cancel:
+         return false;
+         break;
+      default:
+         // should never be reached
+         break;
+      }
       return true;
    }
-   popup_associated_function_();
-   return false;
+   return true;
 }
 
 bool SugarboxApp::AskForSavingTape()
@@ -507,13 +526,13 @@ void SugarboxApp::InitFileDialogs()
    format_ext_map_read_.clear();
    list_format_ext_str.clear();
    format_list = disk_builder_.GetFormatsList(DiskBuilder::READ);
-   buffer_ext_length = 0;
+   buffer_ext_length = 32;
    for (auto it = format_list.begin(); it != format_list.end(); it++)
    {
       //
-      std::string ext = std::string(".") + std::string((*it)->GetFormatExt());
+      std::string ext = std::string((*it)->GetFormatDescriptor()) +  std::string(" (*.") + std::string((*it)->GetFormatExt()) + std::string(")");
       list_format_ext_str.push_back(ext);
-      buffer_ext_length += ext.size() + 1;
+      buffer_ext_length += ext.size() + 2;
       format_ext_map_read_.insert(std::pair< std::string, const FormatType*>(ext, *it));
    }
    buffer_ext_length += 1;
@@ -521,14 +540,14 @@ void SugarboxApp::InitFileDialogs()
    load_disk_extension_ = new char[buffer_ext_length];
    memset(load_disk_extension_, 0, buffer_ext_length);
    ptr = load_disk_extension_;
-   for (auto it2 : list_format_ext_str)
+   for (auto it2 = list_format_ext_str.begin(); it2 != list_format_ext_str.end(); it2++)
    {
-      ptr = strcat(ptr, it2.c_str());
-      unsigned int size_ext = strlen(ptr);
-      ptr[size_ext] = '\0';
-      ptr = &ptr[size_ext + 1];
+      if (it2 != list_format_ext_str.begin())
+      {
+         ptr = strcat(ptr, ";;");
+      }
+      ptr = strcat(ptr, it2->c_str());
    }
-   ptr[0] = '\0';
 
    load_tape_extension_ = ".wav\0.cdt\0.csw\0\0";
 }
@@ -540,15 +559,30 @@ bool SugarboxApp::DiskPresent(int drive)
 
 void SugarboxApp::SaveAs(int drive)
 {
-   // Todo : Generic types, multilanguage, etc.
-   file_dialog_type_ = FD_SAVE_AS;
+   QFileDialog fd (this);
+   fd.setFileMode(QFileDialog::AnyFile);
+   fd.setAcceptMode(QFileDialog::AcceptSave);
+   fd.setNameFilter(tr(load_disk_extension_));
+   fd.setViewMode(QFileDialog::Detail);
+   if (fd.exec())
+   {
+      QStringList fileNames = fd.selectedFiles();
+
+      // Get format
+      QString ext_seletected = fd.selectedNameFilter();
+
+      // 
+      emulation_->SaveDiskAs(drive, fileNames[0].toUtf8(), format_ext_map_read_[ext_seletected.toStdString()]);
+   }
 }
 
 void SugarboxApp::Eject(int drive)
 {
    // save ?
-   popup_associated_function_ = std::bind (&EmulatorEngine::Eject, emulation_->GetEngine(), drive);
-   AskForSaving(drive);
+   if (AskForSaving(drive))
+   {
+      emulation_->GetEngine()->Eject(drive);
+   }
 }
 
 void SugarboxApp::Flip(int drive)
@@ -558,20 +592,24 @@ void SugarboxApp::Flip(int drive)
 
 void SugarboxApp::InsertSelectFile(int drive)
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert disk...", load_disk_extension_, ".");
-   file_dialog_type_ = FD_INSERT;
+   QString str = QFileDialog::getOpenFileName(this, tr("Insert disk..."), "", tr(load_disk_extension_));
+   if (str.size() > 0)
+   {
+      emulation_->LoadDisk(str.toUtf8(), drive);
+   }
 }
 
 void SugarboxApp::InsertSelectTape()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Insert tape...", load_tape_extension_, ".");
-   file_dialog_type_ = FD_INSERT_TAPE;
+   //file_dialog_type_ = FD_INSERT_TAPE;
 }
 
 void SugarboxApp::Insert(int drive)
 {
-   popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectFile, this, drive);
    AskForSaving(drive);
+   popup_associated_function_ = std::bind(&SugarboxApp::InsertSelectFile, this, drive);
+   
 }
 
 void SugarboxApp::InsertBlankDisk(int drive, IDisk::DiskType type)
@@ -659,7 +697,7 @@ void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
    }
 
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
-   file_dialog_type_ = FD_SAVE_TAPE_AS;
+   //file_dialog_type_ = FD_SAVE_TAPE_AS;
    format_ = format;
 }
 
@@ -671,13 +709,13 @@ bool SugarboxApp::IsQuickSnapAvailable()
 void SugarboxApp::SnaLoad()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
-   file_dialog_type_ = FD_INSERT_SNA;
+   //file_dialog_type_ = FD_INSERT_SNA;
 }
 
 void SugarboxApp::SnaSave()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save snapshot", ".sna\0", ".");
-   file_dialog_type_ = FD_SAVE_SNA;
+   //file_dialog_type_ = FD_SAVE_SNA;
 }
 
 void SugarboxApp::SnaQuickLoad()
@@ -693,13 +731,13 @@ void SugarboxApp::SnaQuickSave()
 void SugarboxApp::SnrLoad()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load SNR", ".snr\0", ".");
-   file_dialog_type_ = FD_LOAD_SNR;
+   //file_dialog_type_ = FD_LOAD_SNR;
 }
 
 void SugarboxApp::SnrRecord()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
-   file_dialog_type_ = FD_RECORD_SNR;
+   //file_dialog_type_ = FD_RECORD_SNR;
 }
 
 bool SugarboxApp::SnrIsRecording()
@@ -725,7 +763,7 @@ void SugarboxApp::SnrStopPlayback()
 void SugarboxApp::CprLoad()
 {
    //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
-   file_dialog_type_ = FD_LOAD_CPR;
+   //file_dialog_type_ = FD_LOAD_CPR;
 }
 
 bool SugarboxApp::PlusEnabled()
@@ -837,11 +875,12 @@ void SugarboxApp::InitAllActions()
 
    // Display
    Action * act = AddAction(IFunctionInterface::FN_DIS_FULLSCREEN, std::bind(&SugarboxApp::FullScreenToggle, this), "L_FN_CPR_LOAD");
+
    act->action->setShortcut(Qt::Key_F1);
    addAction(act->action);
 }
 
-QAction* SugarboxApp::GiveAction(FunctionType func_type)
+QAction* SugarboxApp::GetAction(FunctionType func_type)
 {
    // Get action
    QAction* action = action_list_[func_type]->action;

@@ -92,7 +92,7 @@ public:
    virtual Action* GetNextAction(FunctionType&) = 0;
 
    // Action creator
-   virtual QAction * GiveAction(FunctionType func_type) = 0;
+   virtual QAction * GetAction(FunctionType func_type) = 0;
 
    // Machine state and components
    virtual bool PlusEnabled() = 0;
