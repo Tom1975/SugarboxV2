@@ -20,7 +20,7 @@ before_install:
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install qt5                        ; fi
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then export Qt5_DIR=$(brew --prefix)/opt/qt5 ; fi
 # linux
--|if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; then
    echo 'Installing G++ 8'
    sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
    sudo apt-get update -qq
