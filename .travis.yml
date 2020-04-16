@@ -4,9 +4,12 @@ language: cpp
 services:
   - xvfb
 
+osx_image: xcode11.3
+
 os:
   - linux
   - osx
+
 
 #limit to git depth to 1 because don't use any git command in this script
 git:
