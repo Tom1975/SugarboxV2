@@ -8,7 +8,8 @@ osx_image: xcode11.3
 
 os:
   - linux
-  - osx
+  # osx is removed until Travis support catalina
+ #- osx
 
 
 #limit to git depth to 1 because don't use any git command in this script
