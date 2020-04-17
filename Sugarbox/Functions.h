@@ -18,6 +18,8 @@ public:
    public:
       QAction* action;
       std::string label_id;
+      std::function<bool()> enabled;
+      std::function<bool()> checked;
    };
 
 
@@ -200,6 +202,7 @@ public:
    // Function Initialization
    void InitFunctions(IFunctionInterface* function_handler);
    void UpdateLanguage();
+   void UpdateStatus();
    // Function Organization (menus / toolbar)
 
    // Function Access

@@ -208,3 +208,19 @@ void FunctionList::UpdateLanguage()
       it.second.UpdateLanguage();
    }
 }
+
+void FunctionList::UpdateStatus()
+{
+   IFunctionInterface::FunctionType func_type;
+   IFunctionInterface::Action* action = function_handler_->GetFirstAction(func_type);
+   while (action != nullptr)
+   {
+      if ( action->checked != nullptr)
+         action->action->setChecked(action->checked());
+      if (action->enabled != nullptr)
+         action->action->setEnabled(action->enabled());
+
+      action = function_handler_->GetNextAction(func_type);
+   }
+}
+

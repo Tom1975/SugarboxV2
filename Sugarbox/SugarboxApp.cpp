@@ -114,6 +114,7 @@ void SugarboxApp::InitMenu()
    functions_list_.InitFunctions(this);
    language_.Init("Resources/labels.ini");
    functions_list_.UpdateLanguage();
+   UpdateMenu();
    InitFileDialogs();
 }
 
@@ -252,8 +253,6 @@ int SugarboxApp::RunApp()
    return 0;
 }
 
-static bool test = false;
-
 void SugarboxApp::RunMainLoop()
 {
    while (true)
@@ -369,14 +368,10 @@ void SugarboxApp::Drop(const char* paths)
       break;
    case 3:
    {
-      test = true;
-      auto fn = [](Emulation* emulation, DataContainer* dnd_container) { emulation->LoadDisk(dnd_container, 0); };
-      popup_associated_function_ = std::bind(fn, emulation_, dnd_container);
-      AskForSaving(0);
-      /*if (!AskForSaving(0))
+      if (AskForSaving(0))
       {
          emulation_->LoadDisk(dnd_container, 0);
-      }*/
+      }
       break;
       // Tape - TODO
    }
@@ -478,9 +473,15 @@ void SugarboxApp::Pause()
    emulation_->Pause( );
 }
 
+bool SugarboxApp::CheckSpeed(int speedlimit)
+{
+   return emulation_->GetEngine()->GetSpeedLimit() == speedlimit;
+}
+
 void SugarboxApp::SetSpeed(int speedlimit)
 {
    emulation_->GetEngine()->SetSpeed(speedlimit);
+   UpdateMenu();
 }
 
 void SugarboxApp::HardReset()
@@ -550,6 +551,11 @@ void SugarboxApp::InitFileDialogs()
    }
 
    load_tape_extension_ = ".wav\0.cdt\0.csw\0\0";
+}
+
+void SugarboxApp::UpdateMenu()
+{
+   functions_list_.UpdateStatus();
 }
 
 bool SugarboxApp::DiskPresent(int drive)
@@ -789,8 +795,8 @@ bool SugarboxApp::IsAutoloadEnabled()
 
 void SugarboxApp::ToggleAutoload()
 {
-   action_list_[IFunctionInterface::FN_AUTOLOAD]->action->toggle();
    emulation_->ToggleAutoload();
+   UpdateMenu();
 }
 
 bool SugarboxApp::IsSomethingInClipboard()
@@ -805,46 +811,54 @@ void SugarboxApp::AutoType()
    //emulation_->AutoType(glfwGetClipboardString(window_));
 }
 
-IFunctionInterface::Action* SugarboxApp::AddAction (IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id)
+IFunctionInterface::Action* SugarboxApp::AddAction (IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id, std::function<bool()>enabled, std::function<bool()>checked)
 {
 
    Action* new_act = new Action;
    new_act ->action = new QAction(tr(""), this);
    new_act->label_id = label_id;
+   new_act->checked = checked;
+   new_act->enabled = enabled;
+   if ( checked != nullptr)
+      new_act->action->setCheckable(true);
+   if (enabled != nullptr)
+      new_act->action->setEnabled(true);
 
    connect(new_act->action, &QAction::triggered, this, fn);
    action_list_[id] = new_act;
+
    return new_act;
 }
 
 void SugarboxApp::InitAllActions()
 {
+   Action* act;
    AddAction(IFunctionInterface::FN_EXIT, std::bind(&IFunctionInterface::Exit, this), "L_FILE_EXIT");
-   AddAction(IFunctionInterface::FN_AUTOLOAD, std::bind(&IFunctionInterface::ToggleAutoload, this), "L_FN_AUTOLOAD")->action->setCheckable(true);
+   AddAction(IFunctionInterface::FN_AUTOLOAD, std::bind(&IFunctionInterface::ToggleAutoload, this), "L_FN_AUTOLOAD", nullptr, std::bind(&Emulation::IsAutoloadEnabled, emulation_));
    AddAction(IFunctionInterface::FN_AUTOTYPE, std::bind(&IFunctionInterface::AutoType, this), "L_FN_AUTOTYPE");
    AddAction(IFunctionInterface::FN_CTRL_ONOFF, std::bind(&IFunctionInterface::HardReset, this), "L_CONTROL_ONOFF");
    AddAction(IFunctionInterface::FN_CTRL_PAUSE, std::bind(&IFunctionInterface::Pause, this), "L_CONTROL_PAUSE");
 
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_10, std::bind(&IFunctionInterface::SetSpeed, this, 10), "L_CONTROL_SPEED_10");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_50, std::bind(&IFunctionInterface::SetSpeed, this, 50), "L_CONTROL_SPEED_50");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_100, std::bind(&IFunctionInterface::SetSpeed, this, 100), "L_CONTROL_SPEED_100");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_150, std::bind(&IFunctionInterface::SetSpeed, this, 150), "L_CONTROL_SPEED_150");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_200, std::bind(&IFunctionInterface::SetSpeed, this, 200), "L_CONTROL_SPEED_200");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_400, std::bind(&IFunctionInterface::SetSpeed, this, 400), "L_CONTROL_SPEED_400");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, std::bind(&IFunctionInterface::SetSpeed, this, -1), "L_CONTROL_SPEED_VSYNC");
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&IFunctionInterface::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX");
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_10, std::bind(&IFunctionInterface::SetSpeed, this, 10), "L_CONTROL_SPEED_10", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 10) );
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_50, std::bind(&IFunctionInterface::SetSpeed, this, 50), "L_CONTROL_SPEED_50", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 50));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_100, std::bind(&IFunctionInterface::SetSpeed, this, 100), "L_CONTROL_SPEED_100", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 100));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_150, std::bind(&IFunctionInterface::SetSpeed, this, 150), "L_CONTROL_SPEED_150", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 150));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_200, std::bind(&IFunctionInterface::SetSpeed, this, 200), "L_CONTROL_SPEED_200", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 200));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_400, std::bind(&IFunctionInterface::SetSpeed, this, 400), "L_CONTROL_SPEED_400", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 400));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, std::bind(&IFunctionInterface::SetSpeed, this, -1), "L_CONTROL_SPEED_VSYNC", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, -1));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&IFunctionInterface::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 0));
 
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&IFunctionInterface::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
 
-   AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS");
-   AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&IFunctionInterface::Eject, this, 0), "L_FN_DISK_1_EJECT");
-   AddAction(IFunctionInterface::FN_DISK_1_FLIP, std::bind(&IFunctionInterface::Flip, this, 0), "L_FN_DISK_1_FLIP");
+   AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
+   AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&IFunctionInterface::Eject, this, 0), "L_FN_DISK_1_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
+   AddAction(IFunctionInterface::FN_DISK_1_FLIP, std::bind(&IFunctionInterface::Flip, this, 0), "L_FN_DISK_1_FLIP", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_INSERT, std::bind(&IFunctionInterface::Insert, this, 0), "L_FN_DISK_1_INSERT");
    AddAction(IFunctionInterface::FN_DISK_1_INSERT_BLANK_VENDOR, std::bind(&IFunctionInterface::InsertBlank, this, 0, IDisk::VENDOR), "L_FN_DISK_1_INSERT_BLANK_VENDOR");
    AddAction(IFunctionInterface::FN_DISK_1_INSERT_BLANK_DATA, std::bind(&IFunctionInterface::InsertBlank, this, 0, IDisk::DATA), "L_FN_DISK_1_INSERT_BLANK_DATA");
-   AddAction(IFunctionInterface::FN_DISK_2_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 1), "L_FN_DISK_2_SAVE_AS");
-   AddAction(IFunctionInterface::FN_DISK_2_EJECT, std::bind(&IFunctionInterface::Eject, this, 1), "L_FN_DISK_2_EJECT");
-   AddAction(IFunctionInterface::FN_DISK_2_FLIP, std::bind(&IFunctionInterface::Flip, this, 1), "L_FN_DISK_2_FLIP");
+   AddAction(IFunctionInterface::FN_DISK_2_SAVE_AS, std::bind(&IFunctionInterface::SaveAs, this, 1), "L_FN_DISK_2_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 1));
+   AddAction(IFunctionInterface::FN_DISK_2_EJECT, std::bind(&IFunctionInterface::Eject, this, 1), "L_FN_DISK_2_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 1));
+   AddAction(IFunctionInterface::FN_DISK_2_FLIP, std::bind(&IFunctionInterface::Flip, this, 1), "L_FN_DISK_2_FLIP", std::bind(&Emulation::IsDiskPresent, emulation_, 1));
    AddAction(IFunctionInterface::FN_DISK_2_INSERT, std::bind(&IFunctionInterface::Insert, this, 1), "L_FN_DISK_2_INSERT");
    AddAction(IFunctionInterface::FN_DISK_2_INSERT_BLANK_VENDOR, std::bind(&IFunctionInterface::InsertBlank, this, 1, IDisk::VENDOR), "L_FN_DISK_2_INSERT_BLANK_VENDOR");
    AddAction(IFunctionInterface::FN_DISK_2_INSERT_BLANK_DATA, std::bind(&IFunctionInterface::InsertBlank, this, 1, IDisk::DATA), "L_FN_DISK_2_INSERT_BLANK_DATA");
@@ -874,7 +888,7 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_CPR_LOAD, std::bind(&IFunctionInterface::CprLoad, this), "L_FN_CPR_LOAD");
 
    // Display
-   Action * act = AddAction(IFunctionInterface::FN_DIS_FULLSCREEN, std::bind(&SugarboxApp::FullScreenToggle, this), "L_FN_CPR_LOAD");
+   act = AddAction(IFunctionInterface::FN_DIS_FULLSCREEN, std::bind(&SugarboxApp::FullScreenToggle, this), "L_FN_CPR_LOAD");
 
    act->action->setShortcut(Qt::Key_F1);
    addAction(act->action);
@@ -945,3 +959,4 @@ void SugarboxApp::dragLeaveEvent(QDragLeaveEvent *event)
    clear();
    event->accept();
 }
+

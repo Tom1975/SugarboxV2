@@ -36,7 +36,7 @@ public:
 
    int RunApp();
    void InitAllActions();
-   IFunctionInterface::Action* AddAction(IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id);
+   IFunctionInterface::Action* AddAction(IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id, std::function<bool()>enabled = nullptr, std::function<bool()>checked = nullptr);
 
    // IFunctionInterface interface
    virtual QAction* GetAction(FunctionType func_type);
@@ -52,6 +52,7 @@ public:
    virtual void HardReset();
    virtual void Pause();
    virtual bool PauseEnabled();
+   virtual bool CheckSpeed(int speedlimit);
    virtual void SetSpeed(int speedlimit);
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
@@ -121,6 +122,7 @@ protected:
    // Menu init
    void InitMenu();
    void InitFileDialogs();
+   void UpdateMenu();
 
    // Display gui
    void RunMainLoop();
