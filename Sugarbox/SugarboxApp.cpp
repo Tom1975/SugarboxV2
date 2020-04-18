@@ -520,7 +520,14 @@ void SugarboxApp::InitFileDialogs()
    }
    load_disk_extension_ += ")";
 
+   // Tape
    load_tape_extension_ = "Tape dump (*.wav *.cdt *.csw *.tzx)";
+   save_tape_extension_ = "WAV (*.wav);;CDT-drb (*.cdt);;CDT-CSW (*.cdt);;CSW 1.1 (*.csw);;CSW 2.0 (*.csw)";
+   format_tape_save_["WAV (*.wav)"] = Emulation::TAPE_WAV;
+   format_tape_save_["CDT-drb (*.cdt)"] = Emulation::TAPE_CDT_DRB;
+   format_tape_save_["CDT-CSW (*.cdt)"] = Emulation::TAPE_CDT_CSW;
+   format_tape_save_["CSW 1.1 (*.csw)"] = Emulation::TAPE_CSW11;
+   format_tape_save_["CSW 2.0 (*.csw)"] = Emulation::TAPE_CSW20;
 }
 
 void SugarboxApp::UpdateMenu()
@@ -607,6 +614,7 @@ void SugarboxApp::TapeInsert()
 
 void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
 {
+   //save_tape_extension_
    const char* format_ext;
    switch (format)
    {

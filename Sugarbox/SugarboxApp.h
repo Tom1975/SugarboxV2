@@ -149,8 +149,11 @@ protected:
    std::map<QString, const FormatType*> format_ext_map_read_;
    QString save_disk_extension_;
    QString load_disk_extension_;
-   char* load_tape_extension_;
-   Emulation::TapeFormat format_;
+
+   std::map<QString, Emulation::TapeFormat> format_tape_save_;
+   QString save_tape_extension_; 
+   QString load_tape_extension_;
+   
 
    // Keyboard handler
    IKeyboard* keyboard_handler_;
