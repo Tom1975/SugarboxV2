@@ -15,7 +15,8 @@
 
 //////////////////////////////////////////////
 /// ctor/dtor
-Emulation::Emulation() :
+Emulation::Emulation(INotifier* notifier) :
+   notifier_(notifier),
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
@@ -353,6 +354,9 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
 
    // Play insert disk soiund
    sound_mixer_->PlayWav(SND_INSERT_DISK);
+
+   // Suppervisor should be advised of it
+   notifier_->DiskLoaded();
 
    // Autoload ?
    // todo : skip startup disk inserted ?

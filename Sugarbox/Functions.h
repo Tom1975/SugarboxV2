@@ -101,36 +101,6 @@ public:
    virtual bool FdcPresent() = 0;
    virtual bool TapePresent() = 0;
 
-   //
-   virtual void Exit() = 0;
-
-   // Control
-   virtual void HardReset() = 0;
-   virtual void Pause() = 0;
-   virtual bool PauseEnabled() = 0;
-   virtual void SetSpeed(int speedlimit) = 0;
-
-   // Settings
-   virtual void ConfigurationSettings() = 0;
-
-   // Disk
-   virtual void SaveAs(int drive) = 0;
-   virtual void Eject(int drive) = 0;
-   virtual bool DiskPresent(int drive) = 0;
-   virtual void Flip(int drive) = 0;
-   virtual void Insert(int drive) = 0;
-   virtual void InsertBlank(int drive, IDisk::DiskType type) = 0;
-
-   // Tape
-   virtual void TapeRecord() = 0;
-   virtual void TapePlay() = 0;
-   virtual void TapeFastForward() = 0;
-   virtual void TapeRewind() = 0;
-   virtual void TapePause() = 0;
-   virtual void TapeStop() = 0;
-   virtual void TapeInsert() = 0;
-   virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
-
    // Snapshots
    virtual bool IsQuickSnapAvailable() = 0;
    virtual void SnaLoad() = 0;
@@ -139,16 +109,9 @@ public:
    virtual void SnaQuickSave() = 0;
    virtual void SnrLoad() = 0;
    virtual void SnrRecord() = 0;
-   virtual bool SnrIsRecording() = 0;
-   virtual bool SnrIsReplaying() = 0;
-   virtual void SnrStopRecord() = 0;
-   virtual void SnrStopPlayback() = 0;
 
    // CPR
    virtual void CprLoad() = 0;
-
-   virtual bool IsAutoloadEnabled() = 0;
-   virtual void ToggleAutoload() = 0;
 
    virtual bool IsSomethingInClipboard() = 0;
    virtual void AutoType() = 0;

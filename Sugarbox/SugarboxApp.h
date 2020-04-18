@@ -26,7 +26,7 @@ namespace Ui {
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier
 {
    Q_OBJECT
 
@@ -48,8 +48,6 @@ public:
    virtual bool FdcPresent();
    virtual bool TapePresent();
 
-   virtual void Exit();
-   virtual void HardReset();
    virtual void Pause();
    virtual bool PauseEnabled();
    virtual bool CheckSpeed(int speedlimit);
@@ -58,15 +56,8 @@ public:
    virtual void SaveAs(int drive);
    virtual void Eject(int drive);
    virtual bool DiskPresent(int drive);
-   virtual void Flip(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
-   virtual void TapeRecord();
-   virtual void TapePlay();
-   virtual void TapeFastForward();
-   virtual void TapeRewind();
-   virtual void TapePause();
-   virtual void TapeStop();
    virtual void TapeInsert();
    virtual void TapeSaveAs(Emulation::TapeFormat format);
    virtual bool IsQuickSnapAvailable();
@@ -76,15 +67,13 @@ public:
    virtual void SnaQuickSave();
    virtual void SnrLoad();
    virtual void SnrRecord();
-   virtual void SnrStopRecord();
-   virtual void SnrStopPlayback();
-   virtual bool SnrIsRecording();
-   virtual bool SnrIsReplaying();
    virtual void CprLoad();
-   virtual bool IsAutoloadEnabled();
    virtual void ToggleAutoload();
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
+
+   // INotifier 
+   virtual void DiskLoaded();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -105,9 +94,11 @@ public:
    void FullScreenToggle();
 public slots:
    void clear();
+   void UpdateMenu();
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
+   void MenuChanged();
 
 protected:
 
@@ -122,22 +113,14 @@ protected:
    // Menu init
    void InitMenu();
    void InitFileDialogs();
-   void UpdateMenu();
 
    // Display gui
-   void RunMainLoop();
-   void DrawMainWindow();
-   void DrawMenu();
-   void DrawSubMenu(QMenu*, Function*, bool toplevel=false);
-   void DrawPeripherals();
+   void CreateSubMenu(QMenu*, Function*, bool toplevel=false);
    void DrawStatusBar();
    void DrawOthers();
 
    bool AskForSaving(int drive);
-   void InsertSelectFile(int drive);
-   void InsertBlankDisk(int drive, IDisk::DiskType type);
    bool AskForSavingTape();
-   void InsertSelectTape();
 
    // Actions
    std::map<IFunctionInterface::FunctionType, Action*> action_list_;
@@ -162,10 +145,10 @@ protected:
 
    //////////////
    // File dialogs
-   std::map<std::string, const FormatType*> format_ext_map_;
-   std::map<std::string, const FormatType*> format_ext_map_read_;
-   char* write_disk_extension_;
-   char* load_disk_extension_;
+   std::map<QString, const FormatType*> format_ext_map_;
+   std::map<QString, const FormatType*> format_ext_map_read_;
+   QString save_disk_extension_;
+   QString load_disk_extension_;
    char* load_tape_extension_;
    Emulation::TapeFormat format_;
 

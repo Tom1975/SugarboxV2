@@ -10,10 +10,16 @@
 #include "Inotify.h"
 #include "ALSoundMixer.h"
 
+class INotifier
+{
+public:
+   virtual void DiskLoaded() = 0;
+};
+
 class Emulation  : public IDirectories, IFdcNotify
 {
 public :
-   Emulation();
+   Emulation(INotifier* notifier);
    virtual ~Emulation();
 
    typedef enum 
@@ -82,6 +88,7 @@ public :
    };
 
 protected:
+   INotifier* notifier_;
 
    Motherboard* motherboard_;
 
