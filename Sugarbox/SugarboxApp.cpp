@@ -9,10 +9,8 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_), configuration_settings_(false)/*,
-ui(new Ui::SugarboxApp)*/
+dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_)
 {
-
    emulation_ = new Emulation(this);
    widget_ = new QWidget();
    setCentralWidget(widget_);
@@ -47,13 +45,11 @@ SugarboxApp::~SugarboxApp()
 // QT functions
 void SugarboxApp::createMenus ()
 {
-   menu_list_.clear();
    for (unsigned int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
    {
       if (functions_list_.GetMenu(menu_index)->IsAvailable())
       {
          QMenu* menu = menuBar()->addMenu(tr(functions_list_.GetMenu(menu_index)->GetLabel()));
-         menu_list_.push_back(menu);
          CreateSubMenu(menu, functions_list_.GetMenu(menu_index), true);
       }
    }
@@ -64,18 +60,9 @@ void SugarboxApp::CreateSubMenu(QMenu* menu, Function* function, bool toplevel)
    if (function->IsNode())
    {
       QMenu* submenu;
-
       if (function->IsAvailable())
       {
-         if (toplevel)
-         {
-            submenu = menu;
-         }
-         else
-         {
-            submenu = menu->addMenu(tr(function->GetLabel()));
-            menu_list_.push_back(submenu);
-         }
+         submenu = (toplevel)?menu: menu->addMenu(tr(function->GetLabel()));
          for (unsigned int submenu_index = 0; submenu_index < function->NbSubMenu(); submenu_index++)
          {
             Function* subfunction = function->GetMenu(submenu_index);
@@ -98,12 +85,12 @@ ISound* SugarboxApp::GetSound(const char* name)
 
 const char* SugarboxApp::GetSoundName(ISound*)
 {
-   return "SFML sound mixer";
+   return "OpenAL-Soft sound mixer";
 }
 
 const char* SugarboxApp::GetFirstSoundName()
 {
-   return "SFML sound mixer";
+   return "OpenAL-Soft sound mixer";
 }
 
 const char* SugarboxApp::GetNextSoundName()
@@ -262,14 +249,7 @@ int SugarboxApp::RunApp()
 
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
-   if (event_keyboard->nativeScanCode() == 0x57)
-   {
-      FullScreenToggle();
-   }
-   else
-   {
-      keyboard_handler_->SendScanCode(event_keyboard->key(), true);
-   }
+   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
 }
 
 void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
@@ -290,16 +270,6 @@ void SugarboxApp::DrawStatusBar()
       counter_ = 0;
    }
    sound_control_.DrawSoundVolume();
-}
-
-void SugarboxApp::DrawOthers()
-{
-   // Configuration ?
-
-   if (configuration_settings_)
-   {
-      dlg_settings_.DisplayMenu();
-   }
 }
 
 void SugarboxApp::SizeChanged(int width, int height)
@@ -479,8 +449,6 @@ void SugarboxApp::SetSpeed(int speedlimit)
 
 void SugarboxApp::ConfigurationSettings()
 {
-   // Set the Configuration window as opened
-   configuration_settings_ = true;
 }
 
 void SugarboxApp::InitFileDialogs()
@@ -533,11 +501,6 @@ void SugarboxApp::InitFileDialogs()
 void SugarboxApp::UpdateMenu()
 {
    functions_list_.UpdateStatus();
-}
-
-bool SugarboxApp::DiskPresent(int drive)
-{
-   return emulation_->IsDiskPresent(drive);
 }
 
 void SugarboxApp::SaveAs(int drive)
@@ -612,74 +575,64 @@ void SugarboxApp::TapeInsert()
    }
 }
 
-void SugarboxApp::TapeSaveAs(Emulation::TapeFormat format)
+void SugarboxApp::TapeSaveAs()
 {
-   //save_tape_extension_
-   const char* format_ext;
-   switch (format)
+   QFileDialog fd(this);
+   fd.setFileMode(QFileDialog::AnyFile);
+   fd.setAcceptMode(QFileDialog::AcceptSave);
+   fd.setNameFilter(save_tape_extension_);
+   fd.setViewMode(QFileDialog::Detail);
+   if (fd.exec())
    {
-   case Emulation::TAPE_WAV:
-      format_ext = ".wav";
-      break;
-   case Emulation::TAPE_CDT_DRB:
-   case Emulation::TAPE_CDT_CSW:
-      format_ext = ".cdt";
-      break;
-   case Emulation::TAPE_CSW11:
-   case Emulation::TAPE_CSW20:
-      format_ext = ".csw";
-      break;
+      QStringList fileNames = fd.selectedFiles();
+      QString ext_seletected = fd.selectedNameFilter();
+      emulation_->SaveTapeAs(fileNames[0].toUtf8(), format_tape_save_[ext_seletected]);
    }
-
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save Tape as...", format_ext, ".");
-   //file_dialog_type_ = FD_SAVE_TAPE_AS;
-   format_ = format;
-}
-
-bool SugarboxApp::IsQuickSnapAvailable()
-{
-   return emulation_->GetEngine()->IsQuickSnapAvailable();
 }
 
 void SugarboxApp::SnaLoad()
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load snapshot", ".sna\0", ".");
-   //file_dialog_type_ = FD_INSERT_SNA;
+   QString str = QFileDialog::getOpenFileName(this, tr(language_.GetString("L_FN_LOAD_SNA")), "", "Snapshot file (*.SNA *.sna)");
+   if (str.size() > 0)
+   {
+      emulation_->LoadSnapshot(str.toUtf8());
+   }
 }
 
 void SugarboxApp::SnaSave()
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save snapshot", ".sna\0", ".");
-   //file_dialog_type_ = FD_SAVE_SNA;
-}
-
-void SugarboxApp::SnaQuickLoad()
-{
-   emulation_->QuickLoadsnapshot();
-}
-
-void SugarboxApp::SnaQuickSave()
-{
-   emulation_->QuickSavesnapshot();
+   QString str = QFileDialog::getSaveFileName(this, tr(language_.GetString("L_FN_LOAD_SNA")), "", "Snapshot file (*.SNA *.sna)");
+   if (str.size() > 0)
+   {
+      emulation_->SaveSnapshot(str.toUtf8());
+   }
 }
 
 void SugarboxApp::SnrLoad()
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load SNR", ".snr\0", ".");
-   //file_dialog_type_ = FD_LOAD_SNR;
+   QString str = QFileDialog::getOpenFileName(this, tr(language_.GetString("L_FN_LOAD_SNR")), "", "Snapshot Record file (*.SNR *.snr)");
+   if (str.size() > 0)
+   {
+      emulation_->LoadSnr(str.toUtf8());
+   }
 }
 
 void SugarboxApp::SnrRecord()
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Save SNR", ".snr\0", ".");
-   //file_dialog_type_ = FD_RECORD_SNR;
+   QString str = QFileDialog::getSaveFileName(this, tr(language_.GetString("L_FN_LOAD_SNR")), "", "Snapshot Record file (*.SNR *.snr)");
+   if (str.size() > 0)
+   {
+      emulation_->RecordSnr(str.toUtf8());
+   }
 }
-
 
 void SugarboxApp::CprLoad()
 {
-   //ImGuiFileDialog::Instance()->OpenDialog("SaveAs", "Load CPR", ".cpr\0.bin\0", ".");
-   //file_dialog_type_ = FD_LOAD_CPR;
+   QString str = QFileDialog::getOpenFileName(this, tr(language_.GetString("L_FN_CPR_LOAD")), "", "Cartridge file (*.bin *.cpr)");
+   if (str.size() > 0)
+   {
+      emulation_->LoadCpr(str.toUtf8());
+   }
 }
 
 bool SugarboxApp::PlusEnabled()
@@ -713,7 +666,6 @@ bool SugarboxApp::IsSomethingInClipboard()
 void SugarboxApp::AutoType()
 {
    const QClipboard *clipboard = QApplication::clipboard();
-
    emulation_->AutoType(clipboard->text().toUtf8());   
 }
 
@@ -776,22 +728,18 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_TAPE_PAUSE, std::bind(&Emulation::TapePause, emulation_), "L_FN_TAPE_PAUSE");
    AddAction(IFunctionInterface::FN_TAPE_STOP, std::bind(&Emulation::TapeStop, emulation_), "L_FN_TAPE_STOP");
    AddAction(IFunctionInterface::FN_TAPE_INSERT, std::bind(&SugarboxApp::TapeInsert, this), "L_FN_TAPE_INSERT");
-   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_WAV, std::bind(&SugarboxApp::TapeSaveAs, this, Emulation::TAPE_WAV), "L_FN_TAPE_SAVE_AS_WAV");
-   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_DRB, std::bind(&SugarboxApp::TapeSaveAs, this, Emulation::TAPE_CDT_DRB), "L_FN_TAPE_SAVE_AS_CDT_DRB");
-   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW, std::bind(&SugarboxApp::TapeSaveAs, this, Emulation::TAPE_CDT_CSW), "L_FN_TAPE_SAVE_AS_CDT_CSW");
-   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11, std::bind(&SugarboxApp::TapeSaveAs, this, Emulation::TAPE_CSW11), "L_FN_TAPE_SAVE_AS_CSW11");
-   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20, std::bind(&SugarboxApp::TapeSaveAs, this, Emulation::TAPE_CSW20), "L_FN_TAPE_SAVE_AS_CSW20");
+   AddAction(IFunctionInterface::FN_TAPE_SAVE_AS, std::bind(&SugarboxApp::TapeSaveAs, this), "L_FN_MENU_SAVE_TAPE_AS");
 
-   AddAction(IFunctionInterface::FN_SNA_LOAD, std::bind(&IFunctionInterface::SnaLoad, this), "L_FN_LOAD_SNA");
-   AddAction(IFunctionInterface::FN_SNA_QUICK_LOAD, std::bind(&IFunctionInterface::SnaQuickLoad, this), "L_FN_QUICK_LOAD_SNA");
-   AddAction(IFunctionInterface::FN_SNA_SAVE, std::bind(&IFunctionInterface::SnaSave, this), "L_FN_SAVE_SNA");
-   AddAction(IFunctionInterface::FN_SNA_QUICK_SAVE, std::bind(&IFunctionInterface::SnaQuickSave, this), "L_FN_QUICK_SAVE_SNA");
-   AddAction(IFunctionInterface::FN_SNR_LOAD, std::bind(&IFunctionInterface::SnrLoad, this), "L_FN_LOAD_SNR");
-   AddAction(IFunctionInterface::FN_SNR_RECORD, std::bind(&IFunctionInterface::SnrRecord, this), "L_FN_RECORD_SNR");
+   AddAction(IFunctionInterface::FN_SNA_LOAD, std::bind(&SugarboxApp::SnaLoad, this), "L_FN_LOAD_SNA");
+   AddAction(IFunctionInterface::FN_SNA_QUICK_LOAD, std::bind(&Emulation::QuickLoadsnapshot, emulation_), "L_FN_QUICK_LOAD_SNA", std::bind(&EmulatorEngine::IsQuickSnapAvailable, emulation_->GetEngine()));
+   AddAction(IFunctionInterface::FN_SNA_SAVE, std::bind(&SugarboxApp::SnaSave, this), "L_FN_SAVE_SNA");
+   AddAction(IFunctionInterface::FN_SNA_QUICK_SAVE, std::bind(&Emulation::QuickSavesnapshot, emulation_), "L_FN_QUICK_SAVE_SNA", std::bind(&EmulatorEngine::IsQuickSnapAvailable, emulation_->GetEngine()));
+   AddAction(IFunctionInterface::FN_SNR_LOAD, std::bind(&SugarboxApp::SnrLoad, this), "L_FN_LOAD_SNR");
+   AddAction(IFunctionInterface::FN_SNR_RECORD, std::bind(&SugarboxApp::SnrRecord, this), "L_FN_RECORD_SNR");
    AddAction(IFunctionInterface::FN_SNR_STOP_PLAYING, std::bind(&EmulatorEngine::StopPlayback, emulation_->GetEngine()), "L_FN_STOP_PLAYBACK_SNR", std::bind(&EmulatorEngine::IsSnrReplaying, emulation_->GetEngine()));
    AddAction(IFunctionInterface::FN_SNR_STOP_RECORD, std::bind(&EmulatorEngine::StopRecord, emulation_->GetEngine()), "L_FN_STOP_RECORD_SNR", std::bind(&EmulatorEngine::IsSnrRecording, emulation_->GetEngine()));
 
-   AddAction(IFunctionInterface::FN_CPR_LOAD, std::bind(&IFunctionInterface::CprLoad, this), "L_FN_CPR_LOAD");
+   AddAction(IFunctionInterface::FN_CPR_LOAD, std::bind(&SugarboxApp::CprLoad, this), "L_FN_CPR_LOAD");
 
    // Display
    act = AddAction(IFunctionInterface::FN_DIS_FULLSCREEN, std::bind(&SugarboxApp::FullScreenToggle, this), "L_FN_CPR_LOAD");
@@ -832,7 +780,6 @@ IFunctionInterface::Action* SugarboxApp::GetNextAction(FunctionType& func_type)
 void SugarboxApp::clear()
 {
    setBackgroundRole(QPalette::Dark);
-
    emit changed();
 }
 

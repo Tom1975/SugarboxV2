@@ -55,16 +55,12 @@ public:
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
    virtual void Eject(int drive);
-   virtual bool DiskPresent(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
    virtual void TapeInsert();
-   virtual void TapeSaveAs(Emulation::TapeFormat format);
-   virtual bool IsQuickSnapAvailable();
+   virtual void TapeSaveAs();
    virtual void SnaLoad();
    virtual void SnaSave();
-   virtual void SnaQuickLoad();
-   virtual void SnaQuickSave();
    virtual void SnrLoad();
    virtual void SnrRecord();
    virtual void CprLoad();
@@ -117,7 +113,6 @@ protected:
    // Display gui
    void CreateSubMenu(QMenu*, Function*, bool toplevel=false);
    void DrawStatusBar();
-   void DrawOthers();
 
    bool AskForSaving(int drive);
    bool AskForSavingTape();
@@ -133,7 +128,6 @@ protected:
    QWidget *widget_;
    QVBoxLayout  *mainLayout_;
    QMenuBar *menubar_;
-   std::vector<QMenu *> menu_list_;
    // Gui related
    enum {
       POPUP_NONE,
@@ -186,6 +180,5 @@ protected:
    DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
    SoundControl sound_control_;
-   bool configuration_settings_;
 };
 

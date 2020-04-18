@@ -70,11 +70,7 @@ public:
       FN_TAPE_PAUSE,
       FN_TAPE_STOP,
       FN_TAPE_INSERT,
-      FN_TAPE_SAVE_AS_WAV,
-      FN_TAPE_SAVE_AS_CDT_DRB,
-      FN_TAPE_SAVE_AS_CDT_CSW,
-      FN_TAPE_SAVE_AS_CSW11,
-      FN_TAPE_SAVE_AS_CSW20,
+      FN_TAPE_SAVE_AS,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE,
@@ -101,20 +97,7 @@ public:
    virtual bool FdcPresent() = 0;
    virtual bool TapePresent() = 0;
 
-   // Snapshots
-   virtual bool IsQuickSnapAvailable() = 0;
-   virtual void SnaLoad() = 0;
-   virtual void SnaQuickLoad() = 0;
-   virtual void SnaSave() = 0;
-   virtual void SnaQuickSave() = 0;
-   virtual void SnrLoad() = 0;
-   virtual void SnrRecord() = 0;
-
-   // CPR
-   virtual void CprLoad() = 0;
-
    virtual bool IsSomethingInClipboard() = 0;
-   virtual void AutoType() = 0;
 };
 
 class Function

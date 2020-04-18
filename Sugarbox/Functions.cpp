@@ -155,14 +155,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
       &function_list_.at(IFunctionInterface::FN_TAPE_PAUSE),
       &function_list_.at(IFunctionInterface::FN_TAPE_STOP),
       &function_list_.at(IFunctionInterface::FN_TAPE_INSERT),
-      new Function(multilanguage_, "L_FN_MENU_SAVE_TAPE",
-         {
-            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_WAV),
-            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_DRB),
-            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CDT_CSW),
-            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW11),
-            &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS_CSW20),
-         },[]() { return true; })
+      &function_list_.at(IFunctionInterface::FN_TAPE_SAVE_AS),
       }, std::bind(&IFunctionInterface::TapePresent, function_handler_)
    ));
 
