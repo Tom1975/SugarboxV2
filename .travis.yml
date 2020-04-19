@@ -4,12 +4,11 @@ language: cpp
 services:
   - xvfb
 
-osx_image: xcode11.3
+osx_image: xcode11.4
 
 os:
   - linux
-  # osx is removed until Travis support catalina
- #- osx
+  - osx
 
 
 #limit to git depth to 1 because don't use any git command in this script
