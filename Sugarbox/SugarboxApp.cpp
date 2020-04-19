@@ -38,6 +38,7 @@ dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_)
 
 SugarboxApp::~SugarboxApp()
 {
+   //key_mgr_out.CloseFile();
    delete emulation_;
 }
 
@@ -137,17 +138,10 @@ int SugarboxApp::RunApp()
    createMenus();
 
 
-   /*
-
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
    // Set a map to convert scancode to key
-   std::map < int, int > scancode_to_key;
-   for (int k = GLFW_KEY_SPACE; k <= GLFW_KEY_LAST; k++)
-   {
-      scancode_to_key.insert(std::pair<int, int>(glfwGetKeyScancode(k), k));
-   }
-   ConfigurationManager key_mgr, key_mgr_out;
+   /*
    std::filesystem::path key_path = current_path_exe;
    key_path /= "KeyboardMaps.ini";
    key_mgr.OpenFile(key_path.string().c_str());
@@ -155,6 +149,19 @@ int SugarboxApp::RunApp()
    std::filesystem::path key_path_out = current_path_exe;
    key_path_out /= "KeyboardMaps_Generic.ini";
    key_mgr_out.OpenFile(key_path_out.string().c_str());
+   */
+   // Run main loop
+
+   return 0;
+}
+
+void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
+{
+   // Convert this key to new config file !
+   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   /*keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
+
+   int value_key = event_keyboard->key();
 
    // Load KeyboardMaps.ini
    // Read scancode, convert to key
@@ -169,87 +176,94 @@ int SugarboxApp::RunApp()
          {
             // Ok, this is a scancode key.
             unsigned int value_sc = key_mgr.GetConfigurationInt(section, key, -1);
-
+            
             // Convert it
-            unsigned int value_key = scancode_to_key[value_sc];
-
-            if (value_key != 0)
+            if (value_sc == event_keyboard->nativeScanCode())
             {
-               // Add it to new map
-               char buffer[16];
-               sprintf(buffer, "%i", value_key);
-               key_mgr_out.SetConfiguration(section, key, buffer);
-
-               // Also, get the other keys :
-               char char_buffer[16];
-               memset(char_buffer, 0, sizeof(char_buffer));
                char base_key[32];
                memset(base_key, 0, sizeof(base_key));
                strncpy(base_key, key, 4);
 
-               // char, uchar, charctrl, ucharctrl
-               strcpy(&base_key[4], "char");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+               //key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
 
-               strcpy(&base_key[4], "char_value");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+               if (value_key != 0)
+               {
+                  // Add it to new map
+                  char buffer[16];
+                  sprintf(buffer, "%i", value_key);
+                  key_mgr_out.SetConfiguration(section, key, buffer);
 
-               strcpy(&base_key[4], "char_value_Alt");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  // Also, get the other keys :
+                  char char_buffer[16];
+                  memset(char_buffer, 0, sizeof(char_buffer));
+                  char base_key[32];
+                  memset(base_key, 0, sizeof(base_key));
+                  strncpy(base_key, key, 4);
 
-               strcpy(&base_key[4], "UCHAR");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  // SCA, char, uchar, charctrl, ucharctrl
+                  strcpy(&base_key[4], "SCA");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "UCHAR_value");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "char");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "UCHAR_Alt");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "char_value");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "UCHAR_value_Alt");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "char_Alt");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "charCtrl");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "char_value_Alt");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "charCtrl_value");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "UCHAR");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "UCHARCTRL");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "UCHAR_value");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
-               strcpy(&base_key[4], "UCHARCTRL_value");
-               key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
-               key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+                  strcpy(&base_key[4], "UCHAR_Alt");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
 
+                  strcpy(&base_key[4], "UCHAR_value_Alt");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+                  strcpy(&base_key[4], "charCtrl");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+                  strcpy(&base_key[4], "charCtrl_value");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+                  strcpy(&base_key[4], "UCHARCTRL");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+                  strcpy(&base_key[4], "UCHARCTRL_value");
+                  key_mgr.GetConfiguration(section, base_key, "", char_buffer, 16);
+                  key_mgr_out.SetConfiguration(section, base_key, char_buffer);
+
+               }
             }
+
          }
 
          key = key_mgr.GetNextKey();
       }
       section = key_mgr.GetNextSection();
    }
-   key_mgr_out.CloseFile();
+   //key_mgr_out.CloseFile();
    */
-
-   // Run main loop
-
-   return 0;
-}
-
-void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
-{
-   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
 }
 
 void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
@@ -275,92 +289,6 @@ void SugarboxApp::DrawStatusBar()
 void SugarboxApp::SizeChanged(int width, int height)
 {
    //glViewport(0, height - toolbar_height - main_display_height, main_display_width, main_display_height);
-}
-
-void SugarboxApp::Drop(int count, const char** paths)
-{
-   // Check for headers :
-   for (int i = 0; i < 4 && i < count; i++)
-   {
-      Drop(paths[i]);
-   }
-}
-
-void SugarboxApp::Drop(const char* paths)
-{
-   DataContainer* dnd_container = emulation_->CanLoad(paths);
-
-   MediaManager mediaMgr(dnd_container);
-   std::vector<MediaManager::MediaType> list_of_types;
-   list_of_types.push_back(MediaManager::MEDIA_DISK);
-   list_of_types.push_back(MediaManager::MEDIA_SNA);
-   list_of_types.push_back(MediaManager::MEDIA_SNR);
-   list_of_types.push_back(MediaManager::MEDIA_TAPE);
-   list_of_types.push_back(MediaManager::MEDIA_BIN);
-   list_of_types.push_back(MediaManager::MEDIA_CPR);
-
-   int media_type = mediaMgr.GetType(list_of_types);
-
-   switch (media_type)
-   {
-      // Test : Is it SNA?
-   case 1:
-      emulation_->LoadSnapshot(paths);
-      break;
-   case 2:
-      // Set ROM : TODO
-      break;
-   case 3:
-   {
-      if (AskForSaving(0))
-      {
-         emulation_->LoadDisk(dnd_container, 0);
-      }
-      break;
-      // Tape - TODO
-   }
-   case 4:
-      // TODO : Ask for tape saving ?
-
-      // Load first element of the container
-      //m_pMachine->LoadTape(m_DragFiles[0]);
-   {
-      MediaManager mediaMgr(dnd_container);
-      std::vector<MediaManager::MediaType> list_of_types;
-      list_of_types.push_back(MediaManager::MEDIA_TAPE);
-      auto list = dnd_container->GetFileList();
-
-
-      emulation_->LoadTape(list[0]);
-      //UpdateStatusBar();
-      break;
-   }
-   case 5:
-      emulation_->LoadSnr(paths);
-      break;
-   case 6:
-      emulation_->LoadBin(paths);
-      break;
-   case 8:
-      emulation_->LoadCpr(paths);
-      break;
-   }
-}
-
-void SugarboxApp::KeyboardHandler(int key, int scancode, int action, int mods)
-{
-   // Handle shortcuts
-
-   // Send scancode to emulation
-   //if (action == GLFW_PRESS)
-   {
-      emulation_->GetKeyboardHandler()->SendScanCode(key, true);
-   }
-
-   //if (action == GLFW_RELEASE)
-   {
-      emulation_->GetKeyboardHandler()->SendScanCode(key, false);
-   }
 }
 
 bool SugarboxApp::AskForSaving(int drive)
@@ -803,7 +731,64 @@ void SugarboxApp::dropEvent(QDropEvent *event)
    foreach(const QUrl &url, event->mimeData()->urls())
    {
       QString fileName = url.toLocalFile();
-      Drop(fileName.toUtf8());
+      std::string path = fileName.toStdString();
+      DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
+
+      MediaManager mediaMgr(dnd_container);
+      std::vector<MediaManager::MediaType> list_of_types;
+      list_of_types.push_back(MediaManager::MEDIA_DISK);
+      list_of_types.push_back(MediaManager::MEDIA_SNA);
+      list_of_types.push_back(MediaManager::MEDIA_SNR);
+      list_of_types.push_back(MediaManager::MEDIA_TAPE);
+      list_of_types.push_back(MediaManager::MEDIA_BIN);
+      list_of_types.push_back(MediaManager::MEDIA_CPR);
+
+      int media_type = mediaMgr.GetType(list_of_types);
+
+      switch (media_type)
+      {
+         // Test : Is it SNA?
+      case 1:
+         emulation_->LoadSnapshot(path.c_str());
+         break;
+      case 2:
+         // Set ROM : TODO
+         break;
+      case 3:
+      {
+         if (AskForSaving(0))
+         {
+            emulation_->LoadDisk(dnd_container, 0);
+         }
+         break;
+         // Tape - TODO
+      }
+      case 4:
+         // TODO : Ask for tape saving ?
+
+         // Load first element of the container
+         //m_pMachine->LoadTape(m_DragFiles[0]);
+      {
+         MediaManager mediaMgr(dnd_container);
+         std::vector<MediaManager::MediaType> list_of_types;
+         list_of_types.push_back(MediaManager::MEDIA_TAPE);
+         auto list = dnd_container->GetFileList();
+
+
+         emulation_->LoadTape(list[0]);
+         //UpdateStatusBar();
+         break;
+      }
+      case 5:
+         emulation_->LoadSnr(path.c_str());
+         break;
+      case 6:
+         emulation_->LoadBin(path.c_str());
+         break;
+      case 8:
+         emulation_->LoadCpr(path.c_str());
+         break;
+      }
    }
 }
 

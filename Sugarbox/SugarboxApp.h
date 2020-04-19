@@ -35,6 +35,8 @@ public:
    virtual ~SugarboxApp();
 
    int RunApp();
+
+   // Actions initialization
    void InitAllActions();
    IFunctionInterface::Action* AddAction(IFunctionInterface::FunctionType id, std::function<void()> fn, const char* label_id, std::function<bool()>enabled = nullptr, std::function<bool()>checked = nullptr);
 
@@ -48,6 +50,7 @@ public:
    virtual bool FdcPresent();
    virtual bool TapePresent();
 
+   // Actions
    virtual void Pause();
    virtual bool PauseEnabled();
    virtual bool CheckSpeed(int speedlimit);
@@ -80,7 +83,6 @@ public:
 
    // Events
    void SizeChanged(int width, int height);
-   void KeyboardHandler( int key, int scancode, int action, int mods);
 
    // Keyboard
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
@@ -99,8 +101,6 @@ signals:
 protected:
 
    // Drag'n'drop
-   void Drop(int count, const char** paths);
-   void Drop(const char* paths);
    void dragEnterEvent(QDragEnterEvent *event) override;
    void dragMoveEvent(QDragMoveEvent *event) override;
    void dragLeaveEvent(QDragLeaveEvent *event) override;
@@ -180,5 +180,8 @@ protected:
    DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
    SoundControl sound_control_;
+
+   ConfigurationManager key_mgr, key_mgr_out;
+
 };
 
