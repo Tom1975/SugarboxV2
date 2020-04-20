@@ -139,6 +139,14 @@ bool Emulation::EmulationRun()
    return pause_==false;
 }
 
+void Emulation::ChangeConfig(MachineSettings* settings)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->ChangeSettings(settings);
+   emulator_engine_->OnOff();
+}
+
 void Emulation::HardReset()
 {
    command_waiting_ = true;

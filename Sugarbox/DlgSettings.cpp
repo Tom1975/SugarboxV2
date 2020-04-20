@@ -1,6 +1,6 @@
 #include "DlgSettings.h"
 
-DlgSettings::DlgSettings(ConfigurationManager* config_manager) : config_manager_(config_manager), engine_(nullptr), seletected_conf_(nullptr)
+DlgSettings::DlgSettings(ConfigurationManager* config_manager, ISettingsChange* parent) : config_manager_(config_manager), engine_(nullptr), seletected_conf_(nullptr), parent_(parent)
 {
 }
 
@@ -39,4 +39,20 @@ void DlgSettings::DisplayMenu()
 {
 
 
+}
+
+void DlgSettings::UpdateCombo(QComboBox *config_box)
+{
+   config_box->clear();
+   for (int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
+   {
+      MachineSettings* settings = settings_list_.GetConfiguration(i);
+      if (settings != nullptr)
+      {
+         const char* shortname = settings->GetShortDescription();
+
+         config_box->addItem( shortname, i );
+      }
+   }
+   connect(config_box, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
 }

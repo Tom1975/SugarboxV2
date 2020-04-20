@@ -9,30 +9,21 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_), sound_control_(&sound_mixer_, &language_)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
 {
    emulation_ = new Emulation(this);
-   widget_ = new QWidget();
-   setCentralWidget(widget_);
-
-   mainLayout_ = new QVBoxLayout();
-
-   QWidget *top_filler = new QWidget;
-   QWidget *bottom_filler = new QWidget;
-   //mainLayout_->addWidget(top_filler);
-   mainLayout_->addWidget(&display_);
-   //mainLayout_->addWidget(bottom_filler);
 
    connect(&display_, &CDisplay::FrameIsReady, &display_, &CDisplay::Display);
 
-   widget_->setLayout(mainLayout_);
    setWindowTitle(tr("SugarboxV2"));
 
    setMinimumSize(160, 160);
    resize(800, 600);
 
    setAcceptDrops(true);
-   setAutoFillBackground(true);
+   //setAutoFillBackground(true);
+   menuBar()->setFocusPolicy(Qt::ClickFocus);
+   setCentralWidget(&display_);
    clear();
 }
 
@@ -44,6 +35,25 @@ SugarboxApp::~SugarboxApp()
 
 //////////////////////////////////////////////
 // QT functions
+void SugarboxApp::CreateActions()
+{
+   QToolBar *fileToolBar = addToolBar(tr("ActionBar"));
+   fileToolBar->addAction(action_list_[FN_CTRL_ONOFF]->action);
+   QComboBox *config_box = new QComboBox(fileToolBar);
+   config_box->setFocusPolicy(Qt::ClickFocus);
+
+   // Create Configuration list
+   dlg_settings_.UpdateCombo(config_box);
+
+   fileToolBar->addWidget(config_box);
+}
+
+void SugarboxApp::CreateStatusBar()
+{
+   
+}
+
+
 void SugarboxApp::createMenus ()
 {
    for (unsigned int menu_index = 0; menu_index < functions_list_.NbMenu(); menu_index++)
@@ -136,6 +146,9 @@ int SugarboxApp::RunApp()
 
    InitMenu();
    createMenus();
+   CreateActions();
+   CreateStatusBar();
+
 
 
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
@@ -282,6 +295,7 @@ void SugarboxApp::DrawStatusBar()
 
       sprintf(str_speed_, "%i %%%%", emulation_->GetSpeed());
       counter_ = 0;
+      statusBar()->showMessage(tr(str_speed_), 2000);
    }
    sound_control_.DrawSoundVolume();
 }
@@ -734,6 +748,8 @@ void SugarboxApp::dropEvent(QDropEvent *event)
       std::string path = fileName.toStdString();
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
+      if (dnd_container == nullptr)
+         continue;
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
       list_of_types.push_back(MediaManager::MEDIA_DISK);
@@ -802,4 +818,10 @@ void SugarboxApp::DiskLoaded()
 {
    // Signal an update 
    emit MenuChanged();
+}
+
+void SugarboxApp::ChangeSettings(MachineSettings* settings)
+{
+   settings->Load();
+   emulation_->ChangeConfig(settings);
 }

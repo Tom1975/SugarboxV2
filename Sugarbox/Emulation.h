@@ -31,6 +31,8 @@ public :
       TAPE_CSW20
    } TapeFormat;
 
+   virtual void ChangeConfig(MachineSettings* settings);
+
    // IFdcNotify
    virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
    virtual void DiskEject();
@@ -86,6 +88,12 @@ public :
    {
       return emulator_engine_;
    };
+
+   ConfigurationManager* GetConfigurationManager()
+   {
+      return &config_manager_;
+   }
+   
 
 protected:
    INotifier* notifier_;

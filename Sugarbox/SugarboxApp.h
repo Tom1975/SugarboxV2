@@ -26,7 +26,7 @@ namespace Ui {
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange
 {
    Q_OBJECT
 
@@ -88,15 +88,19 @@ public:
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
    void keyReleaseEvent(QKeyEvent *event_keyboard);
 
+   virtual void ChangeSettings(MachineSettings*);
+
    // Display
    void FullScreenToggle();
 public slots:
    void clear();
    void UpdateMenu();
 
+
 signals:
    void changed(const QMimeData *mimeData = nullptr);
    void MenuChanged();
+   void SettingsChanged();
 
 protected:
 
@@ -111,6 +115,9 @@ protected:
    void InitFileDialogs();
 
    // Display gui
+   void CreateActions();
+   void CreateStatusBar();
+
    void CreateSubMenu(QMenu*, Function*, bool toplevel=false);
    void DrawStatusBar();
 
