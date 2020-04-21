@@ -54,5 +54,7 @@ void DlgSettings::UpdateCombo(QComboBox *config_box)
          config_box->addItem( shortname, i );
       }
    }
-   connect(config_box, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
+   //connect(config_box, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
+   connect(config_box, qOverload<int>(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
+   
 }
