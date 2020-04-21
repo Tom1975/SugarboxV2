@@ -21,7 +21,7 @@
 
 CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
 {
-
+   setFocusPolicy(Qt::StrongFocus);
    memset(index_to_display_, 0, sizeof index_to_display_);
    setAutoFillBackground(false);
 }

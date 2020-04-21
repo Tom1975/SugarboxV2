@@ -172,6 +172,7 @@ void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
    // Convert this key to new config file !
    keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   event_keyboard->ignore();
    /*keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
 
    int value_key = event_keyboard->key();
@@ -824,4 +825,7 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
 {
    settings->Load();
    emulation_->ChangeConfig(settings);
+   // Set the keyboiard focus to display again (not combo)
+   display_.setFocus();
+
 }
