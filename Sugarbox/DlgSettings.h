@@ -28,6 +28,8 @@ public:
 
    void UpdateCombo(QComboBox *config_box);
 
+public slots:
+   void ChangeSettings(int);
 
 protected:
    std::string conf_path_;

@@ -1,4 +1,5 @@
 #include "DlgSettings.h"
+#include "SugarboxApp.h"
 
 DlgSettings::DlgSettings(ConfigurationManager* config_manager, ISettingsChange* parent) : config_manager_(config_manager), engine_(nullptr), seletected_conf_(nullptr), parent_(parent)
 {
@@ -55,6 +56,10 @@ void DlgSettings::UpdateCombo(QComboBox *config_box)
       }
    }
    //connect(config_box, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
-   connect(config_box, qOverload<int>(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
-   
+   QObject::connect(config_box, SIGNAL(currentIndexChanged(int)), SLOT(ChangeSettings(int)));
+}
+
+void DlgSettings::ChangeSettings(int newindex)
+{
+   parent_->ChangeSettings(settings_list_.GetConfiguration(newindex));
 }

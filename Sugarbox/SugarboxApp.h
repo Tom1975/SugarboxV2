@@ -88,14 +88,14 @@ public:
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
    void keyReleaseEvent(QKeyEvent *event_keyboard);
 
-   virtual void ChangeSettings(MachineSettings*);
+   
 
    // Display
    void FullScreenToggle();
 public slots:
    void clear();
    void UpdateMenu();
-
+   virtual void ChangeSettings(MachineSettings*);
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
