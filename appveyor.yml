@@ -40,10 +40,14 @@ build_script:
 
 only_commits:
   files:
-    - CMakeLists.txt
     - appveyor.yml
-    - Sugarbox/c
-    - CPCCore/
+    - Sugarbox/*
+    - CPCCore/*
+    - '**/cmake'
+    - '**/CMakeLists.txt'
+    - '**/*.cpp'
+    - '**/*.h'
+    - '**/*.c'
 
 after_build:
 - cmd : |- 
