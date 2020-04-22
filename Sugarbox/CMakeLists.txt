@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
-include (Windeployqt.cmake)
-
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -131,5 +129,4 @@ set(CPACK_INSTALLED_DIRECTORIES
 
 INCLUDE(CPack)
 
-windeployqt( Sugarbox .)
 # Install
