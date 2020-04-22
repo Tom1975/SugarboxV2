@@ -6,7 +6,7 @@ environment:
 branches:
   only:
   - master
-  - release_management
+  - tweak_ci_dev
   
 
 image:
@@ -21,7 +21,8 @@ platform:
 
 install:
 - git submodule update --init --recursive
-
+- if %platform%==x64 ( set QTDIR=C:\Qt\5.13.2\msvc2017_64) else ( set QTDIR=C:\Qt\5.13.2\msvc2017 )  
+- set PATH=%PATH%;%QTDIR%\bin;C:\MinGW\bin
   
 before_build:
 - cmd: |-
