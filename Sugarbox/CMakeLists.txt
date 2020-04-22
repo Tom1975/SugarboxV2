@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
+include (Windeployqt.cmake)
+
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -11,6 +13,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+
 
 set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -25,6 +28,7 @@ set(CompilerFlags
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 qt5_add_resources(QRCS resources.qrc)
+
 
 file(GLOB HEADERS
     *.h
@@ -127,5 +131,5 @@ set(CPACK_INSTALLED_DIRECTORIES
 
 INCLUDE(CPack)
 
+windeployqt( Sugarbox .)
 # Install
-
