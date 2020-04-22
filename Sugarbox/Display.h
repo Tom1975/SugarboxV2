@@ -5,24 +5,28 @@
 #include <string>
 #include <memory.h>
 
-//#include <glad/gl.h>
-#include <GL/gl3w.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
 
 #include "Screen.h"
 
+QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram);
+QT_FORWARD_DECLARE_CLASS(QOpenGLTexture)
+
 #define NB_FRAMES 3
+
 // Display
-class CDisplay : public IDisplay
+class CDisplay : public QOpenGLWidget, protected QOpenGLFunctions, public IDisplay
 {
+   Q_OBJECT
+
 public :
-   CDisplay ();
+   explicit CDisplay(QWidget *parent = 0);
    virtual ~CDisplay ();
 
    void Init();
    void Show(bool bShow);
-   void Display();
 
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
@@ -63,7 +67,16 @@ public :
    virtual void SetCurrentPart (int x, int y ){};
    virtual int GetDnDPart () { return 0;};
 
-   virtual GLuint GetTexture();
+signals:
+   void FrameIsReady();
+
+public slots:
+   void Display();
+
+protected:
+   void initializeGL() override;
+   void paintGL() override;
+
 protected:
 
    // Displayed window : 
@@ -83,22 +96,12 @@ protected:
    int current_texture_;
 
    // Open gl stuff
-   GLuint texture_ [NB_FRAMES] ;
-   GLuint fragment_shader_;
-   GLuint vertex_shader_;
-   GLuint program_;
-
-   GLint sh_texture_;
-   GLint sh_origin_;
-   GLint sh_ratio_;
-   GLint sh_size_of_display_;
-   GLint sh_size_of_texture_;
-
-   GLuint readFboId_;
-   GLuint VertexArrayID_;
-   GLuint vertexbuffer_;
-
-   GLuint vbo;
-   GLuint vao;
-
+   QColor clearColor;
+   QPoint lastPos;
+   int xRot;
+   int yRot;
+   int zRot;
+   QOpenGLTexture *textures[1];
+   QOpenGLShaderProgram *program;
+   QOpenGLBuffer vbo;
 };

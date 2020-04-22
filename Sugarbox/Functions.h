@@ -1,13 +1,28 @@
 #pragma once
 #include <functional>
 #include <map>
+
+#include <QAction>
+
 #include "MultiLanguage.h"
 #include "Emulation.h"
 #include "IDisk.h"
 
+
 class IFunctionInterface
 {
 public:
+
+   class Action
+   {
+   public:
+      QAction* action;
+      std::string label_id;
+      std::function<bool()> enabled;
+      std::function<bool()> checked;
+   };
+
+
    typedef enum
    {
       // File
@@ -55,11 +70,7 @@ public:
       FN_TAPE_PAUSE,
       FN_TAPE_STOP,
       FN_TAPE_INSERT,
-      FN_TAPE_SAVE_AS_WAV,
-      FN_TAPE_SAVE_AS_CDT_DRB,
-      FN_TAPE_SAVE_AS_CDT_CSW,
-      FN_TAPE_SAVE_AS_CSW11,
-      FN_TAPE_SAVE_AS_CSW20,
+      FN_TAPE_SAVE_AS,
       // Sound
       FN_SND_RECORD,
       FN_SND_MUTE,
@@ -70,74 +81,30 @@ public:
       // AutoType
       FN_AUTOTYPE,
       // DISPLAY
+      FN_DIS_FULLSCREEN,
       // DEBUGER
-
-
    }FunctionType;
+
+   // Get all action
+   virtual Action* GetFirstAction(FunctionType&) = 0;
+   virtual Action* GetNextAction(FunctionType&) = 0;
+
+   // Action creator
+   virtual QAction * GetAction(FunctionType func_type) = 0;
 
    // Machine state and components
    virtual bool PlusEnabled() = 0;
    virtual bool FdcPresent() = 0;
    virtual bool TapePresent() = 0;
 
-   //
-   virtual void Exit() = 0;
-
-   // Control
-   virtual void HardReset() = 0;
-   virtual void Pause() = 0;
-   virtual bool PauseEnabled() = 0;
-   virtual void SetSpeed(int speedlimit) = 0;
-
-   // Settings
-   virtual void ConfigurationSettings() = 0;
-
-   // Disk
-   virtual void SaveAs(int drive) = 0;
-   virtual void Eject(int drive) = 0;
-   virtual bool DiskPresent(int drive) = 0;
-   virtual void Flip(int drive) = 0;
-   virtual void Insert(int drive) = 0;
-   virtual void InsertBlank(int drive, IDisk::DiskType type) = 0;
-
-   // Tape
-   virtual void TapeRecord() = 0;
-   virtual void TapePlay() = 0;
-   virtual void TapeFastForward() = 0;
-   virtual void TapeRewind() = 0;
-   virtual void TapePause() = 0;
-   virtual void TapeStop() = 0;
-   virtual void TapeInsert() = 0;
-   virtual void TapeSaveAs(Emulation::TapeFormat format) = 0;
-
-   // Snapshots
-   virtual bool IsQuickSnapAvailable() = 0;
-   virtual void SnaLoad() = 0;
-   virtual void SnaQuickLoad() = 0;
-   virtual void SnaSave() = 0;
-   virtual void SnaQuickSave() = 0;
-   virtual void SnrLoad() = 0;
-   virtual void SnrRecord() = 0;
-   virtual bool SnrIsRecording() = 0;
-   virtual bool SnrIsReplaying() = 0;
-   virtual void SnrStopRecord() = 0;
-   virtual void SnrStopPlayback() = 0;
-
-   // CPR
-   virtual void CprLoad() = 0;
-
-   virtual bool IsAutoloadEnabled() = 0;
-   virtual void ToggleAutoload() = 0;
-
    virtual bool IsSomethingInClipboard() = 0;
-   virtual void AutoType() = 0;
 };
 
 class Function
 {
 public:
    Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available);
-   Function(std::function<void()> fn, MultiLanguage* multilanguage, std::string id_label, std::function<bool()> available, std::function<bool()> selected );
+   Function(QAction* action, MultiLanguage* multilanguage, std::string id_label );
    virtual ~Function();
 
    // Node access
@@ -145,13 +112,13 @@ public:
    // Function access
    const char* GetLabel();
    const char* GetShortcut();
-   bool IsSelected();
    bool IsAvailable();
-   void Call();
+   QAction* GetAction();
 
    unsigned int NbSubMenu();
 
    Function* GetMenu(int index_menu);
+   void UpdateLanguage();
    
    const char* GetSubMenuLabel(int index_submenu);
    const char* GetSubMenuShortcut(int index_submenu);
@@ -160,13 +127,13 @@ public:
    bool IsSelected(int index_submenu);
 
 protected:
+   // QT Action
+   QAction* action_;
+
    bool node_;
    std::vector<Function*> submenu_list_;
-
    std::string id_label_;
-   std::function<void()> function_;
    std::function<bool()> available_;
-   std::function<bool()> selected_;
    MultiLanguage* multilanguage_;
 };
 
@@ -180,7 +147,8 @@ public:
 
    // Function Initialization
    void InitFunctions(IFunctionInterface* function_handler);
-
+   void UpdateLanguage();
+   void UpdateStatus();
    // Function Organization (menus / toolbar)
 
    // Function Access

@@ -10,10 +10,16 @@
 #include "Inotify.h"
 #include "ALSoundMixer.h"
 
+class INotifier
+{
+public:
+   virtual void DiskLoaded() = 0;
+};
+
 class Emulation  : public IDirectories, IFdcNotify
 {
 public :
-   Emulation();
+   Emulation(INotifier* notifier);
    virtual ~Emulation();
 
    typedef enum 
@@ -24,6 +30,8 @@ public :
       TAPE_CSW11,
       TAPE_CSW20
    } TapeFormat;
+
+   virtual void ChangeConfig(MachineSettings* settings);
 
    // IFdcNotify
    virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
@@ -81,7 +89,14 @@ public :
       return emulator_engine_;
    };
 
+   ConfigurationManager* GetConfigurationManager()
+   {
+      return &config_manager_;
+   }
+   
+
 protected:
+   INotifier* notifier_;
 
    Motherboard* motherboard_;
 
@@ -100,6 +115,7 @@ protected:
 
    std::thread* worker_thread_;
    bool running_thread_;
+   bool emulation_stopped_;
 
    // Thread synchronisation
    bool command_waiting_;

@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.0)
 project(Sugarbox)
 
+# Find includes in the build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CMAKE_CXX_STANDARD 17)
+
+
+# Turn on automatic invocation of the MOC
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -11,6 +22,9 @@ set(CompilerFlags
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
+
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+qt5_add_resources(QRCS resources.qrc)
 
 file(GLOB HEADERS
     *.h
@@ -23,33 +37,18 @@ file(GLOB SRCS
 file(GLOB RES
    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*
 )
-
-set (IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui)
-set (IMGUI_FILEDIALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ImGuiFileDialog)
-set(GLAD_GL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../glfw")
             
-include_directories(${IMGUI_DIR} 
-                    ${IMGUI_DIR}/examples 
-                    ${GLAD_GL_DIR}/deps 
-                    ${IMGUI_DIR}/examples/libs/gl3w 
-                    ${IMGUI_FILEDIALOG_DIR}
-                    )
-
 set (HEADERS 
    ${HEADERS}
-   ${IMGUI_DIR}/examples/imgui_impl_glfw.h
-   ${IMGUI_DIR}/examples/imgui_impl_opengl3.h
 )
 set (SRCS 
       ${SRCS}
-      ${IMGUI_DIR}/imgui.cpp
-      ${IMGUI_DIR}/imgui_draw.cpp
-      ${IMGUI_DIR}/imgui_widgets.cpp
-      ${IMGUI_DIR}/examples/imgui_impl_glfw.cpp
-      ${IMGUI_DIR}/examples/imgui_impl_opengl3.cpp
-      ${IMGUI_DIR}/examples/libs/gl3w/GL/gl3w.c
-      ${IMGUI_FILEDIALOG_DIR}/ImGuiFileDialog/ImGuiFileDialog.cpp
    )
+
+set ( UIS
+ SugarboxApp.ui
+)
+
 
 source_group("Resources" FILES ${RES} )
 
@@ -63,9 +62,6 @@ if(UNIX)
 elseif(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-DMINGW32)
-    set(DIRENT_INCLUDE_DIR ${IMGUI_FILEDIALOG_DIR}/3rdparty/dirent/include)
-    
-    include_directories(${DIRENT_INCLUDE_DIR})
 endif()
 
 IF(MSVC)
@@ -78,28 +74,25 @@ IF(MSVC)
    endif()
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")  
 ENDIF(MSVC)
-
-if(CMAKE_COMPILER_IS_GNUCC )
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a stdc++fs GLEW GL )
+if(CMAKE_COMPILER_IS_GNUCC)
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
+   set ( LIB_EXT pthread stdc++fs)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++1z )
-   set ( LIBZA libz.a )
+	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
+   set ( LIBZA libz.a pthread stdc++fs)
 endif()
-
-set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GL3W")
-set ( CMAKE_CXX_STANDARD 17 )
 
 IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
-add_executable(Sugarbox ${SRCS} ${HEADERS} ${RES} )
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic ${LIBZA} glfw ${OPENGL_LINK} OpenAL)
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets ${LIB_EXT})
+
 if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")
 endif()

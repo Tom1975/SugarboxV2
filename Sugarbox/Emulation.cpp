@@ -15,7 +15,8 @@
 
 //////////////////////////////////////////////
 /// ctor/dtor
-Emulation::Emulation() :
+Emulation::Emulation(INotifier* notifier) :
+   notifier_(notifier),
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
@@ -23,12 +24,15 @@ Emulation::Emulation() :
    worker_thread_(nullptr),
    command_waiting_(false),
    sound_mixer_(nullptr),
-   autorun_(true)
+   autorun_(true),
+   emulation_stopped_(false)
 {
 }
 
 Emulation::~Emulation()
 {
+   // End emulation
+   Stop();
    delete motherboard_;
 }
 
@@ -122,6 +126,7 @@ void Emulation::EmulationLoop()
       }
    }
    emulator_engine_->Stop();
+   emulation_stopped_ = true;
 }
 
 void Emulation::Pause()
@@ -132,6 +137,14 @@ void Emulation::Pause()
 bool Emulation::EmulationRun()
 {
    return pause_==false;
+}
+
+void Emulation::ChangeConfig(MachineSettings* settings)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->ChangeSettings(settings);
+   emulator_engine_->OnOff();
 }
 
 void Emulation::HardReset()
@@ -349,6 +362,9 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
 
    // Play insert disk soiund
    sound_mixer_->PlayWav(SND_INSERT_DISK);
+
+   // Suppervisor should be advised of it
+   notifier_->DiskLoaded();
 
    // Autoload ?
    // todo : skip startup disk inserted ?
