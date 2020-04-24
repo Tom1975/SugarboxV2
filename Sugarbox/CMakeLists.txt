@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.14)
 project(Sugarbox)
 
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17)
-
 
 # Turn on automatic invocation of the MOC
 set(CMAKE_AUTOMOC ON)
@@ -27,6 +26,43 @@ set(CompilerFlags
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 qt5_add_resources(QRCS resources.qrc)
 
+if(Qt5_FOUND AND WIN32 AND TARGET Qt5::qmake AND NOT TARGET Qt5::windeployqt)
+    get_target_property(_qt5_qmake_location Qt5::qmake IMPORTED_LOCATION)
+
+    execute_process(
+        COMMAND "${_qt5_qmake_location}" -query QT_INSTALL_PREFIX
+        RESULT_VARIABLE return_code
+        OUTPUT_VARIABLE qt5_install_prefix
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    set(imported_location "${qt5_install_prefix}/bin/windeployqt.exe")
+
+    if(EXISTS ${imported_location})
+        add_executable(Qt5::windeployqt IMPORTED)
+
+        set_target_properties(Qt5::windeployqt PROPERTIES
+            IMPORTED_LOCATION ${imported_location}
+        )
+    endif()
+endif()
+
+get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
+get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+
+function(windeployqt target)
+
+    # POST_BUILD step
+    # - after build, we have a bin/lib for analyzing qt dependencies
+    # - we run windeployqt on target and deploy Qt libs
+
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND "${_qt_bin_dir}/windeployqt.exe"         
+                \"$<TARGET_FILE:${target}>\"
+        COMMENT "Deploying Qt libraries using windeployqt for compilation target '${target}' ..."
+    )
+
+endfunction()
 
 file(GLOB HEADERS
     *.h
@@ -92,8 +128,38 @@ endif()
 
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
 
+#windeployqt(Sugarbox)
+
+#MESSAGE ("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
+#file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}_path"
+#    CONTENT "$<TARGET_FILE:Sugarbox>"
+#)
+#MESSAGE("Path = " "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}_path")
+
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/Debug)
+set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
+MESSAGE ("SUGARBOX_OUTPUT_DEBUG" ${SUGARBOX_OUTPUT_DEBUG})
+
 # Link test executable against gtest & gtest_main
 target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets ${LIB_EXT})
+set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${SUGARBOX_OUTPUT_DEBUG}")
+#if(TARGET Qt5::windeployqt)
+    # execute windeployqt in a tmp directory after build
+#    add_custom_command(TARGET Sugarbox
+#        POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/windeployqt"
+#        COMMAND set PATH=%PATH%$<SEMICOLON>${qt5_install_prefix}/bin
+#        COMMAND Qt5::windeployqt --dir "${CMAKE_CURRENT_BINARY_DIR}/windeployqt" "$<TARGET_FILE_DIR:Sugarbox>/$<TARGET_FILE_NAME:Sugarbox>"
+#    )
+#
+#    # copy deployment directory during installation
+#    install(
+#        DIRECTORY
+#        "${CMAKE_CURRENT_BINARY_DIR}/windeployqt/"
+#        CONFIGURATIONS Debug 
+#        DESTINATION ${SUGARBOX_OUTPUT_DEBUG}
+#    )
+#endif()
 
 if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")
@@ -103,23 +169,46 @@ endif()
 install ( TARGETS Sugarbox RUNTIME DESTINATION . )
 install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION . ) 
 
-# Ready-to-use debug_
-install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION ${PROJECT_BINARY_DIR} ) 
-install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" DESTINATION ${PROJECT_BINARY_DIR} ) 
-install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" DESTINATION ${PROJECT_BINARY_DIR} ) 
-install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" DESTINATION ${PROJECT_BINARY_DIR} )  
-install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION ${PROJECT_BINARY_DIR} ) 
+# Ready-to-use debug configuration
+foreach(loop_var ${CMAKE_CONFIGURATION_TYPES})
+   MESSAGE ( "loop_var  = " ${loop_var})
+   install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
+   install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
+   install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
+   install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} )  
+   install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
 
+endforeach(loop_var)
+
+ # install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
+ # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
+ # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
+ # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} )  
+ # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
+
+# Debug WINDOWS
+IF(MSVC)
+   install (CODE "
+      set (_file ${CMAKE_CURRENT_BINARY_DIR}/$<$<CONFIG:debug>:Debug>$<$<CONFIG:release>:Release>$<$<CONFIG:RelWithDebInfo>:RelWithDebInfo>$<$<CONFIG:MinSizeRel>:MinSizeRel>/Sugarbox.exe)
+      set ( rel_or_debug  $<$<CONFIG:debug>:--debug>$<$<CONFIG:release>:--release>$<$<CONFIG:RelWithDebInfo>:--release>$<$<CONFIG:MinSizeRel>:--release> )
+      MESSAGE (\"file : \" \${_file})
+      MESSAGE (\"rel_or_debug : \" \${rel_or_debug})
+      execute_process(
+              COMMAND \"${CMAKE_COMMAND}\" -E
+                  env PATH=\"${_qt_bin_dir}\" \"${WINDEPLOYQT_EXECUTABLE}\"
+                      --no-compiler-runtime
+                      \${rel_or_debug}
+                      \${_file}
+          )
+   "  )
+endif()
 
 # CPACK
 set(CPACK_GENERATOR "TGZ;ZIP")
 set(CPACK_PACKAGE_NAME "Sugarbox")
 set(CPACK_PACKAGE_VENDOR "Thomas GUILLEMIN")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An amstrad CPC Emulator")
-set(CPACK_PACKAGE_VERSION "1.99.0")
-set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "99")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An Amstrad CPC/CPC+/GX4000 Emulator")
+set(CPACK_PACKAGE_VERSION "1.99.1")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sugarbox")
 set(CPACK_INSTALLED_DIRECTORIES 
    "${CMAKE_CURRENT_SOURCE_DIR}/Resources" "Resources"
