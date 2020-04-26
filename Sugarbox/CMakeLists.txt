@@ -49,6 +49,7 @@ endif()
 
 get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
 function(windeployqt target)
 
@@ -128,13 +129,6 @@ endif()
 
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
 
-#windeployqt(Sugarbox)
-
-#MESSAGE ("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
-#file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}_path"
-#    CONTENT "$<TARGET_FILE:Sugarbox>"
-#)
-#MESSAGE("Path = " "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}_path")
 
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/Debug)
 set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
@@ -169,7 +163,7 @@ endif()
 install ( TARGETS Sugarbox RUNTIME DESTINATION . )
 install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION . ) 
 
-# Ready-to-use debug configuration
+# Ready-to-use configuration
 foreach(loop_var ${CMAKE_CONFIGURATION_TYPES})
    MESSAGE ( "loop_var  = " ${loop_var})
    install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
@@ -177,29 +171,41 @@ foreach(loop_var ${CMAKE_CONFIGURATION_TYPES})
    install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
    install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} )  
    install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" CONFIGURATIONS ${loop_var} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${loop_var} ) 
-
 endforeach(loop_var)
 
- # install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
- # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
- # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
- # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} )  
- # install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" CONFIGURATIONS Debug DESTINATION ${SUGARBOX_OUTPUT_DEBUG} ) 
-
-# Debug WINDOWS
+# MSVC CPACK Qt dlls
 IF(MSVC)
    install (CODE "
+      set (_outpath ${CMAKE_CURRENT_BINARY_DIR}/$<$<CONFIG:debug>:Debug>$<$<CONFIG:release>:Release>$<$<CONFIG:RelWithDebInfo>:RelWithDebInfo>$<$<CONFIG:MinSizeRel>:MinSizeRel>/)
       set (_file ${CMAKE_CURRENT_BINARY_DIR}/$<$<CONFIG:debug>:Debug>$<$<CONFIG:release>:Release>$<$<CONFIG:RelWithDebInfo>:RelWithDebInfo>$<$<CONFIG:MinSizeRel>:MinSizeRel>/Sugarbox.exe)
       set ( rel_or_debug  $<$<CONFIG:debug>:--debug>$<$<CONFIG:release>:--release>$<$<CONFIG:RelWithDebInfo>:--release>$<$<CONFIG:MinSizeRel>:--release> )
-      MESSAGE (\"file : \" \${_file})
-      MESSAGE (\"rel_or_debug : \" \${rel_or_debug})
       execute_process(
               COMMAND \"${CMAKE_COMMAND}\" -E
                   env PATH=\"${_qt_bin_dir}\" \"${WINDEPLOYQT_EXECUTABLE}\"
+                      --dry-run
                       --no-compiler-runtime
+                      --list mapping
                       \${rel_or_debug}
                       \${_file}
+               OUTPUT_VARIABLE _output
+               OUTPUT_STRIP_TRAILING_WHITESPACE
           )
+      separate_arguments(_files WINDOWS_COMMAND \${_output})
+      while(_files)
+         list(GET _files 0 _src)
+         list(GET _files 1 _dest)
+         # This is for install
+         execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E
+            copy   \${_src} \"\${_outpath}/\${_dest}\"
+         )
+         # This is for cpack
+         execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E
+            copy   \${_src} \"\${CMAKE_INSTALL_PREFIX}/\${_dest}\"
+         )
+         list(REMOVE_AT _files 0 1)
+      endwhile()
    "  )
 endif()
 
