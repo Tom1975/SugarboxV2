@@ -8,8 +8,8 @@ project(Sugarbox)
 
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_CXX_STANDARD 17)
+
 
 # Turn on automatic invocation of the MOC
 set(CMAKE_AUTOMOC ON)
@@ -43,6 +43,7 @@ if(Qt5_FOUND AND WIN32 AND TARGET Qt5::qmake AND NOT TARGET Qt5::windeployqt)
 
     set(imported_location "${qt5_install_prefix}/bin/windeployqt.exe")
 
+    MESSAGE ("QT_INSTALL_PREFIX = " ${QT_INSTALL_PREFIX})
     if(EXISTS ${imported_location})
         add_executable(Qt5::windeployqt IMPORTED)
 
@@ -186,12 +187,18 @@ IF(MSVC)
    "  )
 endif()
 
-# CPACK
-set(CPACK_GENERATOR "TGZ;ZIP")
+# CPACK - ZIP/TGZ
 set(CPACK_PACKAGE_NAME "Sugarbox")
 set(CPACK_PACKAGE_VENDOR "Thomas GUILLEMIN")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An Amstrad CPC/CPC+/GX4000 Emulator")
 set(CPACK_PACKAGE_VERSION "1.99.1")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sugarbox")
+
+#set(CPACK_GENERATOR "TGZ;ZIP")
+
+set ( QTIFWDIR "C:/Qt/Tools/QtInstallerFramework/3.2/bin")
+set ( CPACK_IFW_BINARYCREATOR_EXECUTABLE "C:/Qt/Tools/QtInstallerFramework/3.2/bin/binarycreator.exe")
+set(CPACK_GENERATOR "IFW")
+
 
 INCLUDE(CPack)
