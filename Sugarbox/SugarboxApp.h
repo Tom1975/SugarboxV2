@@ -20,6 +20,7 @@
 #include "SettingsList.h"
 #include "DlgSettings.h"
 #include "SoundControl.h"
+#include "DebugSocket.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -189,5 +190,7 @@ protected:
 
    ConfigurationManager key_mgr, key_mgr_out;
 
+   // Debugger
+   DebugSocket* debugger_link_;
 };
 

@@ -9,7 +9,7 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr)
 {
    emulation_ = new Emulation(this);
 
@@ -25,6 +25,8 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    menuBar()->setFocusPolicy(Qt::ClickFocus);
    setCentralWidget(&display_);
    clear();
+
+   debugger_link_ = new DebugSocket(this, emulation_);
 }
 
 SugarboxApp::~SugarboxApp()
