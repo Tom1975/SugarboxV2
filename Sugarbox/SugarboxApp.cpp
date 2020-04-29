@@ -27,6 +27,7 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    clear();
 
    debugger_link_ = new DebugSocket(this, emulation_);
+   debugger_link_->StartServer();
 }
 
 SugarboxApp::~SugarboxApp()

@@ -10,45 +10,74 @@ using namespace std;
 
 QT_USE_NAMESPACE
 
-static QString getIdentifier(QWebSocket *peer)
+
+DebugSocket::DebugSocket(QObject* parent, Emulation* emulation) :emulation_(emulation), QTcpServer(parent)
+   
 {
-   return QStringLiteral("%1:%2").arg(peer->peerAddress().toString(),
-      QString::number(peer->peerPort()));
 }
 
-DebugSocket::DebugSocket(QObject* parent, Emulation* emulation):emulation_(emulation), QObject(parent)
+void DebugSocket::StartServer()
 {
-   quint16 port = 10000;
-
-   server = new QTcpServer(this);
-
-   connect(server, SIGNAL(newConnection()), this, SLOT(newConnection()));
-
-   if (!server->listen(QHostAddress::Any, port))
+   if (!this->listen(QHostAddress::Any, 10000))
    {
-      qDebug() << "Server could not start!";
+      qDebug() << "Could not start server";
    }
    else
    {
-      qDebug() << "Server started!";
+      qDebug() << "Listening...";
    }
 }
 
-DebugSocket::~DebugSocket()
+void DebugSocket::incomingConnection(int socketDescriptor)
 {
+   qDebug() << socketDescriptor << " Connecting...";
+   MyThread *thread = new MyThread(socketDescriptor, this);
+   connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+   thread->start();
 }
 
 
-//! [onNewConnection]
-void DebugSocket::newConnection()
+MyThread::MyThread(int ID, QObject *parent) :
+   QThread(parent)
 {
-   QTcpSocket *socket = server->nextPendingConnection();
-
-   socket->write("Client connected\r\n");
-   socket->flush();
-
-   socket->waitForBytesWritten(3000);
-
-   socket->close();
+   this->socketDescriptor = ID;
 }
-//! [onNewConnection]
+
+void MyThread::run()
+{
+   // thread starts here
+   qDebug() << socketDescriptor << " Starting thread";
+   socket = new QTcpSocket();
+   if (!socket->setSocketDescriptor(this->socketDescriptor))
+   {
+      emit error(socket->error());
+      return;
+   }
+
+   connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
+   connect(socket, SIGNAL(disconnected()), this, SLOT(disconnected()), Qt::DirectConnection);
+
+   qDebug() << socketDescriptor << " Client connected";
+
+   socket->write("Welcome to ZEsarUX remote command protocol (ZRCP)\nWrite help for available commands\n");
+   socket->write("\ncommand> ");
+   // make this thread a loop
+   exec();
+}
+
+void MyThread::disconnected()
+{
+   qDebug() << socketDescriptor << " Disconnected";
+   socket->deleteLater();
+   exit(0);
+}
+
+void MyThread::readyRead()
+{
+   QByteArray Data = socket->readAll();
+
+   qDebug() << socketDescriptor << " Data in: " << Data;
+
+   // Convert string to command
+
+}

@@ -5,20 +5,42 @@
 #include <QTcpSocket>
 #include "Emulation.h"
 
-class DebugSocket : public QObject
+class DebugSocket : public QTcpServer
 {
    Q_OBJECT
 public:
-   DebugSocket(QObject * parent, Emulation* emulation);
-   virtual~DebugSocket();
+   explicit DebugSocket(QObject* parent, Emulation* emulation);
+   void StartServer();
 
 signals:
 
 public slots:
-   void newConnection();
 
 protected:
+   void incomingConnection(int socketDescriptor);
+protected:
    Emulation* emulation_;
-   QTcpServer  *server;
+
 };
 
+class MyThread : public QThread
+{
+   Q_OBJECT
+public:
+   explicit MyThread(int iID, QObject *parent = 0);
+   void run();
+
+signals:
+   void error(QTcpSocket::SocketError socketerror);
+
+public slots:
+   void readyRead();
+   void disconnected();
+
+public slots:
+
+private:
+   QTcpSocket *socket;
+   int socketDescriptor;
+
+};
