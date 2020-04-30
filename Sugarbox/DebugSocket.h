@@ -23,24 +23,32 @@ protected:
 
 };
 
-class MyThread : public QThread
+class DebugThread : public QThread
 {
    Q_OBJECT
 public:
-   explicit MyThread(int iID, QObject *parent = 0);
+   explicit DebugThread(Emulation* emulation, int iID, QObject *parent = 0);
    void run();
-
+   
 signals:
-   void error(QTcpSocket::SocketError socketerror);
+   void Error(QTcpSocket::SocketError socketerror);
 
 public slots:
-   void readyRead();
-   void disconnected();
+   void ReadyRead();
+   void Disconnected();
 
-public slots:
+protected:
+   Emulation* emulation_;
 
-private:
-   QTcpSocket *socket;
-   int socketDescriptor;
+   // Socket handling
+   QTcpSocket *socket_;
+   int socketDescriptor_;
+   std::string pending_command_;
 
+   // Command list
+   std::map<std::string, std::function<void()> > function_map_;
+   void InitMap();
+
+   // Debug commands
+   void about();
 };

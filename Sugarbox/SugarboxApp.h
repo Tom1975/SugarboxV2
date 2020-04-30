@@ -135,14 +135,6 @@ protected:
    QWidget *widget_;
    QVBoxLayout  *mainLayout_;
    QMenuBar *menubar_;
-   // Gui related
-   enum {
-      POPUP_NONE,
-      POPUP_ASK_SAVE
-   } PopupType;
-   unsigned int PopupArg;
-   std::function<void()> popup_associated_function_;
-
 
    //////////////
    // File dialogs
