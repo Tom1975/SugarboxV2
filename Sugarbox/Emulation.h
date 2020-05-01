@@ -80,6 +80,9 @@ public :
    void TapePause();
    void TapeStop();
 
+   // Debug access
+   std::vector<std::string> GetZ80Registers();
+   unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
 
    //Auto type
    void AutoType(const char* clipboard);

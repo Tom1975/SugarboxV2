@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include <QtWebSockets/QtWebSockets>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -46,9 +48,14 @@ protected:
    std::string pending_command_;
 
    // Command list
-   std::map<std::string, std::function<void()> > function_map_;
+   std::map<std::string, std::function<void(std::deque<std::string>&)> > function_map_;
    void InitMap();
 
    // Debug commands
-   void about();
+   void About(std::deque<std::string>);
+   void GetCurrentMachine(std::deque<std::string>);
+   void GetRegisters(std::deque<std::string>);
+   void GetVersion(std::deque<std::string>);
+   void HardReset(std::deque<std::string> param);
+   void ReadMemory(std::deque<std::string>);
 };
