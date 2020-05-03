@@ -47,12 +47,22 @@ protected:
    int socketDescriptor_;
    std::string pending_command_;
 
+   // State machine
+   enum {
+      STATE_NONE,
+      STATE_STEP
+   } state_;
+   std::string prompt_;
+
    // Command list
    std::map<std::string, std::function<void(std::deque<std::string>&)> > function_map_;
    void InitMap();
 
    // Debug commands
    void About(std::deque<std::string>);
+   void ClearBreakpoints(std::deque<std::string> param);
+   void EnterCpuStep(std::deque<std::string> param);
+   void ExtendedStack(std::deque<std::string>);
    void GetCurrentMachine(std::deque<std::string>);
    void GetRegisters(std::deque<std::string>);
    void GetVersion(std::deque<std::string>);

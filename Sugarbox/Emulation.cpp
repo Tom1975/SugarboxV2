@@ -17,6 +17,7 @@
 //////////////////////////////////////////////
 /// ctor/dtor
 Emulation::Emulation(INotifier* notifier) :
+   no_debug_(true),
    notifier_(notifier),
    motherboard_(nullptr), 
    sna_handler_(nullptr),
@@ -109,7 +110,7 @@ void Emulation::EmulationLoop()
    {
       if (!pause_)
       {
-         emulator_engine_->RunTimeSlice(true);
+         emulator_engine_->RunTimeSlice(no_debug_);
       }
       else
       {
@@ -416,6 +417,12 @@ void Emulation::TrackChanged(int nb_tracks)
       
 }
 
+void Emulation::Break()
+{
+   no_debug_ = false;
+   emulator_engine_->SetRun(false);
+}
+
 std::vector<std::string> Emulation::GetZ80Registers()
 {
    std::vector<std::string> reg_list;
@@ -492,6 +499,29 @@ std::vector<std::string> Emulation::GetZ80Registers()
 }
 unsigned int Emulation::ReadMemory( unsigned short address, unsigned char * buffer, unsigned int size)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    emulator_engine_->GetMem()->GetDebugValue(buffer, address, size, Memory::MEM_READ, 0);
    return size;
+}
+
+void Emulation::ClearBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->ClearBreakpoints();
+}
+
+const char* Emulation::GetStackType(unsigned int index)
+{
+   // depend on the type of call. TBD !
+   // can be : 'call' or 'rst', or 'interrupt'
+   return "pushed";
+}
+
+unsigned short Emulation::GetStackShort(unsigned int index)
+{
+   // address : 
+   unsigned short stack_address = emulator_engine_->GetProc()->sp_ += index * 2;
+   return emulator_engine_->GetMem()->GetWord(stack_address);
 }

@@ -81,8 +81,14 @@ public :
    void TapeStop();
 
    // Debug access
+   bool no_debug_;
+
+   void Break();
    std::vector<std::string> GetZ80Registers();
    unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
+   void ClearBreakpoints();
+   const char* GetStackType(unsigned int index);
+   unsigned short GetStackShort(unsigned int index);
 
    //Auto type
    void AutoType(const char* clipboard);
