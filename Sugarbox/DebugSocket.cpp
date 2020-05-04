@@ -170,6 +170,7 @@ void DebugThread::InitMap()
 {
    function_map_["about"] = std::bind(&DebugThread::About, this, std::placeholders::_1);
    function_map_["clear-membreakpoints"] = std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1);
+   function_map_["cpu-step"] = std::bind(&DebugThread::CpuStep, this, std::placeholders::_1);
    function_map_["disassemble"]= std::bind(&DebugThread::Disassemble, this, std::placeholders::_1);
    function_map_["enter-cpu-step"] = std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1);
    function_map_["extended-stack"] = std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1);
@@ -180,13 +181,9 @@ void DebugThread::InitMap()
    function_map_["read-memory"] = std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1);
 
    // todo 
-
-   // cpu-step
    // run
-   // extended-stack get 100
    // get-cpu-frequency
    // reset-tstates-partial
-   // disassemble 3872
    // cpu-code-coverage get
    // get-tstates-partial
    // cpu-code-coverage clear
@@ -207,7 +204,7 @@ void DebugThread::Disassemble(std::deque<std::string> param)
    if (param.size() > 1)
    {
       char* endstr;
-      int position = strtol(param[1].c_str(), &endstr, 10);
+      unsigned short position = strtol(param[1].c_str(), &endstr, 10)&0xFFFF;
       int nb_line = 1;
       if (param.size() > 2)
       {
@@ -217,13 +214,18 @@ void DebugThread::Disassemble(std::deque<std::string> param)
       for (int i = 0; i < nb_line; i++)
       {
          char out_buffer[128];
-         memset(out_buffer, 0, sizeof(out_buffer));
+         memset(out_buffer, 0x20, sizeof(out_buffer));
          unsigned int pos = 0;
          // Format : adress on 7 char (??)
          pos += 7;
 
          // Disassemble
+         emulation_->Disassemble(position, &out_buffer[pos], 128 - 7);
+         
+         socket_->write(out_buffer);
+         socket_->write("\n");
 
+         qDebug() << out_buffer;
       }
    }
 
@@ -328,3 +330,10 @@ void DebugThread::ClearBreakpoints(std::deque<std::string> param)
    emulation_->ClearBreakpoints();
    qDebug() << "Clear Breakpoints";
 }
+
+void DebugThread::CpuStep(std::deque<std::string> param)
+{
+   emulation_->Step();
+   qDebug() << "Step";
+}
+

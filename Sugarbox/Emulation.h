@@ -9,6 +9,7 @@
 #include "ISound.h"
 #include "Inotify.h"
 #include "ALSoundMixer.h"
+#include "Z80Desassember.h"
 
 class INotifier
 {
@@ -89,6 +90,8 @@ public :
    void ClearBreakpoints();
    const char* GetStackType(unsigned int index);
    unsigned short GetStackShort(unsigned int index);
+   void Disassemble(unsigned short address, char* buffer, int buffer_size);
+   void Step();
 
    //Auto type
    void AutoType(const char* clipboard);
@@ -108,6 +111,7 @@ protected:
    INotifier* notifier_;
 
    Motherboard* motherboard_;
+   Z80Desassember* disassembler_;
 
    EmulatorEngine* emulator_engine_;
    CSnapshot sna_handler_;

@@ -93,7 +93,8 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    sound_mixer_->AddWav(SND_INSERT_DISK, insert_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_EJECT_DISK, eject_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_MOTOR_ON, drive_mo_wav, sizeof(seek_short_wav));
-   
+
+   disassembler_ = new Z80Desassember(emulator_engine_);
 }
 
 void Emulation::Stop()
@@ -109,7 +110,7 @@ void Emulation::EmulationLoop()
 
    while (running_thread_)
    {
-      if (!pause_ && !break_)
+      if (!pause_ && !break_ && emulator_engine_->IsRunning())
       {
          emulator_engine_->RunTimeSlice(no_debug_);
       }
@@ -526,4 +527,21 @@ unsigned short Emulation::GetStackShort(unsigned int index)
    // address : 
    unsigned short stack_address = emulator_engine_->GetProc()->sp_ += index * 2;
    return emulator_engine_->GetMem()->GetWord(stack_address);
+}
+
+void Emulation::Disassemble(unsigned short address, char* buffer, int buffer_size)
+{
+   char mnemonic[16];
+   char argument[16];
+   disassembler_->DasmMnemonic(address, mnemonic, argument);
+
+   sprintf_s(buffer, buffer_size, "%s %s", mnemonic, argument);
+}
+
+void Emulation::Step()
+{
+   emulator_engine_->SetStepIn(true);
+   emulator_engine_->SetRun(true);
+   break_ = false;
+   no_debug_ = false;
 }

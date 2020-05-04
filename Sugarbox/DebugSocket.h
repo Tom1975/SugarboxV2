@@ -61,6 +61,7 @@ protected:
    // Debug commands
    void About(std::deque<std::string>);
    void ClearBreakpoints(std::deque<std::string> param);
+   void CpuStep(std::deque<std::string> param);
    void Disassemble(std::deque<std::string> param);
    void EnterCpuStep(std::deque<std::string> param);
    void ExtendedStack(std::deque<std::string>);
