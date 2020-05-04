@@ -149,23 +149,19 @@ void DebugThread::ReadyRead()
             else
             {
                //socket_->write("bad command\r\n");
-               qDebug() << "bad command\n";
+               qDebug() << "bad command";
             }
 
          }
          socket_->write("\n");
-         qDebug() << "\n";
       }
       socket_->write("command");
-      qDebug() << "command";
       if (prompt_.size() > 0)
       {
          socket_->write("@");
          socket_->write(prompt_.c_str());
-         qDebug() << "@" << prompt_.c_str();
       }
       socket_->write("> ");      
-      qDebug() << "> ";
       
    }
 }
@@ -174,13 +170,14 @@ void DebugThread::InitMap()
 {
    function_map_["about"] = std::bind(&DebugThread::About, this, std::placeholders::_1);
    function_map_["clear-membreakpoints"] = std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1);
+   function_map_["disassemble"]= std::bind(&DebugThread::Disassemble, this, std::placeholders::_1);
    function_map_["enter-cpu-step"] = std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1);
    function_map_["extended-stack"] = std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1);
-   function_map_["get-version"] = std::bind(&DebugThread::GetVersion, this, std::placeholders::_1);
    function_map_["get-current-machine"] = std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1);
    function_map_["get-registers"] = std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1);
-   function_map_["read-memory"] = std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1);
+   function_map_["get-version"] = std::bind(&DebugThread::GetVersion, this, std::placeholders::_1);
    function_map_["hard-reset-cpu"] = std::bind(&DebugThread::HardReset, this, std::placeholders::_1);
+   function_map_["read-memory"] = std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1);
 
    // todo 
 
@@ -203,6 +200,33 @@ void DebugThread::About(std::deque<std::string>)
 {
    socket_->write(ABOUT_STRING);
    qDebug() << socketDescriptor_ << ABOUT_STRING;
+}
+
+void DebugThread::Disassemble(std::deque<std::string> param)
+{
+   if (param.size() > 1)
+   {
+      char* endstr;
+      int position = strtol(param[1].c_str(), &endstr, 10);
+      int nb_line = 1;
+      if (param.size() > 2)
+      {
+         nb_line = strtol(param[2].c_str(), &endstr, 10);
+      }
+
+      for (int i = 0; i < nb_line; i++)
+      {
+         char out_buffer[128];
+         memset(out_buffer, 0, sizeof(out_buffer));
+         unsigned int pos = 0;
+         // Format : adress on 7 char (??)
+         pos += 7;
+
+         // Disassemble
+
+      }
+   }
+
 }
 
 void DebugThread::EnterCpuStep(std::deque<std::string>)
@@ -230,7 +254,6 @@ void DebugThread::ExtendedStack(std::deque<std::string> param)
             // Return stack
             sprintf(stack_trace, "%4.4XH %s%c", emulation_->GetStackShort(i), emulation_->GetStackType(i), 0x0a);
             socket_->write(stack_trace);
-            qDebug() << stack_trace;
          }
       }
       
@@ -290,7 +313,6 @@ void DebugThread::ReadMemory (std::deque<std::string> param)
       
    }
    socket_->write(out);
-   qDebug() << out;  
 
    delete buffer;
 }

@@ -121,6 +121,7 @@ protected:
 
    // Emulation control
    bool pause_;
+   bool break_;
 
    std::thread* worker_thread_;
    bool running_thread_;

@@ -23,6 +23,7 @@ Emulation::Emulation(INotifier* notifier) :
    sna_handler_(nullptr),
    running_thread_(false),
    pause_(false),
+   break_(false),
    worker_thread_(nullptr),
    command_waiting_(false),
    sound_mixer_(nullptr),
@@ -108,7 +109,7 @@ void Emulation::EmulationLoop()
 
    while (running_thread_)
    {
-      if (!pause_)
+      if (!pause_ && !break_)
       {
          emulator_engine_->RunTimeSlice(no_debug_);
       }
@@ -420,6 +421,7 @@ void Emulation::TrackChanged(int nb_tracks)
 void Emulation::Break()
 {
    no_debug_ = false;
+   break_ = true;
    emulator_engine_->SetRun(false);
 }
 
