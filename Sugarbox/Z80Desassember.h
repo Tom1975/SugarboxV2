@@ -50,7 +50,7 @@ public:
    {
       Opcode op;
       op.Size = Size;
-      strcpy_s(op.Disassembly, MAX_DISASSEMBLY_SIZE, Disassembly);
+      strcpy(op.Disassembly, Disassembly);
       return op;
    };
 

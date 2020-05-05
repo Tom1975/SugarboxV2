@@ -187,7 +187,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
       memcpy(pMnemonic, Opcode_L, (pEndOfMnemonic - Opcode_L) * sizeof(char));
 
       char * pAddr = pArgument;
-      strcpy_s(pAddr, 16, &pEndOfMnemonic[1]);
+      strcpy(pAddr, &pEndOfMnemonic[1]);
 
       //  Next
       char* pReplace_L = strchr(pAddr, '%');
@@ -264,7 +264,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    }
    else
    {
-      strcpy_s(pMnemonic, 16, Opcode_L);
+      strcpy(pMnemonic, Opcode_L);
    }
    //pAddr = _tcscat(pAddr, "\n ");
 
