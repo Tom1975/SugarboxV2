@@ -254,7 +254,7 @@ void DebugThread::ExtendedStack(std::deque<std::string> param)
          for (int i = 0; i < stack_size; i++)
          {
             // Return stack
-            sprintf(stack_trace, "%4.4XH %s%c", emulation_->GetStackShort(i), emulation_->GetStackType(i), 0x0a);
+            std::snprintf(stack_trace, sizeof(stack_trace), "%4.4XH %s%c", emulation_->GetStackShort(i), emulation_->GetStackType(i), 0x0a);
             socket_->write(stack_trace);
          }
       }
@@ -310,7 +310,7 @@ void DebugThread::ReadMemory (std::deque<std::string> param)
    memset(out, 0, size * 2 + 1);
    for (unsigned int i  = 0; i < size; i++)
    {
-      sprintf(pout, "%02X", buffer[i]);
+      std::snprintf(pout, size*2+1, "%02X", buffer[i]);
       pout += 2;
       
    }

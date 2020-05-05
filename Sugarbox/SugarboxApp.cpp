@@ -297,7 +297,7 @@ void SugarboxApp::DrawStatusBar()
    {
       // Update
 
-      sprintf(str_speed_, "%i %%%%", emulation_->GetSpeed());
+      std::snprintf(str_speed_, sizeof(str_speed_), "%i %%%%", emulation_->GetSpeed());
       counter_ = 0;
       statusBar()->showMessage(tr(str_speed_), 2000);
    }

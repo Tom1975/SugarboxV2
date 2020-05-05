@@ -176,17 +176,17 @@ unsigned int ConfigurationManager::GetConfiguration(const char* section, const c
          std::string value = config_file_[section]->at(cle);
          if (value.size() < buffer_size)
          {
-            strncpy(out_buffer, value.c_str(), buffer_size);
+            std::strncpy(out_buffer, value.c_str(), buffer_size);
             return strlen(out_buffer);
          }
          else
          {
-            strncpy(out_buffer, value.c_str(), buffer_size);
+            std::strncpy(out_buffer, value.c_str(), buffer_size);
             return buffer_size;
          }
       }
    }
-   strncpy(out_buffer, default_value, buffer_size);
+   std::strncpy(out_buffer, default_value, buffer_size);
    return 0;
 }
 

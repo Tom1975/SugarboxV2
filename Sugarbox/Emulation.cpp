@@ -386,7 +386,7 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
       case IDisk::AUTO_FILE:
       {
          char wcsCmdLine[256];
-         sprintf (wcsCmdLine, "RUN\"%s", fileToLoad);
+         std::snprintf(wcsCmdLine, sizeof(wcsCmdLine), "RUN\"%s", fileToLoad);
          emulator_engine_->Paste(wcsCmdLine);
          emulator_engine_->Paste("\r");
       }
@@ -433,36 +433,36 @@ std::vector<std::string> Emulation::GetZ80Registers()
 
    char reg_buffer[24];
 
-   sprintf(reg_buffer, "PC=%4.4X", z80->GetPC());
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "PC=%4.4Xh", z80->GetPC());
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "SP=%4.4X", z80->sp_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "SP=%4.4Xh", z80->sp_);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "AF=%4.4X", z80->af_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "AF=%4.4Xh", z80->af_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "BC=%4.4X", z80->bc_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "BC=%4.4Xh", z80->bc_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "HL=%4.4X", z80->hl_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "HL=%4.4Xh", z80->hl_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "DE=%4.4X", z80->de_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "DE=%4.4Xh", z80->de_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "IX=%4.4X", z80->ix_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IX=%4.4Xh", z80->ix_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "IY=%4.4X", z80->iy_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IY=%4.4Xh", z80->iy_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "AF'=%4.4X", z80->af_p_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "AF'=%4.4Xh", z80->af_p_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "BC'=%4.4X", z80->bc_p_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "BC'=%4.4Xh", z80->bc_p_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "HL'=%4.4X", z80->hl_p_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "HL'=%4.4Xh", z80->hl_p_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "DE'=%4.4X", z80->de_p_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "DE'=%4.4Xh", z80->de_p_.w);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "I=%2.2X", z80->ir_.b.h);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "I=%2.2Xhh", z80->ir_.b.h);
    reg_list.push_back(reg_buffer);
-   sprintf(reg_buffer, "R=%2.2X", z80->ir_.b.l);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "R=%2.2Xhh", z80->ir_.b.l);
    reg_list.push_back(reg_buffer);
 
-   sprintf(reg_buffer, "F=%c%c%c%c%c%c%c%c",
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "F=%c%c%c%c%c%c%c%c",
       (z80->af_.b.l&SF) ? 'S' : '-',
       (z80->af_.b.l&ZF) ? 'Z' : '-',
       (z80->af_.b.l&YF) ? '5' : '-',
@@ -474,7 +474,7 @@ std::vector<std::string> Emulation::GetZ80Registers()
    ) ;
    reg_list.push_back(reg_buffer);
 
-   sprintf(reg_buffer, "F=%c%c%c%c%c%c%c%c",
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "F=%c%c%c%c%c%c%c%c",
       (z80->af_p_.b.l&SF) ? 'S' : '-',
       (z80->af_p_.b.l&ZF) ? 'Z' : '-',
       (z80->af_p_.b.l&YF) ? '5' : '-',
@@ -486,16 +486,16 @@ std::vector<std::string> Emulation::GetZ80Registers()
    );
    reg_list.push_back(reg_buffer);
 
-   sprintf(reg_buffer, "MEMPTR=%4.4X", z80->mem_ptr_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "MEMPTR=%4.4Xh", z80->mem_ptr_.w);
    reg_list.push_back(reg_buffer);
 
-   sprintf(reg_buffer, "IM=%d", z80->interrupt_mode_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IM=%d", z80->interrupt_mode_);
    reg_list.push_back(reg_buffer);
    
-   sprintf(reg_buffer, "IFF=%c%c", z80->iff1_?'1':'-', z80->iff2_ ? '2' : '-');
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IFF=%c%c", z80->iff1_?'1':'-', z80->iff2_ ? '2' : '-');
    reg_list.push_back(reg_buffer);
    
-   sprintf(reg_buffer, "Q=%2.2X", z80->q_);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "Q=%2.2X", z80->q_);
    reg_list.push_back(reg_buffer);
 
    return reg_list;

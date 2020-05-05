@@ -45,7 +45,7 @@ void DlgSettings::DisplayMenu()
 void DlgSettings::UpdateCombo(QComboBox *config_box)
 {
    config_box->clear();
-   for (int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
+   for (unsigned int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
    {
       MachineSettings* settings = settings_list_.GetConfiguration(i);
       if (settings != nullptr)
