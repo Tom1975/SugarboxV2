@@ -70,4 +70,5 @@ protected:
    void GetVersion(std::deque<std::string>);
    void HardReset(std::deque<std::string> param);
    void ReadMemory(std::deque<std::string>);
+   void Run(std::deque<std::string> param);
 };

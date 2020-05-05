@@ -179,6 +179,7 @@ void DebugThread::InitMap()
    function_map_["get-version"] = std::bind(&DebugThread::GetVersion, this, std::placeholders::_1);
    function_map_["hard-reset-cpu"] = std::bind(&DebugThread::HardReset, this, std::placeholders::_1);
    function_map_["read-memory"] = std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1);
+   function_map_["run"] = std::bind(&DebugThread::Run, this, std::placeholders::_1);
 
    // todo 
    // run
@@ -317,6 +318,20 @@ void DebugThread::ReadMemory (std::deque<std::string> param)
    socket_->write(out);
 
    delete buffer;
+}
+
+void DebugThread::Run(std::deque<std::string> param)
+{
+   if ( param.size() > 1)
+   {
+      // usable commands : 
+      // - update-immediately
+      // - verbose
+      // - no-stop-on-data
+      // a number of opcodes to run.
+      // todo.
+   }
+   emulation_->Run();
 }
 
 void DebugThread::HardReset(std::deque<std::string> param)

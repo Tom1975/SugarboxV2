@@ -92,6 +92,7 @@ public :
    unsigned short GetStackShort(unsigned int index);
    void Disassemble(unsigned short address, char* buffer, int buffer_size);
    void Step();
+   void Run( int nb_opcodes = 0);
 
    //Auto type
    void AutoType(const char* clipboard);

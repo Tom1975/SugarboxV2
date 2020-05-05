@@ -545,3 +545,9 @@ void Emulation::Step()
    break_ = false;
    no_debug_ = false;
 }
+
+void Emulation::Run(int nb_opcodes )
+{
+   break_ = false;
+   emulator_engine_->SetRun(true);
+}
