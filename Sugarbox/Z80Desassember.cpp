@@ -197,7 +197,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          if (pReplace_L[1] == 'n' && pReplace_L[2] == 'n')
          {
             char minibuf[6];
-            sprintf_s(minibuf, 6, "$%2.2X%2.2X", machine_->GetMem()->Get(currentAddr + size - 1), machine_->GetMem()->Get(currentAddr + size - 2));
+            std::snprintf(minibuf, 6, "$%2.2X%2.2X", machine_->GetMem()->Get(currentAddr + size - 1), machine_->GetMem()->Get(currentAddr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 5 * sizeof (char));
          }
@@ -205,7 +205,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          else if (pReplace_L[1] == 'n' && pReplace_L[2] == '2')
          {
             char minibuf[4];
-            sprintf_s(minibuf, 4, "%2.2X ", machine_->GetMem()->Get(currentAddr + size - 2));
+            std::snprintf(minibuf, 4, "%2.2X ", machine_->GetMem()->Get(currentAddr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 3 * sizeof (char));
          }
@@ -213,7 +213,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          else if (pReplace_L[1] == 'n')
          {
             char minibuf[3];
-            sprintf_s(minibuf, 3, "%2.2X", machine_->GetMem()->Get(currentAddr + size - 1));
+            std::snprintf(minibuf, 3, "%2.2X", machine_->GetMem()->Get(currentAddr + size - 1));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 2 * sizeof (char));
          }
@@ -223,7 +223,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
             char minibuf[5];
             char dec_L = machine_->GetMem()->Get(currentAddr + size - 1);
             unsigned short relative_adress = Addr + dec_L + size;
-            sprintf_s(minibuf, 5, "%4.4X", relative_adress);
+            std::snprintf(minibuf, 5, "%4.4X", relative_adress);
             // 2 then 1
             memcpy(pReplace_L, minibuf, 4 * sizeof (char));
 
@@ -301,7 +301,7 @@ static unsigned char GetBitOpcode(unsigned char b, const char* r)
 }
 
 #define DEF_OP_BIT_CPLT(o,b,r)\
-{char *Buffer_Tmp = new char[64];sprintf_s(Buffer_Tmp, 64, "BIT %i, %s", b, #r);   \
+{char *Buffer_Tmp = new char[64];std::snprintf(Buffer_Tmp, 64, "BIT %i, %s", b, #r);   \
    ListeOpcodesCB[o] = FillStructOpcode( 1, Buffer_Tmp);delete []Buffer_Tmp;\
    }
 

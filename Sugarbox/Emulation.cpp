@@ -535,7 +535,7 @@ void Emulation::Disassemble(unsigned short address, char* buffer, int buffer_siz
    char argument[16];
    disassembler_->DasmMnemonic(address, mnemonic, argument);
 
-   sprintf_s(buffer, buffer_size, "%s %s", mnemonic, argument);
+   std::snprintf(buffer, buffer_size, "%s %s", mnemonic, argument);
 }
 
 void Emulation::Step()
