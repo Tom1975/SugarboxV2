@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Breakpoint.h"
+#include <string>
 
 class Z80Desassember
 {
@@ -43,14 +44,14 @@ public:
    struct Opcode
    {
       unsigned char Size;
-      char Disassembly[MAX_DISASSEMBLY_SIZE];
+      std::string Disassembly;
    };
 
    Opcode FillStructOpcode(unsigned char Size, char* Disassembly)
    {
       Opcode op;
       op.Size = Size;
-      strcpy(op.Disassembly, Disassembly);
+      op.Disassembly = Disassembly;
       return op;
    };
 

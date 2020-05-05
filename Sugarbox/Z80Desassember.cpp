@@ -145,29 +145,29 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    unsigned char size = ListeOpcodes[nextInstr_L].Size;
 
    // Disassembly
-   const char* Opcode_L;
-   if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%CB") == 0)
+   std::string Opcode_L;
+   if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%CB") == 0)
    {
       // CB ?
       nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
       Opcode_L = ListeOpcodesCB[nextInstr_L].Disassembly;
       size += ListeOpcodesCB[nextInstr_L].Size;
    }
-   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%ED") == 0)
+   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%ED") == 0)
    {
       // ED ?
       nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
       Opcode_L = ListeOpcodesED[nextInstr_L].Disassembly;
       size += ListeOpcodesED[nextInstr_L].Size;
    }
-   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%DD") == 0)
+   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%DD") == 0)
    {
       // DD
       nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
       Opcode_L = ListeOpcodesDD[nextInstr_L].Disassembly;
       size += ListeOpcodesDD[nextInstr_L].Size;
    }
-   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%FD") == 0)
+   else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%FD") == 0)
    {
       // FD
       nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
@@ -180,14 +180,16 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    }
 
    // First word of Disassembly is opcode
-   const char* pEndOfMnemonic = strchr(Opcode_L, ' ');
+   size_t pEndOfMnemonic = Opcode_L.find(' ');
 
-   if (pEndOfMnemonic != NULL)
+   if (pEndOfMnemonic != std::string::npos)
    {
-      memcpy(pMnemonic, Opcode_L, (pEndOfMnemonic - Opcode_L) * sizeof(char));
+
+      std::string mnemonic = Opcode_L.substr(0, pEndOfMnemonic);
+      memcpy(pMnemonic, mnemonic.c_str(), mnemonic.size() * sizeof(char));
 
       char * pAddr = pArgument;
-      strcpy(pAddr, &pEndOfMnemonic[1]);
+      strcpy(pAddr, Opcode_L.substr(pEndOfMnemonic).c_str());
 
       //  Next
       char* pReplace_L = strchr(pAddr, '%');
@@ -264,7 +266,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    }
    else
    {
-      strcpy(pMnemonic, Opcode_L);
+      strncpy(pMnemonic, Opcode_L.c_str(), sizeof(pMnemonic)-1);
    }
    //pAddr = _tcscat(pAddr, "\n ");
 
