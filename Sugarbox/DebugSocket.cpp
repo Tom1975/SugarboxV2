@@ -221,7 +221,7 @@ void DebugThread::Disassemble(std::deque<std::string> param)
          pos += 7;
 
          // Disassemble
-         emulation_->Disassemble(position, &out_buffer[pos], 128 - 7);
+         position += emulation_->Disassemble(position, &out_buffer[pos], 128 - 7);
          
          socket_->write(out_buffer);
          socket_->write("\n");

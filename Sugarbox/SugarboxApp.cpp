@@ -749,7 +749,8 @@ void SugarboxApp::dropEvent(QDropEvent *event)
    foreach(const QUrl &url, event->mimeData()->urls())
    {
       QString fileName = url.toLocalFile();
-      std::string path = fileName.toStdString();
+      std::string path = fileName.toUtf8().constData();
+      
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)

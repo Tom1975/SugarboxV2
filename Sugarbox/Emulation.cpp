@@ -17,13 +17,13 @@
 //////////////////////////////////////////////
 /// ctor/dtor
 Emulation::Emulation(INotifier* notifier) :
-   no_debug_(true),
+   debug_action_(DBG_NONE),
    notifier_(notifier),
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
    pause_(false),
-   break_(false),
+   nb_opcode_to_run_(0),
    worker_thread_(nullptr),
    command_waiting_(false),
    sound_mixer_(nullptr),
@@ -110,13 +110,42 @@ void Emulation::EmulationLoop()
 
    while (running_thread_)
    {
-      if (!pause_ && !break_ && emulator_engine_->IsRunning())
+      if (pause_)
       {
-         emulator_engine_->RunTimeSlice(no_debug_);
-      }
-      else
-      {
+         // Pause : just wait for something to happen
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+      else 
+      {
+         // Debug mode : what can be done : 
+         switch (debug_action_)
+         {
+         case DBG_NONE:
+            emulator_engine_->RunFullSpeed();
+            break;
+         case DBG_STEP:
+            // - Step : Execute one command (Step in)
+            emulator_engine_->RunDebugMode(1);
+            debug_action_ = DBG_BREAK;
+            break;
+
+         case DBG_RUN:
+            // - run until next breakpoint
+            if (emulator_engine_->RunTimeSlice(true) == 1)
+               debug_action_ = DBG_BREAK;
+            break;
+
+         case DBG_RUN_FIXED_OP:
+            // xx opcodes run : stop now
+            emulator_engine_->RunDebugMode(nb_opcode_to_run_);
+            debug_action_ = DBG_BREAK;
+            break;              
+            
+         case DBG_BREAK:
+            // - break : Stop emulation until next command
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            break;
+         }
       }
 
       // Command waiting ? 
@@ -160,6 +189,8 @@ void Emulation::HardReset()
 
 DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->CanLoad(file, list_of_types);
 }
 
@@ -421,8 +452,7 @@ void Emulation::TrackChanged(int nb_tracks)
 
 void Emulation::Break()
 {
-   no_debug_ = false;
-   break_ = true;
+   debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
 }
 
@@ -529,25 +559,35 @@ unsigned short Emulation::GetStackShort(unsigned int index)
    return emulator_engine_->GetMem()->GetWord(stack_address);
 }
 
-void Emulation::Disassemble(unsigned short address, char* buffer, int buffer_size)
+int Emulation::Disassemble(unsigned short address, char* buffer, int buffer_size)
 {
    char mnemonic[16];
    char argument[16];
-   disassembler_->DasmMnemonic(address, mnemonic, argument);
+   int size_disassembled = disassembler_->DasmMnemonic(address, mnemonic, argument);
 
    std::snprintf(buffer, buffer_size, "%s %s", mnemonic, argument);
+   return size_disassembled;
 }
 
 void Emulation::Step()
 {
    emulator_engine_->SetStepIn(true);
    emulator_engine_->SetRun(true);
-   break_ = false;
-   no_debug_ = false;
+   debug_action_ = DBG_STEP;
 }
 
 void Emulation::Run(int nb_opcodes )
 {
-   break_ = false;
    emulator_engine_->SetRun(true);
+   if (nb_opcode_to_run_ == 0)
+   {
+      debug_action_ = DBG_RUN;
+   }
+   else
+   {
+      debug_action_ = DBG_RUN_FIXED_OP;
+      nb_opcode_to_run_ = nb_opcodes;
+
+   }
 }
+

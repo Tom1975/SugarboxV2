@@ -82,7 +82,14 @@ public :
    void TapeStop();
 
    // Debug access
-   bool no_debug_;
+   enum
+   {
+      DBG_NONE,
+      DBG_RUN,
+      DBG_RUN_FIXED_OP,
+      DBG_STEP,
+      DBG_BREAK,
+   }debug_action_;
 
    void Break();
    std::vector<std::string> GetZ80Registers();
@@ -90,7 +97,7 @@ public :
    void ClearBreakpoints();
    const char* GetStackType(unsigned int index);
    unsigned short GetStackShort(unsigned int index);
-   void Disassemble(unsigned short address, char* buffer, int buffer_size);
+   int Disassemble(unsigned short address, char* buffer, int buffer_size);
    void Step();
    void Run( int nb_opcodes = 0);
 
@@ -126,7 +133,9 @@ protected:
 
    // Emulation control
    bool pause_;
-   bool break_;
+
+   unsigned nb_opcode_to_run_;
+
 
    std::thread* worker_thread_;
    bool running_thread_;
