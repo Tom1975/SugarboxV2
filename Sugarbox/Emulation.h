@@ -17,6 +17,12 @@ public:
    virtual void DiskLoaded() = 0;
 };
 
+class IBeakpointNotifier
+{
+public:
+   virtual void NotifyBreak() = 0;
+};
+
 class Emulation  : public IDirectories, IFdcNotify
 {
 public :
@@ -81,6 +87,7 @@ public :
    void TapePause();
    void TapeStop();
 
+   //////////////////////////////////
    // Debug access
    enum
    {
@@ -91,15 +98,20 @@ public :
       DBG_BREAK,
    }debug_action_;
 
+   void AddNotifier(IBeakpointNotifier*);
+   void RemoveNotifier(IBeakpointNotifier*);
+   std::list< IBeakpointNotifier*> notifier_list_;
+
+   void Step();
+   void Run( int nb_opcodes = 0);
    void Break();
+
+   int Disassemble(unsigned short address, char* buffer, int buffer_size);
    std::vector<std::string> GetZ80Registers();
    unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
    void ClearBreakpoints();
    const char* GetStackType(unsigned int index);
    unsigned short GetStackShort(unsigned int index);
-   int Disassemble(unsigned short address, char* buffer, int buffer_size);
-   void Step();
-   void Run( int nb_opcodes = 0);
 
    //Auto type
    void AutoType(const char* clipboard);

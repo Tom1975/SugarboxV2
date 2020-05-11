@@ -53,6 +53,9 @@ DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
 
    this->socketDescriptor_ = ID;
 
+   // Breakpoitn handler
+   emulation->AddNotifier(this);
+
    // populate command map if necessary
    InitMap();
 }
@@ -70,6 +73,7 @@ void DebugThread::run()
 
    connect(socket_, SIGNAL(readyRead()), this, SLOT(ReadyRead()), Qt::DirectConnection);
    connect(socket_, SIGNAL(disconnected()), this, SLOT(Disconnected()), Qt::DirectConnection);
+   connect(this, SIGNAL(SignalBreakpoint()), this, SLOT(BreakpointReached()));
 
    qDebug() << socketDescriptor_ << " Client connected";
 
@@ -83,6 +87,7 @@ void DebugThread::Disconnected()
 {
    qDebug() << socketDescriptor_ << " Disconnected";
    socket_->deleteLater();
+   emulation_->RemoveNotifier(this);
    exit(0);
 }
 
@@ -378,5 +383,17 @@ bool DebugThread::CpuStep(std::deque<std::string> param)
    emulation_->Step();
    qDebug() << "Step";
    return true;
+}
+
+void DebugThread::BreakpointReached ()
+{
+   // Done. Send ... something : todo
+
+
+}
+
+void DebugThread::NotifyBreak()
+{
+   emit SignalBreakpoint();
 }
 

@@ -128,18 +128,31 @@ void Emulation::EmulationLoop()
             emulator_engine_->RunDebugMode(1);
             debug_action_ = DBG_BREAK;
             break;
-
          case DBG_RUN:
             // - run until next breakpoint
             if (emulator_engine_->RunTimeSlice(true) == 1)
+            {
                debug_action_ = DBG_BREAK;
+
+               // Break notification
+               for (auto &it : notifier_list_)
+               {
+                  it->NotifyBreak();
+               }
+            }
             break;
 
          case DBG_RUN_FIXED_OP:
             // xx opcodes run : stop now
             emulator_engine_->RunDebugMode(nb_opcode_to_run_);
             debug_action_ = DBG_BREAK;
-            break;              
+
+            // Break notification
+            for (auto &it : notifier_list_)
+            {
+               it->NotifyBreak();
+            }
+            break;
             
          case DBG_BREAK:
             // - break : Stop emulation until next command
@@ -569,6 +582,17 @@ int Emulation::Disassemble(unsigned short address, char* buffer, int buffer_size
    return size_disassembled;
 }
 
+void Emulation::AddNotifier(IBeakpointNotifier* notifier)
+{
+   notifier_list_.push_back(notifier);
+}
+
+void Emulation::RemoveNotifier(IBeakpointNotifier* notifier)
+{
+   notifier_list_.remove(notifier);
+}
+
+
 void Emulation::Step()
 {
    emulator_engine_->SetStepIn(true);
@@ -576,7 +600,7 @@ void Emulation::Step()
    debug_action_ = DBG_STEP;
 }
 
-void Emulation::Run(int nb_opcodes )
+void Emulation::Run(int nb_opcodes )   
 {
    emulator_engine_->SetRun(true);
    if (nb_opcode_to_run_ == 0)

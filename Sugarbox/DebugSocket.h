@@ -26,19 +26,23 @@ protected:
 
 };
 
-class DebugThread : public QThread
+class DebugThread : public QThread, public IBeakpointNotifier
 {
    Q_OBJECT
 public:
    explicit DebugThread(Emulation* emulation, int iID, QObject *parent = 0);
-   void run();
    
+   void run();
+   virtual void NotifyBreak();
+
 signals:
    void Error(QTcpSocket::SocketError socketerror);
+   void SignalBreakpoint();
 
 public slots:
    void ReadyRead();
    void Disconnected();
+   void BreakpointReached();
 
 protected:
    Emulation* emulation_;
