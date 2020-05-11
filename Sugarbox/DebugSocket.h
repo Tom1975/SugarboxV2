@@ -56,20 +56,21 @@ protected:
    std::string prompt_;
 
    // Command list
-   std::map<std::string, std::function<void(std::deque<std::string>&)> > function_map_;
+   std::map<std::string, std::function<bool(std::deque<std::string>&)> > function_map_;
+   std::function<bool(std::deque<std::string>&)> current_command_;
    void InitMap();
 
    // Debug commands
-   void About(std::deque<std::string>);
-   void ClearBreakpoints(std::deque<std::string> param);
-   void CpuStep(std::deque<std::string> param);
-   void Disassemble(std::deque<std::string> param);
-   void EnterCpuStep(std::deque<std::string> param);
-   void ExtendedStack(std::deque<std::string>);
-   void GetCurrentMachine(std::deque<std::string>);
-   void GetRegisters(std::deque<std::string>);
-   void GetVersion(std::deque<std::string>);
-   void HardReset(std::deque<std::string> param);
-   void ReadMemory(std::deque<std::string>);
-   void Run(std::deque<std::string> param);
+   bool About(std::deque<std::string>);
+   bool ClearBreakpoints(std::deque<std::string> param);
+   bool CpuStep(std::deque<std::string> param);
+   bool Disassemble(std::deque<std::string> param);
+   bool EnterCpuStep(std::deque<std::string> param);
+   bool ExtendedStack(std::deque<std::string>);
+   bool GetCurrentMachine(std::deque<std::string>);
+   bool GetRegisters(std::deque<std::string>);
+   bool GetVersion(std::deque<std::string>);
+   bool HardReset(std::deque<std::string> param);
+   bool ReadMemory(std::deque<std::string>);
+   bool Run(std::deque<std::string> param);
 };

@@ -117,6 +117,7 @@ void DebugThread::ReadyRead()
    }
    
    // Only get until the last ';'
+   bool complete_command = true;
    size_t last = pending_command_.find_last_of('\n');
    if (last != std::string::npos)
    {
@@ -126,6 +127,11 @@ void DebugThread::ReadyRead()
       if (processed_command.size() > 0 && processed_command.back() == '\r')
       {
          processed_command.pop_back();
+      }
+
+      if (current_command_ != nullptr)
+      {
+         // do something smart !
       }
 
       if (processed_command.size() > 0)
@@ -144,7 +150,15 @@ void DebugThread::ReadyRead()
             if (function_map_.find(command_parameters[0]) != function_map_.end())
             {
                //command_parameters.pop_front();
-               function_map_[command_parameters[0]](command_parameters);
+               complete_command  = function_map_[command_parameters[0]](command_parameters);
+               if (!complete_command)
+               {
+                  current_command_ = function_map_[command_parameters[0]];
+               }
+               else
+               {
+                  current_command_ = nullptr;
+               }
             }
             else
             {
@@ -155,14 +169,16 @@ void DebugThread::ReadyRead()
          }
          socket_->write("\n");
       }
-      socket_->write("command");
-      if (prompt_.size() > 0)
+      if (complete_command)
       {
-         socket_->write("@");
-         socket_->write(prompt_.c_str());
+         socket_->write("command");
+         if (prompt_.size() > 0)
+         {
+            socket_->write("@");
+            socket_->write(prompt_.c_str());
+         }
+         socket_->write("> ");
       }
-      socket_->write("> ");      
-      
    }
 }
 
@@ -182,25 +198,24 @@ void DebugThread::InitMap()
    function_map_["run"] = std::bind(&DebugThread::Run, this, std::placeholders::_1);
 
    // todo 
-   // run
-   // get-cpu-frequency
-   // reset-tstates-partial
    // cpu-code-coverage get
-   // get-tstates-partial
    // cpu-code-coverage clear
-   // get-cpu-frequency
    // cpu-history get 0
+   // get-cpu-frequency
+   // get-tstates-partial
+   // reset-tstates-partial
    // quit
 
 }
 
-void DebugThread::About(std::deque<std::string>)
+bool DebugThread::About(std::deque<std::string>)
 {
    socket_->write(ABOUT_STRING);
    qDebug() << socketDescriptor_ << ABOUT_STRING;
+   return true;
 }
 
-void DebugThread::Disassemble(std::deque<std::string> param)
+bool DebugThread::Disassemble(std::deque<std::string> param)
 {
    if (param.size() > 1)
    {
@@ -229,18 +244,19 @@ void DebugThread::Disassemble(std::deque<std::string> param)
          qDebug() << out_buffer;
       }
    }
-
+   return true;
 }
 
-void DebugThread::EnterCpuStep(std::deque<std::string>)
+bool DebugThread::EnterCpuStep(std::deque<std::string>)
 {
    prompt_ = STATE_CPU_STEP;
    state_ = STATE_STEP;
    // Stop emulation
    emulation_->Break();
+   return true;
 }
 
-void DebugThread::ExtendedStack(std::deque<std::string> param)
+bool DebugThread::ExtendedStack(std::deque<std::string> param)
 {
    // Depending on the parameters
    if (param[1] == std::string("get"))
@@ -258,25 +274,27 @@ void DebugThread::ExtendedStack(std::deque<std::string> param)
             std::snprintf(stack_trace, sizeof(stack_trace), "%4.4XH %s%c", emulation_->GetStackShort(i), emulation_->GetStackType(i), 0x0a);
             socket_->write(stack_trace);
          }
-      }
-      
+      }     
    }
+   return true;
 }
 
-void DebugThread::GetVersion(std::deque<std::string>)
+bool DebugThread::GetVersion(std::deque<std::string>)
 {
    socket_->write(CURRENT_VERSION);
    qDebug() << socketDescriptor_ << CURRENT_VERSION;
+   return true;
 }
 
-void DebugThread::GetCurrentMachine(std::deque<std::string>)
+bool DebugThread::GetCurrentMachine(std::deque<std::string>)
 {
    socket_->write(CURRENT_MACHINE);
    qDebug() << socketDescriptor_ << CURRENT_MACHINE;
+   return true;
 }
 
 
-void DebugThread::GetRegisters(std::deque<std::string>)
+bool DebugThread::GetRegisters(std::deque<std::string>)
 {
    std::vector<std::string> reg_list = emulation_->GetZ80Registers();
 
@@ -294,12 +312,13 @@ void DebugThread::GetRegisters(std::deque<std::string>)
       socket_->write(it.c_str());
       qDebug() << it.c_str() << " ";
    }
+   return true;
 }
 
-void DebugThread::ReadMemory (std::deque<std::string> param)
+bool DebugThread::ReadMemory (std::deque<std::string> param)
 {
    if (param.size() < 3)
-      return;
+      return true;
    unsigned short address = atoi(param[1].c_str());
    unsigned int size = atoi(param[2].c_str());
    unsigned char* buffer = new unsigned char[size];
@@ -318,9 +337,10 @@ void DebugThread::ReadMemory (std::deque<std::string> param)
    socket_->write(out);
 
    delete buffer;
+   return true;
 }
 
-void DebugThread::Run(std::deque<std::string> param)
+bool DebugThread::Run(std::deque<std::string> param)
 {
    if ( param.size() > 1)
    {
@@ -332,23 +352,31 @@ void DebugThread::Run(std::deque<std::string> param)
       // todo.
    }
    emulation_->Run();
+
+   // TODO : Run until end; Get end (with callback ? ) and do whatever is needed.
+   // TODO : Wait for a break ( 0xa) from remote debugger.
+
+   return false;
 }
 
-void DebugThread::HardReset(std::deque<std::string> param)
+bool DebugThread::HardReset(std::deque<std::string> param)
 {
    emulation_->HardReset();
    qDebug() << "Hard reset CPU";
+   return true;
 }
 
-void DebugThread::ClearBreakpoints(std::deque<std::string> param)
+bool DebugThread::ClearBreakpoints(std::deque<std::string> param)
 {
    emulation_->ClearBreakpoints();
    qDebug() << "Clear Breakpoints";
+   return true;
 }
 
-void DebugThread::CpuStep(std::deque<std::string> param)
+bool DebugThread::CpuStep(std::deque<std::string> param)
 {
    emulation_->Step();
    qDebug() << "Step";
+   return true;
 }
 
