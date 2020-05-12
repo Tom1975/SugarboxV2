@@ -266,7 +266,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    }
    else
    {
-      strncpy(pMnemonic, Opcode_L.c_str(), sizeof(pMnemonic)-1);
+      strncpy(pMnemonic, Opcode_L.c_str(), 15);
    }
    //pAddr = _tcscat(pAddr, "\n ");
 

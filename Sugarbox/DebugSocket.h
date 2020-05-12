@@ -33,16 +33,16 @@ public:
    explicit DebugThread(Emulation* emulation, int iID, QObject *parent = 0);
    
    void run();
-   virtual void NotifyBreak();
+   virtual void NotifyBreak(unsigned int nb_opcodes);
 
 signals:
    void Error(QTcpSocket::SocketError socketerror);
-   void SignalBreakpoint();
+   void SignalBreakpoint(unsigned int nb_opcodes);
 
 public slots:
    void ReadyRead();
    void Disconnected();
-   void BreakpointReached();
+   void BreakpointReached(unsigned int nb_opcodes);
 
 protected:
    Emulation* emulation_;

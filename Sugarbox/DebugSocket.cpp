@@ -73,7 +73,7 @@ void DebugThread::run()
 
    connect(socket_, SIGNAL(readyRead()), this, SLOT(ReadyRead()), Qt::DirectConnection);
    connect(socket_, SIGNAL(disconnected()), this, SLOT(Disconnected()), Qt::DirectConnection);
-   connect(this, SIGNAL(SignalBreakpoint()), this, SLOT(BreakpointReached()));
+   connect(this, SIGNAL(SignalBreakpoint(unsigned int )), SLOT(BreakpointReached(unsigned int )));
 
    qDebug() << socketDescriptor_ << " Client connected";
 
@@ -347,19 +347,36 @@ bool DebugThread::ReadMemory (std::deque<std::string> param)
 
 bool DebugThread::Run(std::deque<std::string> param)
 {
-   if ( param.size() > 1)
+   unsigned int nb_opcodes_to_run = 0;
+
+   for (int i = 1; i < param.size(); i++)
    {
       // usable commands : 
-      // - update-immediately
-      // - verbose
-      // - no-stop-on-data
-      // a number of opcodes to run.
-      // todo.
-   }
-   emulation_->Run();
+      if (stricmp(param[i].c_str(), "-update-immediately") == 0)
+      {
+         // - update-immediately
+         // todo
+      }
+      else if (stricmp(param[i].c_str(), "-verbose") == 0)
+      {
+         // - verbose
+         // todo
+      }
+      else if (stricmp(param[i].c_str(), "-no-stop-on-data") == 0)
+      {
+         // -no-stop-on-data
+         // todo
+      }
+      else 
+      {
+         // a number of opcodes to run.
+         char *endptr;
+         nb_opcodes_to_run = strtoul(param[i].c_str(), &endptr, 10);
+      }
 
-   // TODO : Run until end; Get end (with callback ? ) and do whatever is needed.
-   // TODO : Wait for a break ( 0xa) from remote debugger.
+   }
+
+   emulation_->Run(nb_opcodes_to_run);
 
    return false;
 }
@@ -385,15 +402,17 @@ bool DebugThread::CpuStep(std::deque<std::string> param)
    return true;
 }
 
-void DebugThread::BreakpointReached ()
+void DebugThread::BreakpointReached (unsigned int nb_opcodes)
 {
    // Done. Send ... something : todo
 
-
+   char out[16];
+   sprintf(out, "%\n", nb_opcodes);
+   socket_->write(out);
 }
 
-void DebugThread::NotifyBreak()
+void DebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
-   emit SignalBreakpoint();
+   emit SignalBreakpoint(nb_opcodes);
 }
 

@@ -137,7 +137,8 @@ void Emulation::EmulationLoop()
                // Break notification
                for (auto &it : notifier_list_)
                {
-                  it->NotifyBreak();
+                  // Send : Number of opcodes
+                  it->NotifyBreak(0);
                }
             }
             break;
@@ -150,7 +151,8 @@ void Emulation::EmulationLoop()
             // Break notification
             for (auto &it : notifier_list_)
             {
-               it->NotifyBreak();
+               // Send : Number of opcodes 
+               it->NotifyBreak(0);
             }
             break;
             
@@ -603,7 +605,7 @@ void Emulation::Step()
 void Emulation::Run(int nb_opcodes )   
 {
    emulator_engine_->SetRun(true);
-   if (nb_opcode_to_run_ == 0)
+   if (nb_opcodes == 0)
    {
       debug_action_ = DBG_RUN;
    }

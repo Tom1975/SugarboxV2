@@ -20,7 +20,7 @@ public:
 class IBeakpointNotifier
 {
 public:
-   virtual void NotifyBreak() = 0;
+   virtual void NotifyBreak(unsigned int nb_opcodes) = 0;
 };
 
 class Emulation  : public IDirectories, IFdcNotify
