@@ -191,9 +191,12 @@ void DebugThread::InitMap()
 {
    function_map_["about"] = std::bind(&DebugThread::About, this, std::placeholders::_1);
    function_map_["clear-membreakpoints"] = std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1);
+   function_map_["enable-breakpoints"] = std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1);
    function_map_["cpu-step"] = std::bind(&DebugThread::CpuStep, this, std::placeholders::_1);
    function_map_["disassemble"]= std::bind(&DebugThread::Disassemble, this, std::placeholders::_1);
+   function_map_["disable-breakpoints"] = std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1);
    function_map_["enter-cpu-step"] = std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1);
+   function_map_["enable-breakpoints"] = std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1);
    function_map_["extended-stack"] = std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1);
    function_map_["get-current-machine"] = std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1);
    function_map_["get-registers"] = std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1);
@@ -391,6 +394,20 @@ bool DebugThread::HardReset(std::deque<std::string> param)
 bool DebugThread::ClearBreakpoints(std::deque<std::string> param)
 {
    emulation_->ClearBreakpoints();
+   qDebug() << "Clear Breakpoints";
+   return true;
+}
+
+bool DebugThread::EnableBreakpoints(std::deque<std::string> param)
+{
+   emulation_->EnableBreakpoints();
+   qDebug() << "Clear Breakpoints";
+   return true;
+}
+
+bool DebugThread::DisableBreakpoints(std::deque<std::string> param)
+{
+   emulation_->DisableBreakpoints();
    qDebug() << "Clear Breakpoints";
    return true;
 }

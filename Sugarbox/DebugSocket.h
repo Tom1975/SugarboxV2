@@ -68,7 +68,9 @@ protected:
    bool About(std::deque<std::string>);
    bool ClearBreakpoints(std::deque<std::string> param);
    bool CpuStep(std::deque<std::string> param);
+   bool DisableBreakpoints(std::deque<std::string> param);
    bool Disassemble(std::deque<std::string> param);
+   bool EnableBreakpoints(std::deque<std::string> param);
    bool EnterCpuStep(std::deque<std::string> param);
    bool ExtendedStack(std::deque<std::string>);
    bool GetCurrentMachine(std::deque<std::string>);

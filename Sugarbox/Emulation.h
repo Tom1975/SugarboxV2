@@ -110,6 +110,8 @@ public :
    std::vector<std::string> GetZ80Registers();
    unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
    void ClearBreakpoints();
+   void EnableBreakpoints();
+   void DisableBreakpoints();
    const char* GetStackType(unsigned int index);
    unsigned short GetStackShort(unsigned int index);
 

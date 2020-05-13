@@ -560,6 +560,20 @@ void Emulation::ClearBreakpoints()
    emulator_engine_->ClearBreakpoints();
 }
 
+void Emulation::EnableBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->ClearBreakpoints();
+}
+
+void Emulation::DisableBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->ClearBreakpoints();
+}
+
 const char* Emulation::GetStackType(unsigned int index)
 {
    // depend on the type of call. TBD !
