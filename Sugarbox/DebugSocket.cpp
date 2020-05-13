@@ -155,10 +155,10 @@ void DebugThread::ReadyRead()
             if (function_map_.find(command_parameters[0]) != function_map_.end())
             {
                //command_parameters.pop_front();
-               complete_command  = function_map_[command_parameters[0]](command_parameters);
+               complete_command  = function_map_[command_parameters[0]].execute(command_parameters);
                if (!complete_command)
                {
-                  current_command_ = function_map_[command_parameters[0]];
+                  current_command_ = function_map_[command_parameters[0]].execute;
                }
                else
                {
@@ -189,21 +189,21 @@ void DebugThread::ReadyRead()
 
 void DebugThread::InitMap()
 {
-   function_map_["about"] = std::bind(&DebugThread::About, this, std::placeholders::_1);
-   function_map_["clear-membreakpoints"] = std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1);
-   function_map_["enable-breakpoints"] = std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1);
-   function_map_["cpu-step"] = std::bind(&DebugThread::CpuStep, this, std::placeholders::_1);
-   function_map_["disassemble"]= std::bind(&DebugThread::Disassemble, this, std::placeholders::_1);
-   function_map_["disable-breakpoints"] = std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1);
-   function_map_["enter-cpu-step"] = std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1);
-   function_map_["enable-breakpoints"] = std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1);
-   function_map_["extended-stack"] = std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1);
-   function_map_["get-current-machine"] = std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1);
-   function_map_["get-registers"] = std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1);
-   function_map_["get-version"] = std::bind(&DebugThread::GetVersion, this, std::placeholders::_1);
-   function_map_["hard-reset-cpu"] = std::bind(&DebugThread::HardReset, this, std::placeholders::_1);
-   function_map_["read-memory"] = std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1);
-   function_map_["run"] = std::bind(&DebugThread::Run, this, std::placeholders::_1);
+   function_map_["about"] = { std::bind(&DebugThread::About, this, std::placeholders::_1), "" };
+   function_map_["clear-membreakpoints"] = { std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1), ""};
+   function_map_["enable-breakpoints"] = {std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1), ""};
+   function_map_["cpu-step"] = {std::bind(&DebugThread::CpuStep, this, std::placeholders::_1), ""};
+   function_map_["disassemble"] = {std::bind(&DebugThread::Disassemble, this, std::placeholders::_1), ""};
+   function_map_["disable-breakpoints"] = {std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1), ""};
+   function_map_["enter-cpu-step"] = {std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1), ""};
+   function_map_["enable-breakpoints"] = {std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1), ""};
+   function_map_["extended-stack"] = {std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1), ""};
+   function_map_["get-current-machine"] = {std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1), ""};
+   function_map_["get-registers"] = {std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1), ""};
+   function_map_["get-version"] = {std::bind(&DebugThread::GetVersion, this, std::placeholders::_1), ""};
+   function_map_["hard-reset-cpu"] = {std::bind(&DebugThread::HardReset, this, std::placeholders::_1), ""};
+   function_map_["read-memory"] = {std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1), ""};
+   function_map_["run"] = {std::bind(&DebugThread::Run, this, std::placeholders::_1), ""};
 
    // todo 
    // cpu-code-coverage get

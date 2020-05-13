@@ -60,7 +60,12 @@ protected:
    std::string prompt_;
 
    // Command list
-   std::map<std::string, std::function<bool(std::deque<std::string>&)> > function_map_;
+   typedef struct RemoteCommand
+   {
+      std::function<bool(std::deque<std::string>&)> execute;
+      std::string help;
+   };
+   std::map<std::string, RemoteCommand > function_map_;
    std::function<bool(std::deque<std::string>&)> current_command_;
    void InitMap();
 
