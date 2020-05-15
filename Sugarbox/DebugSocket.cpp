@@ -88,6 +88,7 @@ void DebugThread::Disconnected()
    qDebug() << socketDescriptor_ << " Disconnected";
    socket_->deleteLater();
    emulation_->RemoveNotifier(this);
+   emulation_->Run(0);
    exit(0);
 }
 

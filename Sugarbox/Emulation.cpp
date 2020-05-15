@@ -108,6 +108,7 @@ void Emulation::EmulationLoop()
 {
    const std::lock_guard<std::mutex> lock(command_mutex_);
 
+   emulator_engine_->GetProc()->stop_on_fetch_ = false;
    while (running_thread_)
    {
       if (pause_)
@@ -519,7 +520,7 @@ std::vector<std::string> Emulation::GetZ80Registers()
    ) ;
    reg_list.push_back(reg_buffer);
 
-   std::snprintf(reg_buffer, sizeof(reg_buffer), "F=%c%c%c%c%c%c%c%c",
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "F'=%c%c%c%c%c%c%c%c",
       (z80->af_p_.b.l&SF) ? 'S' : '-',
       (z80->af_p_.b.l&ZF) ? 'Z' : '-',
       (z80->af_p_.b.l&YF) ? '5' : '-',
