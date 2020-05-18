@@ -558,21 +558,43 @@ void Emulation::ClearBreakpoints()
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   emulator_engine_->ClearBreakpoints();
+   emulator_engine_->GetBreakpointHandler()->ClearBreakpoints();
+}
+
+void Emulation::CreateBreakpoint(int indice, std::deque<std::string> param)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->CreateBreakpoint(indice, param);
+
+}
+
+void Emulation::EnableBreakpoint(int bp_number)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->EnableBreakpoint(bp_number);
 }
 
 void Emulation::EnableBreakpoints()
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   emulator_engine_->ClearBreakpoints();
+   emulator_engine_->GetBreakpointHandler()->EnableBreakpoints();
+}
+
+void Emulation::DisableBreakpoint(int bp_number)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->DisableBreakpoint(bp_number);
 }
 
 void Emulation::DisableBreakpoints()
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   emulator_engine_->ClearBreakpoints();
+   emulator_engine_->GetBreakpointHandler()->DisableBreakpoints();
 }
 
 const char* Emulation::GetStackType(unsigned int index)

@@ -10,6 +10,7 @@
 #include "Inotify.h"
 #include "ALSoundMixer.h"
 #include "Z80Desassember.h"
+#include <deque>
 
 class INotifier
 {
@@ -110,7 +111,10 @@ public :
    std::vector<std::string> GetZ80Registers();
    unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
    void ClearBreakpoints();
+   void CreateBreakpoint(int indice, std::deque<std::string> param);
+   void EnableBreakpoint(int bp_number);
    void EnableBreakpoints();
+   void DisableBreakpoint(int bp_number);
    void DisableBreakpoints();
    const char* GetStackType(unsigned int index);
    unsigned short GetStackShort(unsigned int index);

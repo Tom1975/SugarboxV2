@@ -1,5 +1,4 @@
 
-
 #include <sstream>
 #include <functional>
 #include <QtCore>
@@ -192,27 +191,35 @@ void DebugThread::InitMap()
 {
    function_map_["about"] = { std::bind(&DebugThread::About, this, std::placeholders::_1), "" };
    function_map_["clear-membreakpoints"] = { std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1), ""};
-   function_map_["enable-breakpoints"] = {std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1), ""};
    function_map_["cpu-step"] = {std::bind(&DebugThread::CpuStep, this, std::placeholders::_1), ""};
    function_map_["disassemble"] = {std::bind(&DebugThread::Disassemble, this, std::placeholders::_1), ""};
-   function_map_["disable-breakpoints"] = {std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1), ""};
+   function_map_["disable-breakpoint"] = {std::bind(&DebugThread::DisableBreakpoint, this, std::placeholders::_1), ""};
+   function_map_["disable-breakpoints"] = { std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1), "" };
    function_map_["enter-cpu-step"] = {std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1), ""};
+   function_map_["enable-breakpoint"] = { std::bind(&DebugThread::EnableBreakpoint, this, std::placeholders::_1), "" };
    function_map_["enable-breakpoints"] = {std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1), ""};
    function_map_["extended-stack"] = {std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1), ""};
+   function_map_["get-cpu-frequency"] = { std::bind(&DebugThread::GetCpuFrequency, this, std::placeholders::_1), "" };
    function_map_["get-current-machine"] = {std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1), ""};
    function_map_["get-registers"] = {std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1), ""};
    function_map_["get-version"] = {std::bind(&DebugThread::GetVersion, this, std::placeholders::_1), ""};
    function_map_["hard-reset-cpu"] = {std::bind(&DebugThread::HardReset, this, std::placeholders::_1), ""};
    function_map_["read-memory"] = {std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1), ""};
    function_map_["run"] = {std::bind(&DebugThread::Run, this, std::placeholders::_1), ""};
+   function_map_["set-breakpoint"] = { std::bind(&DebugThread::SetBreakpoint, this, std::placeholders::_1), "" };
 
    // todo 
+   // help
    // cpu-code-coverage get
    // cpu-code-coverage clear
    // cpu-history get 0
-   // get-cpu-frequency
    // get-tstates-partial
    // reset-tstates-partial
+   // set-register
+   // load-binary
+   // smartload
+   // sprites
+   // get-memory-pages
    // quit
 
 }
@@ -292,6 +299,13 @@ bool DebugThread::GetVersion(std::deque<std::string>)
 {
    socket_->write(CURRENT_VERSION);
    qDebug() << socketDescriptor_ << CURRENT_VERSION;
+   return true;
+}
+
+bool DebugThread::GetCpuFrequency(std::deque<std::string>)
+{
+   socket_->write("4000000");
+   qDebug() << socketDescriptor_ << "4000000";
    return true;
 }
 
@@ -399,10 +413,42 @@ bool DebugThread::ClearBreakpoints(std::deque<std::string> param)
    return true;
 }
 
+bool DebugThread::EnableBreakpoint(std::deque<std::string> param)
+{
+   // Get breakpoint number
+   if (param.size() > 1)
+   {
+      char* endstr;
+      int bp_number = strtol(param[1].c_str(), &endstr, 10);
+      if (bp_number>0)
+      {
+         emulation_->EnableBreakpoint(bp_number);
+         qDebug() << "Enable BReakpoint " << bp_number;
+      }
+   }
+   
+   return true;
+}
+
 bool DebugThread::EnableBreakpoints(std::deque<std::string> param)
 {
    emulation_->EnableBreakpoints();
    qDebug() << "Clear Breakpoints";
+   return true;
+}
+
+bool DebugThread::DisableBreakpoint(std::deque<std::string> param)
+{
+   if (param.size() > 1)
+   {
+      char* endstr;
+      int bp_number = strtol(param[1].c_str(), &endstr, 10);
+      if (bp_number > 0)
+      {
+         emulation_->DisableBreakpoint(bp_number);
+         qDebug() << "Enable BReakpoint " << bp_number;
+      }
+   }
    return true;
 }
 
@@ -420,6 +466,34 @@ bool DebugThread::CpuStep(std::deque<std::string> param)
    return true;
 }
 
+bool DebugThread::SetBreakpoint(std::deque<std::string> param)
+{
+   // Indice
+   if (param.size() < 3)
+   {
+      socket_->write("Error : Indice is mandatory, as well as a minimal address");
+      return true;
+   }
+   char*endstr;
+   int indice = strtol(param[1].c_str(), &endstr, 10);
+   if (indice == 0 ||indice > NB_BP_MAX)
+   {
+      // todo : format with NB_BP_MAX
+      socket_->write("Error : Indice should be a number between 1 and 100");
+      return true;
+   }
+
+   // Remove command name
+   param.pop_front();
+   // Remove indice
+   param.pop_front();
+   emulation_->CreateBreakpoint(indice, param);
+
+   return true;
+}
+
+//////////////////////////////////////////////
+// callback & signals
 void DebugThread::BreakpointReached (unsigned int nb_opcodes)
 {
    // Done. Send ... something : todo
@@ -433,4 +507,3 @@ void DebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
    emit SignalBreakpoint(nb_opcodes);
 }
-
