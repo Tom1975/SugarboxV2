@@ -17,6 +17,10 @@
 
 QT_USE_NAMESPACE
 
+#if defined (__unix) || (__MORPHOS__) || (__APPLE__)
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+#endif
 
 DebugSocket::DebugSocket(QObject* parent, Emulation* emulation) :emulation_(emulation), QTcpServer(parent)
 {

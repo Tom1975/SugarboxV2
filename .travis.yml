@@ -1,6 +1,7 @@
 language: cpp
 dist: xenial
 language: cpp
+osx_image: xcode11.4
 services:
   - xvfb
 
@@ -8,7 +9,7 @@ osx_image: xcode11.4
 
 os:
   - linux
-#  - osx
+  - osx
 
 
 #limit to git depth to 1 because don't use any git command in this script
