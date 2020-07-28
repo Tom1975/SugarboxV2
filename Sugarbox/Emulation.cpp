@@ -131,7 +131,7 @@ void Emulation::EmulationLoop()
             break;
          case DBG_RUN:
             // - run until next breakpoint
-            if (emulator_engine_->RunTimeSlice(true) == 1)
+            if (emulator_engine_->RunTimeSlice(false) == 1)
             {
                debug_action_ = DBG_BREAK;
 
