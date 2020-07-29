@@ -135,11 +135,11 @@ void Emulation::EmulationLoop()
             {
                debug_action_ = DBG_BREAK;
 
-               // Break notification
+               // Break notification : 
                for (auto &it : notifier_list_)
                {
                   // Send : Number of opcodes
-                  it->NotifyBreak(0);
+                  it->BreakpointEncountered(emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint());
                }
             }
             break;

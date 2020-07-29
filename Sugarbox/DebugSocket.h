@@ -34,15 +34,18 @@ public:
    
    void run();
    virtual void NotifyBreak(unsigned int nb_opcodes);
+   virtual void BreakpointEncountered(IBreakpointItem* breakpoint);
 
 signals:
    void Error(QTcpSocket::SocketError socketerror);
-   void SignalBreakpoint(unsigned int nb_opcodes);
+   void SignalBreakpoint(IBreakpointItem* breakpoint);
+   void SignalBreak(unsigned int nb_opcodes);
 
 public slots:
    void ReadyRead();
    void Disconnected();
-   void BreakpointReached(unsigned int nb_opcodes);
+   void Break(unsigned int nb_opcodes);
+   void BreakpointReached(IBreakpointItem* breakpoint);
 
 protected:
    Emulation* emulation_;

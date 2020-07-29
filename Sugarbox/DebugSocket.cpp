@@ -76,7 +76,8 @@ void DebugThread::run()
 
    connect(socket_, SIGNAL(readyRead()), this, SLOT(ReadyRead()), Qt::DirectConnection);
    connect(socket_, SIGNAL(disconnected()), this, SLOT(Disconnected()), Qt::DirectConnection);
-   connect(this, SIGNAL(SignalBreakpoint(unsigned int )), SLOT(BreakpointReached(unsigned int )));
+   connect(this, SIGNAL(SignalBreakpoint(IBreakpointItem*)), SLOT(BreakpointReached(unsigned int )));
+   connect(this, SIGNAL(SignalBreak(unsigned int)), SLOT(Break(unsigned int)));
 
    qDebug() << socketDescriptor_ << " Client connected";
 
@@ -498,16 +499,28 @@ bool DebugThread::SetBreakpoint(std::deque<std::string> param)
 
 //////////////////////////////////////////////
 // callback & signals
-void DebugThread::BreakpointReached (unsigned int nb_opcodes)
+void DebugThread::Break(unsigned int nb_opcodes)
 {
    // Done. Send ... something : todo
-
    char out[16];
-   sprintf(out, "%\n", nb_opcodes);
+   sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
+   socket_->write(out);
+}
+
+void DebugThread::BreakpointReached(IBreakpointItem* breakpoint)
+{
+   // Done. Send ... something : todo
+   char out[16];
+   sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
    socket_->write(out);
 }
 
 void DebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
-   emit SignalBreakpoint(nb_opcodes);
+   emit SignalBreak(nb_opcodes);
+}
+
+void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
+{
+   emit SignalBreakpoint(breakpoint);
 }
