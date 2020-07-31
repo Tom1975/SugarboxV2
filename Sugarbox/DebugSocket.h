@@ -44,8 +44,6 @@ signals:
 public slots:
    void ReadyRead();
    void Disconnected();
-   void Break(unsigned int nb_opcodes);
-   void BreakpointReached(IBreakpointItem* breakpoint);
 
 protected:
    Emulation* emulation_;
@@ -54,6 +52,7 @@ protected:
    QTcpSocket *socket_;
    int socketDescriptor_;
    std::string pending_command_;
+   
 
    // State machine
    enum {
@@ -91,4 +90,18 @@ protected:
    bool ReadMemory(std::deque<std::string>);
    bool Run(std::deque<std::string> param);
    bool SetBreakpoint(std::deque<std::string> param);
+};
+
+class DebugWorker : public QObject
+{
+   Q_OBJECT
+public:
+   DebugWorker(QTcpSocket *socket);
+
+public slots:
+   void Break(unsigned int nb_opcodes);
+   void BreakpointReached(IBreakpointItem* breakpoint);
+
+protected:
+   QTcpSocket *socket_;
 };

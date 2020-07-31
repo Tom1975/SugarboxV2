@@ -61,13 +61,16 @@ DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
 
    // populate command map if necessary
    InitMap();
+
+   qDebug() << socketDescriptor_ << " DebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
 }
 
 void DebugThread::run()
 {
    // thread starts here
-   qDebug() << socketDescriptor_ << " Starting thread";
+   qDebug() << socketDescriptor_ << " DebugThread -> Starting thread - Thread ID : " << currentThreadId();
    socket_ = new QTcpSocket();
+   DebugWorker worker(socket_);
    if (!socket_->setSocketDescriptor(this->socketDescriptor_))
    {
       emit Error(socket_->error());
@@ -76,8 +79,8 @@ void DebugThread::run()
 
    connect(socket_, SIGNAL(readyRead()), this, SLOT(ReadyRead()), Qt::DirectConnection);
    connect(socket_, SIGNAL(disconnected()), this, SLOT(Disconnected()), Qt::DirectConnection);
-   connect(this, SIGNAL(SignalBreakpoint(IBreakpointItem*)), SLOT(BreakpointReached(unsigned int )));
-   connect(this, SIGNAL(SignalBreak(unsigned int)), SLOT(Break(unsigned int)));
+   connect(this, SIGNAL(SignalBreakpoint(IBreakpointItem*)), &worker, SLOT(BreakpointReached(IBreakpointItem*)));
+   connect(this, SIGNAL(SignalBreak(unsigned int)), &worker, SLOT(Break(unsigned int)));
 
    qDebug() << socketDescriptor_ << " Client connected";
 
@@ -497,30 +500,39 @@ bool DebugThread::SetBreakpoint(std::deque<std::string> param)
    return true;
 }
 
-//////////////////////////////////////////////
-// callback & signals
-void DebugThread::Break(unsigned int nb_opcodes)
-{
-   // Done. Send ... something : todo
-   char out[16];
-   sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
-   socket_->write(out);
-}
-
-void DebugThread::BreakpointReached(IBreakpointItem* breakpoint)
-{
-   // Done. Send ... something : todo
-   char out[16];
-   sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
-   socket_->write(out);
-}
-
 void DebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
+   qDebug() << "  NotifyBreak - Thread ID : " << currentThreadId();
    emit SignalBreak(nb_opcodes);
 }
 
 void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
 {
+   qDebug() << "  BreakpointEncountered - Thread ID : " << currentThreadId();
    emit SignalBreakpoint(breakpoint);
+}
+
+//////////////////////////////////////////////
+// callback & signals
+DebugWorker::DebugWorker(QTcpSocket *socket) : socket_(socket)
+{
+   
+}
+
+void DebugWorker::Break(unsigned int nb_opcodes)
+{
+   // Done. Send ... something : todo
+   char out[64];
+   sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
+   qDebug() << out;
+   socket_->write(out);
+}
+
+void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
+{
+   // Done. Send ... something : todo
+   char out[64];
+   sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
+   qDebug() << out;
+   socket_->write(out);
 }
