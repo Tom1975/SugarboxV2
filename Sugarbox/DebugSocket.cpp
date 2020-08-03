@@ -51,16 +51,11 @@ DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
    emulation_(emulation), QThread(parent)
 {
    pending_command_ = STATE_DEFAULT;
-   prompt_ = "";
-   state_ = STATE_NONE;
 
-   this->socketDescriptor_ = ID;
+   socketDescriptor_ = ID;
 
    // Breakpoitn handler
    emulation->AddNotifier(this);
-
-   // populate command map if necessary
-   InitMap();
 
    qDebug() << socketDescriptor_ << " DebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
 }
@@ -70,17 +65,20 @@ void DebugThread::run()
    // thread starts here
    qDebug() << socketDescriptor_ << " DebugThread -> Starting thread - Thread ID : " << currentThreadId();
    socket_ = new QTcpSocket();
-   DebugWorker worker(socket_);
+   worker_ = new DebugWorker(socket_, socketDescriptor_, emulation_);
    if (!socket_->setSocketDescriptor(this->socketDescriptor_))
    {
       emit Error(socket_->error());
       return;
    }
 
+   // populate command map if necessary
+   InitMap();
+
    connect(socket_, SIGNAL(readyRead()), this, SLOT(ReadyRead()), Qt::DirectConnection);
    connect(socket_, SIGNAL(disconnected()), this, SLOT(Disconnected()), Qt::DirectConnection);
-   connect(this, SIGNAL(SignalBreakpoint(IBreakpointItem*)), &worker, SLOT(BreakpointReached(IBreakpointItem*)));
-   connect(this, SIGNAL(SignalBreak(unsigned int)), &worker, SLOT(Break(unsigned int)));
+   connect(this, SIGNAL(SignalBreakpoint(IBreakpointItem*)), worker_, SLOT(BreakpointReached(IBreakpointItem*)));
+   connect(this, SIGNAL(SignalBreak(unsigned int)), worker_, SLOT(Break(unsigned int)));
 
    qDebug() << socketDescriptor_ << " Client connected";
 
@@ -184,37 +182,31 @@ void DebugThread::ReadyRead()
       }
       if (complete_command)
       {
-         socket_->write("command");
-         if (prompt_.size() > 0)
-         {
-            socket_->write("@");
-            socket_->write(prompt_.c_str());
-         }
-         socket_->write("> ");
+         worker_->WritePrompt();
       }
    }
 }
 
 void DebugThread::InitMap()
 {
-   function_map_["about"] = { std::bind(&DebugThread::About, this, std::placeholders::_1), "" };
-   function_map_["clear-membreakpoints"] = { std::bind(&DebugThread::ClearBreakpoints, this, std::placeholders::_1), ""};
-   function_map_["cpu-step"] = {std::bind(&DebugThread::CpuStep, this, std::placeholders::_1), ""};
-   function_map_["disassemble"] = {std::bind(&DebugThread::Disassemble, this, std::placeholders::_1), ""};
-   function_map_["disable-breakpoint"] = {std::bind(&DebugThread::DisableBreakpoint, this, std::placeholders::_1), ""};
-   function_map_["disable-breakpoints"] = { std::bind(&DebugThread::DisableBreakpoints, this, std::placeholders::_1), "" };
-   function_map_["enter-cpu-step"] = {std::bind(&DebugThread::EnterCpuStep, this, std::placeholders::_1), ""};
-   function_map_["enable-breakpoint"] = { std::bind(&DebugThread::EnableBreakpoint, this, std::placeholders::_1), "" };
-   function_map_["enable-breakpoints"] = {std::bind(&DebugThread::EnableBreakpoints, this, std::placeholders::_1), ""};
-   function_map_["extended-stack"] = {std::bind(&DebugThread::ExtendedStack, this, std::placeholders::_1), ""};
-   function_map_["get-cpu-frequency"] = { std::bind(&DebugThread::GetCpuFrequency, this, std::placeholders::_1), "" };
-   function_map_["get-current-machine"] = {std::bind(&DebugThread::GetCurrentMachine, this, std::placeholders::_1), ""};
-   function_map_["get-registers"] = {std::bind(&DebugThread::GetRegisters, this, std::placeholders::_1), ""};
-   function_map_["get-version"] = {std::bind(&DebugThread::GetVersion, this, std::placeholders::_1), ""};
-   function_map_["hard-reset-cpu"] = {std::bind(&DebugThread::HardReset, this, std::placeholders::_1), ""};
-   function_map_["read-memory"] = {std::bind(&DebugThread::ReadMemory, this, std::placeholders::_1), ""};
-   function_map_["run"] = {std::bind(&DebugThread::Run, this, std::placeholders::_1), ""};
-   function_map_["set-breakpoint"] = { std::bind(&DebugThread::SetBreakpoint, this, std::placeholders::_1), "" };
+   function_map_["about"] = { std::bind(&DebugWorker::About, worker_, std::placeholders::_1), "" };
+   function_map_["clear-membreakpoints"] = { std::bind(&DebugWorker::ClearBreakpoints, worker_, std::placeholders::_1), ""};
+   function_map_["cpu-step"] = {std::bind(&DebugWorker::CpuStep, worker_, std::placeholders::_1), ""};
+   function_map_["disassemble"] = {std::bind(&DebugWorker::Disassemble, worker_, std::placeholders::_1), ""};
+   function_map_["disable-breakpoint"] = {std::bind(&DebugWorker::DisableBreakpoint, worker_, std::placeholders::_1), ""};
+   function_map_["disable-breakpoints"] = { std::bind(&DebugWorker::DisableBreakpoints, worker_, std::placeholders::_1), "" };
+   function_map_["enter-cpu-step"] = {std::bind(&DebugWorker::EnterCpuStep, worker_, std::placeholders::_1), ""};
+   function_map_["enable-breakpoint"] = { std::bind(&DebugWorker::EnableBreakpoint, worker_, std::placeholders::_1), "" };
+   function_map_["enable-breakpoints"] = {std::bind(&DebugWorker::EnableBreakpoints, worker_, std::placeholders::_1), ""};
+   function_map_["extended-stack"] = {std::bind(&DebugWorker::ExtendedStack, worker_, std::placeholders::_1), ""};
+   function_map_["get-cpu-frequency"] = { std::bind(&DebugWorker::GetCpuFrequency, worker_, std::placeholders::_1), "" };
+   function_map_["get-current-machine"] = {std::bind(&DebugWorker::GetCurrentMachine, worker_, std::placeholders::_1), ""};
+   function_map_["get-registers"] = {std::bind(&DebugWorker::GetRegisters, worker_, std::placeholders::_1), ""};
+   function_map_["get-version"] = {std::bind(&DebugWorker::GetVersion, worker_, std::placeholders::_1), ""};
+   function_map_["hard-reset-cpu"] = {std::bind(&DebugWorker::HardReset, worker_, std::placeholders::_1), ""};
+   function_map_["read-memory"] = {std::bind(&DebugWorker::ReadMemory, worker_, std::placeholders::_1), ""};
+   function_map_["run"] = {std::bind(&DebugWorker::Run, worker_, std::placeholders::_1), ""};
+   function_map_["set-breakpoint"] = { std::bind(&DebugWorker::SetBreakpoint, worker_, std::placeholders::_1), "" };
 
    // todo 
    // help
@@ -232,14 +224,35 @@ void DebugThread::InitMap()
 
 }
 
-bool DebugThread::About(std::deque<std::string>)
+void DebugThread::NotifyBreak(unsigned int nb_opcodes)
+{
+   qDebug() << "  NotifyBreak - Thread ID : " << currentThreadId();
+   emit SignalBreak(nb_opcodes);
+}
+
+void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
+{
+   qDebug() << "  BreakpointEncountered - Thread ID : " << currentThreadId();
+   emit SignalBreakpoint(breakpoint);
+}
+
+
+//////////////////////////////////////////////
+// callback & signals
+DebugWorker::DebugWorker(QTcpSocket *socket, int socketDescriptor, Emulation* emulation) : socket_(socket), socketDescriptor_(socketDescriptor), emulation_(emulation)
+{
+   prompt_ = "";
+   state_ = STATE_NONE;
+}
+
+bool DebugWorker::About(std::deque<std::string>)
 {
    socket_->write(ABOUT_STRING);
    qDebug() << socketDescriptor_ << ABOUT_STRING;
    return true;
 }
 
-bool DebugThread::Disassemble(std::deque<std::string> param)
+bool DebugWorker::Disassemble(std::deque<std::string> param)
 {
    if (param.size() > 1)
    {
@@ -271,7 +284,7 @@ bool DebugThread::Disassemble(std::deque<std::string> param)
    return true;
 }
 
-bool DebugThread::EnterCpuStep(std::deque<std::string>)
+bool DebugWorker::EnterCpuStep(std::deque<std::string>)
 {
    prompt_ = STATE_CPU_STEP;
    state_ = STATE_STEP;
@@ -280,7 +293,7 @@ bool DebugThread::EnterCpuStep(std::deque<std::string>)
    return true;
 }
 
-bool DebugThread::ExtendedStack(std::deque<std::string> param)
+bool DebugWorker::ExtendedStack(std::deque<std::string> param)
 {
    // Depending on the parameters
    if (param[1] == std::string("get"))
@@ -303,21 +316,21 @@ bool DebugThread::ExtendedStack(std::deque<std::string> param)
    return true;
 }
 
-bool DebugThread::GetVersion(std::deque<std::string>)
+bool DebugWorker::GetVersion(std::deque<std::string>)
 {
    socket_->write(CURRENT_VERSION);
    qDebug() << socketDescriptor_ << CURRENT_VERSION;
    return true;
 }
 
-bool DebugThread::GetCpuFrequency(std::deque<std::string>)
+bool DebugWorker::GetCpuFrequency(std::deque<std::string>)
 {
    socket_->write("4000000");
    qDebug() << socketDescriptor_ << "4000000";
    return true;
 }
 
-bool DebugThread::GetCurrentMachine(std::deque<std::string>)
+bool DebugWorker::GetCurrentMachine(std::deque<std::string>)
 {
    socket_->write(CURRENT_MACHINE);
    qDebug() << socketDescriptor_ << CURRENT_MACHINE;
@@ -325,7 +338,7 @@ bool DebugThread::GetCurrentMachine(std::deque<std::string>)
 }
 
 
-bool DebugThread::GetRegisters(std::deque<std::string>)
+bool DebugWorker::GetRegisters(std::deque<std::string>)
 {
    std::vector<std::string> reg_list = emulation_->GetZ80Registers();
 
@@ -346,7 +359,7 @@ bool DebugThread::GetRegisters(std::deque<std::string>)
    return true;
 }
 
-bool DebugThread::ReadMemory (std::deque<std::string> param)
+bool DebugWorker::ReadMemory (std::deque<std::string> param)
 {
    if (param.size() < 3)
       return true;
@@ -371,7 +384,7 @@ bool DebugThread::ReadMemory (std::deque<std::string> param)
    return true;
 }
 
-bool DebugThread::Run(std::deque<std::string> param)
+bool DebugWorker::Run(std::deque<std::string> param)
 {
    unsigned int nb_opcodes_to_run = 0;
 
@@ -407,21 +420,21 @@ bool DebugThread::Run(std::deque<std::string> param)
    return false;
 }
 
-bool DebugThread::HardReset(std::deque<std::string> param)
+bool DebugWorker::HardReset(std::deque<std::string> param)
 {
    emulation_->HardReset();
    qDebug() << "Hard reset CPU";
    return true;
 }
 
-bool DebugThread::ClearBreakpoints(std::deque<std::string> param)
+bool DebugWorker::ClearBreakpoints(std::deque<std::string> param)
 {
    emulation_->ClearBreakpoints();
    qDebug() << "Clear Breakpoints";
    return true;
 }
 
-bool DebugThread::EnableBreakpoint(std::deque<std::string> param)
+bool DebugWorker::EnableBreakpoint(std::deque<std::string> param)
 {
    // Get breakpoint number
    if (param.size() > 1)
@@ -438,14 +451,14 @@ bool DebugThread::EnableBreakpoint(std::deque<std::string> param)
    return true;
 }
 
-bool DebugThread::EnableBreakpoints(std::deque<std::string> param)
+bool DebugWorker::EnableBreakpoints(std::deque<std::string> param)
 {
    emulation_->EnableBreakpoints();
    qDebug() << "Clear Breakpoints";
    return true;
 }
 
-bool DebugThread::DisableBreakpoint(std::deque<std::string> param)
+bool DebugWorker::DisableBreakpoint(std::deque<std::string> param)
 {
    if (param.size() > 1)
    {
@@ -460,21 +473,21 @@ bool DebugThread::DisableBreakpoint(std::deque<std::string> param)
    return true;
 }
 
-bool DebugThread::DisableBreakpoints(std::deque<std::string> param)
+bool DebugWorker::DisableBreakpoints(std::deque<std::string> param)
 {
    emulation_->DisableBreakpoints();
    qDebug() << "Clear Breakpoints";
    return true;
 }
 
-bool DebugThread::CpuStep(std::deque<std::string> param)
+bool DebugWorker::CpuStep(std::deque<std::string> param)
 {
    emulation_->Step();
    qDebug() << "Step";
    return true;
 }
 
-bool DebugThread::SetBreakpoint(std::deque<std::string> param)
+bool DebugWorker::SetBreakpoint(std::deque<std::string> param)
 {
    // Indice
    if (param.size() < 3)
@@ -500,23 +513,16 @@ bool DebugThread::SetBreakpoint(std::deque<std::string> param)
    return true;
 }
 
-void DebugThread::NotifyBreak(unsigned int nb_opcodes)
+void DebugWorker::WritePrompt()
 {
-   qDebug() << "  NotifyBreak - Thread ID : " << currentThreadId();
-   emit SignalBreak(nb_opcodes);
-}
+   socket_->write("command");
+   if (prompt_.size() > 0)
+   {
+      socket_->write("@");
+      socket_->write(prompt_.c_str());
+   }
+   socket_->write("> ");
 
-void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
-{
-   qDebug() << "  BreakpointEncountered - Thread ID : " << currentThreadId();
-   emit SignalBreakpoint(breakpoint);
-}
-
-//////////////////////////////////////////////
-// callback & signals
-DebugWorker::DebugWorker(QTcpSocket *socket) : socket_(socket)
-{
-   
 }
 
 void DebugWorker::Break(unsigned int nb_opcodes)
@@ -526,6 +532,7 @@ void DebugWorker::Break(unsigned int nb_opcodes)
    sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
    qDebug() << out;
    socket_->write(out);
+   WritePrompt();
 }
 
 void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
@@ -535,4 +542,6 @@ void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
    sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
    qDebug() << out;
    socket_->write(out);
+   WritePrompt();
 }
+ 
