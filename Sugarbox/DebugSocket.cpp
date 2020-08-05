@@ -137,7 +137,12 @@ void DebugThread::ReadyRead()
 
       if (processed_command.size() > 0 && processed_command.back() == '\r')
       {
+         cr_lf_ = "\r\n";
          processed_command.pop_back();
+      }
+      else
+      {
+         cr_lf_ = "\n";
       }
 
       if (current_command_ != nullptr)
@@ -161,10 +166,10 @@ void DebugThread::ReadyRead()
             if (function_map_.find(command_parameters[0]) != function_map_.end())
             {
                //command_parameters.pop_front();
-               complete_command  = function_map_[command_parameters[0]].execute(command_parameters);
+               complete_command  = function_map_[command_parameters[0]]->Execute(command_parameters);
                if (!complete_command)
                {
-                  current_command_ = function_map_[command_parameters[0]].execute;
+                  current_command_ = function_map_[command_parameters[0]];
                }
                else
                {
@@ -178,7 +183,7 @@ void DebugThread::ReadyRead()
             }
 
          }
-         socket_->write("\n");
+         socket_->write(cr_lf_.c_str());
       }
       if (complete_command)
       {
@@ -187,29 +192,52 @@ void DebugThread::ReadyRead()
    }
 }
 
+void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
+{
+   action->InitCommand(this);
+
+   auto it = commands.begin();
+   if (it == commands.end())
+      return;
+
+   std::deque<std::string> command_list;
+   function_map_[*it] = action;
+   command_list.push_back(*it);
+   while (++it != commands.end())
+   {
+      alternate_command_[*it] = action;
+      command_list.push_back(*it);
+   }
+   command_list_[action] = command_list;
+}
+
 void DebugThread::InitMap()
 {
-   function_map_["about"] = { std::bind(&DebugWorker::About, worker_, std::placeholders::_1), "" };
-   function_map_["clear-membreakpoints"] = { std::bind(&DebugWorker::ClearBreakpoints, worker_, std::placeholders::_1), ""};
-   function_map_["cpu-step"] = {std::bind(&DebugWorker::CpuStep, worker_, std::placeholders::_1), ""};
-   function_map_["disassemble"] = {std::bind(&DebugWorker::Disassemble, worker_, std::placeholders::_1), ""};
-   function_map_["disable-breakpoint"] = {std::bind(&DebugWorker::DisableBreakpoint, worker_, std::placeholders::_1), ""};
-   function_map_["disable-breakpoints"] = { std::bind(&DebugWorker::DisableBreakpoints, worker_, std::placeholders::_1), "" };
-   function_map_["enter-cpu-step"] = {std::bind(&DebugWorker::EnterCpuStep, worker_, std::placeholders::_1), ""};
-   function_map_["enable-breakpoint"] = { std::bind(&DebugWorker::EnableBreakpoint, worker_, std::placeholders::_1), "" };
-   function_map_["enable-breakpoints"] = {std::bind(&DebugWorker::EnableBreakpoints, worker_, std::placeholders::_1), ""};
-   function_map_["extended-stack"] = {std::bind(&DebugWorker::ExtendedStack, worker_, std::placeholders::_1), ""};
-   function_map_["get-cpu-frequency"] = { std::bind(&DebugWorker::GetCpuFrequency, worker_, std::placeholders::_1), "" };
-   function_map_["get-current-machine"] = {std::bind(&DebugWorker::GetCurrentMachine, worker_, std::placeholders::_1), ""};
-   function_map_["get-registers"] = {std::bind(&DebugWorker::GetRegisters, worker_, std::placeholders::_1), ""};
-   function_map_["get-version"] = {std::bind(&DebugWorker::GetVersion, worker_, std::placeholders::_1), ""};
-   function_map_["hard-reset-cpu"] = {std::bind(&DebugWorker::HardReset, worker_, std::placeholders::_1), ""};
-   function_map_["read-memory"] = {std::bind(&DebugWorker::ReadMemory, worker_, std::placeholders::_1), ""};
-   function_map_["run"] = {std::bind(&DebugWorker::Run, worker_, std::placeholders::_1), ""};
-   function_map_["set-breakpoint"] = { std::bind(&DebugWorker::SetBreakpoint, worker_, std::placeholders::_1), "" };
+   AddCommand(new RemoteCommandAbout(), { "about" });
+   AddCommand(new RemoteCommandHelp(this), { "help", "?" });
+
+   /*function_map_["about"] = { std::bind(&DebugWorker::About, worker_, std::placeholders::_1), "Shows about message" };
+   function_map_["clear-membreakpoints"] = { std::bind(&DebugWorker::ClearBreakpoints, worker_, std::placeholders::_1), "Clear all memory breakpoints"};
+   function_map_["cpu-step"] = {std::bind(&DebugWorker::CpuStep, worker_, std::placeholders::_1), "Run single opcode cpu step."};
+   function_map_["disassemble"] = {std::bind(&DebugWorker::Disassemble, worker_, std::placeholders::_1), "Disassemble at address.If no address specified, disassemble from PC register. If no lines specified, disassembles one line" };
+   function_map_["disable-breakpoint"] = {std::bind(&DebugWorker::DisableBreakpoint, worker_, std::placeholders::_1), "Disable specific breakpoint"};
+   function_map_["disable-breakpoints"] = { std::bind(&DebugWorker::DisableBreakpoints, worker_, std::placeholders::_1), "Disable breakpoints" };
+   function_map_["enter-cpu-step"] = {std::bind(&DebugWorker::EnterCpuStep, worker_, std::placeholders::_1), "Enter cpu step mode"};
+   function_map_["enable-breakpoint"] = { std::bind(&DebugWorker::EnableBreakpoint, worker_, std::placeholders::_1), "Enable specific breakpoint" };
+   function_map_["enable-breakpoints"] = {std::bind(&DebugWorker::EnableBreakpoints, worker_, std::placeholders::_1), "Enable all breakpoints"};
+   function_map_["extended-stack"] = {std::bind(&DebugWorker::ExtendedStack, worker_, std::placeholders::_1), "Sets extended stack parameters, which allows you to see what kind of values are in the stack. Action and parameters are the following:\n	get     n[index]  Get n values.The index default value is the SP register\n"};
+   function_map_["get-cpu-frequency"] = { std::bind(&DebugWorker::GetCpuFrequency, worker_, std::placeholders::_1), "Get cpu frequency in HZ" };
+   function_map_["get-current-machine"] = {std::bind(&DebugWorker::GetCurrentMachine, worker_, std::placeholders::_1), "Returns current machine name"};
+   function_map_["get-registers"] = {std::bind(&DebugWorker::GetRegisters, worker_, std::placeholders::_1), "Get CPU registers"};
+   function_map_["get-version"] = {std::bind(&DebugWorker::GetVersion, worker_, std::placeholders::_1), "Shows emulator version"};
+   function_map_["hard-reset-cpu"] = {std::bind(&DebugWorker::HardReset, worker_, std::placeholders::_1), "Hard resets the machine"};
+   function_map_["help"] = { std::bind(&DebugThread::Help, this, std::placeholders::_1), "Display the command list" };
+   function_map_["read-memory"] = {std::bind(&DebugWorker::ReadMemory, worker_, std::placeholders::_1), "Dumps memory at address."};
+   function_map_["run"] = {std::bind(&DebugWorker::Run, worker_, std::placeholders::_1), "Run cpu when on cpu step mode. Returns when a breakpoint is fired."};
+   function_map_["set-breakpoint"] = { std::bind(&DebugWorker::SetBreakpoint, worker_, std::placeholders::_1), "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled\n" };
+   */
 
    // todo 
-   // help
    // cpu-code-coverage get
    // cpu-code-coverage clear
    // cpu-history get 0
@@ -221,6 +249,49 @@ void DebugThread::InitMap()
    // sprites
    // get-memory-pages
    // quit
+
+}
+
+bool DebugThread::Help(std::deque<std::string> param)
+{
+   std::string output = "";
+
+   if (param.size() == 1)
+   {
+      output = "Available commands:"+ cr_lf_;
+      for (auto& it : command_list_)
+      {
+         bool first_cmd = true;
+         for (auto& alt_cmd: it.second)
+         {
+            if (!first_cmd)
+            {
+               output += ", ";
+            }
+            else
+            {
+               first_cmd = false;
+            }
+            output += alt_cmd;
+         }
+         output += cr_lf_;
+      }
+   }
+   else
+   {
+      if (function_map_.find(param[1]) != function_map_.end())
+      {
+         output = param[1];
+
+         output += ": ";
+         output += function_map_[param[1]]->Help();
+         output += cr_lf_;
+      }
+   }
+
+   qDebug() << "Help : " << cr_lf_.c_str() << output.c_str();
+   socket_->write(output.c_str());
+   return true;
 
 }
 
@@ -236,6 +307,33 @@ void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
    emit SignalBreakpoint(breakpoint);
 }
 
+void DebugThread::SendResponse(const char* response)
+{
+   socket_->write(response);
+   qDebug() << socketDescriptor_ << response;
+}
+void DebugThread::SendEoL()
+{
+   socket_->write(cr_lf_.c_str());
+}
+
+//////////////////////////////////////////////
+// Help command
+RemoteCommandHelp::RemoteCommandHelp(DebugThread* debug):debug_(debug)
+{
+   
+}
+
+bool RemoteCommandHelp::Execute(std::deque<std::string>& param)
+{
+   return debug_->Help(param);
+}
+
+std::string RemoteCommandHelp::Help()
+{
+   return "Display the command list";
+}
+
 
 //////////////////////////////////////////////
 // callback & signals
@@ -244,6 +342,7 @@ DebugWorker::DebugWorker(QTcpSocket *socket, int socketDescriptor, Emulation* em
    prompt_ = "";
    state_ = STATE_NONE;
 }
+
 
 bool DebugWorker::About(std::deque<std::string>)
 {

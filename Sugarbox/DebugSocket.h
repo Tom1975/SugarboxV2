@@ -8,6 +8,8 @@
 #include <QTcpSocket>
 #include "Emulation.h"
 
+#include "DebugCommand.h"
+
 class DebugSocket : public QTcpServer
 {
    Q_OBJECT
@@ -74,8 +76,7 @@ protected:
    Emulation* emulation_;
 };
 
-
-class DebugThread : public QThread, public IBeakpointNotifier
+class DebugThread : public QThread, public IBeakpointNotifier, public ICommandResponse
 {
    Q_OBJECT
 public:
@@ -84,6 +85,10 @@ public:
    void run();
    virtual void NotifyBreak(unsigned int nb_opcodes);
    virtual void BreakpointEncountered(IBreakpointItem* breakpoint);
+
+   void SendResponse(const char* response);
+   void SendEoL();
+   bool Help(std::deque<std::string> param);
 
 signals:
    void Error(QTcpSocket::SocketError socketerror);
@@ -95,6 +100,8 @@ public slots:
    void Disconnected();
 
 protected:
+   void AddCommand(IRemoteCommand* action, std::initializer_list<std::string >commands);
+
    Emulation* emulation_;
 
    // Socket handling
@@ -102,15 +109,24 @@ protected:
    QTcpSocket *socket_;
    int socketDescriptor_;
    std::string pending_command_;
-   
-   // Command list
-   typedef struct RemoteCommand
-   {
-      std::function<bool(std::deque<std::string>&)> execute;
-      std::string help;
-   };
-   std::map<std::string, RemoteCommand > function_map_;
-   std::function<bool(std::deque<std::string>&)> current_command_;
+   std::string cr_lf_;
+
+   std::map<std::string, IRemoteCommand* > function_map_;
+   std::map<std::string, IRemoteCommand* > alternate_command_;
+   std::map<IRemoteCommand*, std::deque<std::string>> command_list_;
+
+   IRemoteCommand* current_command_;
    void InitMap();
 
+};
+
+
+class RemoteCommandHelp : public IRemoteCommand
+{
+public:
+   RemoteCommandHelp(DebugThread* debug);
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help();
+protected:
+   DebugThread* debug_;
 };
