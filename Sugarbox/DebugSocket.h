@@ -43,15 +43,12 @@ public slots:
 
 public:
    // Debug commands
-   bool About(std::deque<std::string>);
-   bool ClearBreakpoints(std::deque<std::string> param);
-   bool CpuStep(std::deque<std::string> param);
+   void EnterCpuStep();
+
    bool DisableBreakpoint(std::deque<std::string> param);
    bool DisableBreakpoints(std::deque<std::string> param);
-   bool Disassemble(std::deque<std::string> param);
    bool EnableBreakpoint(std::deque<std::string> param);
    bool EnableBreakpoints(std::deque<std::string> param);
-   bool EnterCpuStep(std::deque<std::string> param);
    bool ExtendedStack(std::deque<std::string>);
    bool GetCurrentMachine(std::deque<std::string>);
    bool GetCpuFrequency(std::deque<std::string>);
@@ -88,7 +85,9 @@ public:
 
    void SendResponse(const char* response);
    void SendEoL();
+   void EnterCpuStep();
    bool Help(std::deque<std::string> param);
+   
 
 signals:
    void Error(QTcpSocket::SocketError socketerror);
@@ -101,6 +100,7 @@ public slots:
 
 protected:
    void AddCommand(IRemoteCommand* action, std::initializer_list<std::string >commands);
+   void SendMultilineString(std::string str);
 
    Emulation* emulation_;
 
