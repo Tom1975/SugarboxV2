@@ -220,30 +220,27 @@ void DebugThread::InitMap()
    AddCommand(new RemoteCommandAbout(), { "about" });
    AddCommand(new RemoteCommandClearMembreakpoints(), { "clear-membreakpoints" });
    AddCommand(new RemoteCommandCpuStep(), { "cpu-step", "cs" });
+   AddCommand(new RemoteCommandDisableBreakpoint(), { "disable-breakpoint", "db" });
+   AddCommand(new RemoteCommandDisableBreakpoints(), { "disable-breakpoints" });
    AddCommand(new RemoteCommandDisassemble(), { "disassemble", "d" });
+   AddCommand(new RemoteCommandEnableBreakpoint(), { "enable-breakpoint", "eb" });
+   AddCommand(new RemoteCommandEnableBreakpoints(), { "enable-breakpoints"});
    AddCommand(new RemoteCommandExtendedStack(), { "extended-stack" });
-
+   AddCommand(new RemoteCommandGetCPUFrequency(), { "get-cpu-frequency" });
+   AddCommand(new RemoteCommandGetCurrentMachine(), { "get-current-machine", "gcm" });
+   AddCommand(new RemoteCommandGetRegisters(), { "get-registers", "gr" });
+   AddCommand(new RemoteCommandGetVersion(), { "get-version" });
+   AddCommand(new RemoteCommandHardReset(), { "hard-reset-cpu" });
    AddCommand(new RemoteCommandHelp(this), { "help", "?" });
-
-   /*
-   function_map_["disable-breakpoint"] = {std::bind(&DebugWorker::DisableBreakpoint, worker_, std::placeholders::_1), "Disable specific breakpoint"};
-   function_map_["disable-breakpoints"] = { std::bind(&DebugWorker::DisableBreakpoints, worker_, std::placeholders::_1), "Disable breakpoints" };
-   function_map_["enable-breakpoint"] = { std::bind(&DebugWorker::EnableBreakpoint, worker_, std::placeholders::_1), "Enable specific breakpoint" };
-   function_map_["enable-breakpoints"] = {std::bind(&DebugWorker::EnableBreakpoints, worker_, std::placeholders::_1), "Enable all breakpoints"};
-   function_map_["get-cpu-frequency"] = { std::bind(&DebugWorker::GetCpuFrequency, worker_, std::placeholders::_1), "Get cpu frequency in HZ" };
-   function_map_["get-current-machine"] = {std::bind(&DebugWorker::GetCurrentMachine, worker_, std::placeholders::_1), "Returns current machine name"};
-   function_map_["get-registers"] = {std::bind(&DebugWorker::GetRegisters, worker_, std::placeholders::_1), "Get CPU registers"};
-   function_map_["get-version"] = {std::bind(&DebugWorker::GetVersion, worker_, std::placeholders::_1), "Shows emulator version"};
-   function_map_["hard-reset-cpu"] = {std::bind(&DebugWorker::HardReset, worker_, std::placeholders::_1), "Hard resets the machine"};
-   function_map_["read-memory"] = {std::bind(&DebugWorker::ReadMemory, worker_, std::placeholders::_1), "Dumps memory at address."};
-   function_map_["run"] = {std::bind(&DebugWorker::Run, worker_, std::placeholders::_1), "Run cpu when on cpu step mode. Returns when a breakpoint is fired."};
-   function_map_["set-breakpoint"] = { std::bind(&DebugWorker::SetBreakpoint, worker_, std::placeholders::_1), "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled\n" };
-   */
+   AddCommand(new RemoteCommandReadMemory(), { "read-memory" });
+   AddCommand(new RemoteCommandRun(), { "run", "r" });
+   AddCommand(new RemoteCommandSetBreakpoint(), { "set-breakpoint", "sb" });
 
    // todo 
    // cpu-code-coverage get
    // cpu-code-coverage clear
    // cpu-history get 0
+   //  extended stack => ExtendedStack
    // get-tstates-partial
    // reset-tstates-partial
    // set-register
@@ -338,6 +335,11 @@ void DebugThread::EnterCpuStep()
    worker_->EnterCpuStep();
 }
 
+void DebugThread::Log(const char* log)
+{
+   qDebug() << socketDescriptor_ << log;
+}
+
 //////////////////////////////////////////////
 // Help command
 RemoteCommandHelp::RemoteCommandHelp(DebugThread* debug):debug_(debug)
@@ -368,213 +370,6 @@ void DebugWorker::EnterCpuStep()
 {
    prompt_ = STATE_CPU_STEP;
    state_ = STATE_STEP;
-}
-
-bool DebugWorker::ExtendedStack(std::deque<std::string> param)
-{
-   // Depending on the parameters
-   if (param[1] == std::string("get"))
-   {
-      // Get the stack
-      if (param.size() > 2)
-      {
-         char* endstr;
-         int stack_size = strtol(param[2].c_str(), &endstr, 10);
-         char stack_trace[128];
-         
-         for (int i = 0; i < stack_size; i++)
-         {
-            // Return stack
-            std::snprintf(stack_trace, sizeof(stack_trace), "%4.4XH %s%c", emulation_->GetStackShort(i), emulation_->GetStackType(i), 0x0a);
-            socket_->write(stack_trace);
-         }
-      }     
-   }
-   return true;
-}
-
-bool DebugWorker::GetVersion(std::deque<std::string>)
-{
-   socket_->write(CURRENT_VERSION);
-   qDebug() << socketDescriptor_ << CURRENT_VERSION;
-   return true;
-}
-
-bool DebugWorker::GetCpuFrequency(std::deque<std::string>)
-{
-   socket_->write("4000000");
-   qDebug() << socketDescriptor_ << "4000000";
-   return true;
-}
-
-bool DebugWorker::GetCurrentMachine(std::deque<std::string>)
-{
-   socket_->write(CURRENT_MACHINE);
-   qDebug() << socketDescriptor_ << CURRENT_MACHINE;
-   return true;
-}
-
-
-bool DebugWorker::GetRegisters(std::deque<std::string>)
-{
-   std::vector<std::string> reg_list = emulation_->GetZ80Registers();
-
-   bool skip_first_space = true;
-   for (auto &it : reg_list)
-   {
-      if (skip_first_space)
-      {
-         skip_first_space = false;
-      }
-      else
-      {
-         socket_->write(" ");
-      }
-      socket_->write(it.c_str());
-      qDebug() << it.c_str() << " ";
-   }
-   return true;
-}
-
-bool DebugWorker::ReadMemory (std::deque<std::string> param)
-{
-   if (param.size() < 3)
-      return true;
-   unsigned short address = atoi(param[1].c_str());
-   unsigned int size = atoi(param[2].c_str());
-   unsigned char* buffer = new unsigned char[size];
-   emulation_->ReadMemory(address, buffer, size);
-
-   // Write result to socket
-   char * out = new char[size * 2 + 1];
-   char* pout = out;
-   memset(out, 0, size * 2 + 1);
-   for (unsigned int i  = 0; i < size; i++)
-   {
-      std::snprintf(pout, size*2+1, "%02X", buffer[i]);
-      pout += 2;
-      
-   }
-   socket_->write(out);
-
-   delete buffer;
-   return true;
-}
-
-bool DebugWorker::Run(std::deque<std::string> param)
-{
-   unsigned int nb_opcodes_to_run = 0;
-
-   for (int i = 1; i < param.size(); i++)
-   {
-      // usable commands : 
-      if (stricmp(param[i].c_str(), "-update-immediately") == 0)
-      {
-         // - update-immediately
-         // todo
-      }
-      else if (stricmp(param[i].c_str(), "-verbose") == 0)
-      {
-         // - verbose
-         // todo
-      }
-      else if (stricmp(param[i].c_str(), "-no-stop-on-data") == 0)
-      {
-         // -no-stop-on-data
-         // todo
-      }
-      else 
-      {
-         // a number of opcodes to run.
-         char *endptr;
-         nb_opcodes_to_run = strtoul(param[i].c_str(), &endptr, 10);
-      }
-
-   }
-
-   emulation_->Run(nb_opcodes_to_run);
-
-   return false;
-}
-
-bool DebugWorker::HardReset(std::deque<std::string> param)
-{
-   emulation_->HardReset();
-   qDebug() << "Hard reset CPU";
-   return true;
-}
-
-bool DebugWorker::EnableBreakpoint(std::deque<std::string> param)
-{
-   // Get breakpoint number
-   if (param.size() > 1)
-   {
-      char* endstr;
-      int bp_number = strtol(param[1].c_str(), &endstr, 10);
-      if (bp_number>0)
-      {
-         emulation_->EnableBreakpoint(bp_number);
-         qDebug() << "Enable BReakpoint " << bp_number;
-      }
-   }
-   
-   return true;
-}
-
-bool DebugWorker::EnableBreakpoints(std::deque<std::string> param)
-{
-   emulation_->EnableBreakpoints();
-   qDebug() << "Clear Breakpoints";
-   return true;
-}
-
-bool DebugWorker::DisableBreakpoint(std::deque<std::string> param)
-{
-   if (param.size() > 1)
-   {
-      char* endstr;
-      int bp_number = strtol(param[1].c_str(), &endstr, 10);
-      if (bp_number > 0)
-      {
-         emulation_->DisableBreakpoint(bp_number);
-         qDebug() << "Enable BReakpoint " << bp_number;
-      }
-   }
-   return true;
-}
-
-bool DebugWorker::DisableBreakpoints(std::deque<std::string> param)
-{
-   emulation_->DisableBreakpoints();
-   qDebug() << "Clear Breakpoints";
-   return true;
-}
-
-
-bool DebugWorker::SetBreakpoint(std::deque<std::string> param)
-{
-   // Indice
-   if (param.size() < 3)
-   {
-      socket_->write("Error : Indice is mandatory, as well as a minimal address");
-      return true;
-   }
-   char*endstr;
-   int indice = strtol(param[1].c_str(), &endstr, 10);
-   if (indice == 0 ||indice > NB_BP_MAX)
-   {
-      // todo : format with NB_BP_MAX
-      socket_->write("Error : Indice should be a number between 1 and 100");
-      return true;
-   }
-
-   // Remove command name
-   param.pop_front();
-   // Remove indice
-   param.pop_front();
-   emulation_->CreateBreakpoint(indice, param);
-
-   return true;
 }
 
 void DebugWorker::WritePrompt()

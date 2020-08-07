@@ -97,3 +97,205 @@ bool RemoteCommandClearMembreakpoints::Execute(std::deque<std::string>& param)
    emulation_->ClearBreakpoints();
    return true;
 }
+
+////////////////////////////////////////////////////////
+/// Disable Breakpoint
+bool RemoteCommandDisableBreakpoint::Execute(std::deque<std::string>& param)
+{
+   if (param.size() > 1)
+   {
+      char* endstr;
+      int bp_number = strtol(param[1].c_str(), &endstr, 10);
+      if (bp_number > 0)
+      {
+         emulation_->DisableBreakpoint(bp_number);
+         std::string str = "Disable breakpoint " + std::to_string(bp_number);
+         callback_->Log(str.c_str());
+      }
+   }
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Disable Breakpoints
+bool RemoteCommandDisableBreakpoints::Execute(std::deque<std::string>& param)
+{
+   emulation_->DisableBreakpoints();
+   callback_->Log ("Clear Breakpoints");
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Enable breakpoint
+bool RemoteCommandEnableBreakpoint::Execute(std::deque<std::string>& param)
+{
+   // Get breakpoint number
+   if (param.size() > 1)
+   {
+      char* endstr;
+      int bp_number = strtol(param[1].c_str(), &endstr, 10);
+      if (bp_number > 0)
+      {
+         emulation_->EnableBreakpoint(bp_number);
+         std::string str = "Enable breakpoint " + std::to_string(bp_number);
+         callback_->Log(str.c_str());
+      }
+   }
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Enable breakpoints
+bool RemoteCommandEnableBreakpoints::Execute(std::deque<std::string>& param)
+{
+   emulation_->EnableBreakpoints();
+   callback_->Log("Enable all breakpoints");
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Get CPU Frequency
+bool RemoteCommandGetCPUFrequency::Execute(std::deque<std::string>& param)
+{
+   callback_->SendResponse("4000000");
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Get current machine
+bool RemoteCommandGetCurrentMachine::Execute(std::deque<std::string>& param)
+{
+   callback_->SendResponse(CURRENT_MACHINE);
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Get registers
+bool RemoteCommandGetRegisters::Execute(std::deque<std::string>& param)
+{
+   std::vector<std::string> reg_list = emulation_->GetZ80Registers();
+
+   bool skip_first_space = true;
+   for (auto &it : reg_list)
+   {
+      if (skip_first_space)
+      {
+         skip_first_space = false;
+      }
+      else
+      {
+         callback_->SendResponse(" ");
+      }
+      callback_->SendResponse(it.c_str());
+   }
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Get version
+bool RemoteCommandGetVersion::Execute(std::deque<std::string>& param)
+{
+   callback_->SendResponse(CURRENT_VERSION);
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Hard Reset
+bool RemoteCommandHardReset::Execute(std::deque<std::string>& param)
+{
+   emulation_->HardReset();
+   callback_->Log("Hard reset CPU");
+   return true;
+}
+////////////////////////////////////////////////////////
+/// Read Memory
+bool RemoteCommandReadMemory::Execute(std::deque<std::string>& param)
+{
+   if (param.size() < 3)
+      return true;
+   unsigned short address = atoi(param[1].c_str());
+   unsigned int size = atoi(param[2].c_str());
+   unsigned char* buffer = new unsigned char[size];
+   emulation_->ReadMemory(address, buffer, size);
+
+   // Write result to socket
+   char * out = new char[size * 2 + 1];
+   char* pout = out;
+   memset(out, 0, size * 2 + 1);
+   for (unsigned int i = 0; i < size; i++)
+   {
+      std::snprintf(pout, size * 2 + 1, "%02X", buffer[i]);
+      pout += 2;
+
+   }
+   callback_->SendResponse(out);
+
+   delete buffer;
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// Run
+bool RemoteCommandRun::Execute(std::deque<std::string>& param)
+{
+   unsigned int nb_opcodes_to_run = 0;
+
+   for (int i = 1; i < param.size(); i++)
+   {
+      // usable commands : 
+      if (stricmp(param[i].c_str(), "-update-immediately") == 0)
+      {
+         // - update-immediately
+         // todo
+      }
+      else if (stricmp(param[i].c_str(), "-verbose") == 0)
+      {
+         // - verbose
+         // todo
+      }
+      else if (stricmp(param[i].c_str(), "-no-stop-on-data") == 0)
+      {
+         // -no-stop-on-data
+         // todo
+      }
+      else
+      {
+         // a number of opcodes to run.
+         char *endptr;
+         nb_opcodes_to_run = strtoul(param[i].c_str(), &endptr, 10);
+      }
+   }
+
+   emulation_->Run(nb_opcodes_to_run);
+
+   return false;
+}
+
+////////////////////////////////////////////////////////
+/// RemoteCommandSetBreakpoint
+bool RemoteCommandSetBreakpoint::Execute(std::deque<std::string>& param)
+{
+   // Indice
+   if (param.size() < 3)
+   {
+      callback_->SendResponse("Error : Indice is mandatory, as well as a minimal address");
+      return true;
+   }
+   char*endstr;
+   int indice = strtol(param[1].c_str(), &endstr, 10);
+   if (indice == 0 || indice > NB_BP_MAX)
+   {
+      // todo : format with NB_BP_MAX
+      callback_->SendResponse("Error : Indice should be a number between 1 and 100");
+      return true;
+   }
+
+   // Remove command name
+   param.pop_front();
+   // Remove indice
+   param.pop_front();
+   emulation_->CreateBreakpoint(indice, param);
+
+   return true;
+}

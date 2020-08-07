@@ -45,20 +45,6 @@ public:
    // Debug commands
    void EnterCpuStep();
 
-   bool DisableBreakpoint(std::deque<std::string> param);
-   bool DisableBreakpoints(std::deque<std::string> param);
-   bool EnableBreakpoint(std::deque<std::string> param);
-   bool EnableBreakpoints(std::deque<std::string> param);
-   bool ExtendedStack(std::deque<std::string>);
-   bool GetCurrentMachine(std::deque<std::string>);
-   bool GetCpuFrequency(std::deque<std::string>);
-   bool GetRegisters(std::deque<std::string>);
-   bool GetVersion(std::deque<std::string>);
-   bool HardReset(std::deque<std::string> param);
-   bool ReadMemory(std::deque<std::string>);
-   bool Run(std::deque<std::string> param);
-   bool SetBreakpoint(std::deque<std::string> param);
-
 protected:
    // State machine
    enum {
@@ -86,6 +72,7 @@ public:
    void SendResponse(const char* response);
    void SendEoL();
    void EnterCpuStep();
+   void Log(const char*);
    bool Help(std::deque<std::string> param);
    
 

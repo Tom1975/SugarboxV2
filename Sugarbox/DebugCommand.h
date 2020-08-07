@@ -11,6 +11,8 @@ public:
    virtual void SendResponse(const char*) = 0;
    virtual void SendEoL() = 0;
    virtual void EnterCpuStep() = 0;
+
+   virtual void Log(const char*) = 0;
 };
 
 ////////////////////////////////////////////////////////
@@ -68,10 +70,118 @@ public:
 };
 
 ////////////////////////////////////////////////////////
-///  ExtendedStack
+///  Clear memory breakpoints
 class RemoteCommandClearMembreakpoints : public IRemoteCommand
 {
 public:
    virtual bool Execute(std::deque<std::string>&);
    virtual std::string Help() { return "Clear all memory breakpoints"; }
 };
+
+////////////////////////////////////////////////////////
+///  Disable breakpoint
+class RemoteCommandDisableBreakpoint: public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Disable specific breakpoint"; }
+};
+
+////////////////////////////////////////////////////////
+///  Disable breakpoints
+class RemoteCommandDisableBreakpoints : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Disable breakpoints"; }
+};
+
+////////////////////////////////////////////////////////
+///  Disable breakpoint
+class RemoteCommandEnableBreakpoint : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Enable specific breakpoint"; }
+};
+
+////////////////////////////////////////////////////////
+///  Disable breakpoint
+class RemoteCommandEnableBreakpoints : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Enable breakpoints"; }
+};
+
+////////////////////////////////////////////////////////
+///  Get CPU Frequency
+class RemoteCommandGetCPUFrequency : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Get cpu frequency in hz"; }
+};
+
+////////////////////////////////////////////////////////
+///  Get current machine
+class RemoteCommandGetCurrentMachine : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Returns current machine name"; }
+};
+
+////////////////////////////////////////////////////////
+///  Get Registers
+class RemoteCommandGetRegisters : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Get CPU registers"; }
+}; 
+
+////////////////////////////////////////////////////////
+///  Get version
+class RemoteCommandGetVersion : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Shows emulator version"; }
+};
+
+////////////////////////////////////////////////////////
+///  Hard Reset
+class RemoteCommandHardReset : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Hard resets the machine"; }
+};
+
+////////////////////////////////////////////////////////
+///  Read Memory
+class RemoteCommandReadMemory : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Dumps memory at address"; }
+};
+
+////////////////////////////////////////////////////////
+///  Run
+class RemoteCommandRun : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Run cpu when on cpu step mode. Returns when a breakpoint is fired."; }
+};
+
+////////////////////////////////////////////////////////
+///  RemoteCommandSetBreakpoint
+class RemoteCommandSetBreakpoint : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help() { return "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled"; }
+}; 
