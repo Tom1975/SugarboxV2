@@ -1,6 +1,5 @@
 language: cpp
 dist: xenial
-language: cpp
 osx_image: xcode12
 services:
   - xvfb
@@ -28,7 +27,7 @@ before_install:
    sudo apt-get update -qq;
    if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-8; fi;
    if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi;
-   sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50;
+   sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50;  
    sudo apt install qtbase5-dev;
    sudo apt-get install libqt5websockets5-dev;
    sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev;
@@ -51,7 +50,6 @@ deploy:
   provider: releases
   token: $GITHUB_API_KEY
   file: $TRAVIS_FILE
-  skip_cleanup: true
   draft: true
   on:
     tags: true
