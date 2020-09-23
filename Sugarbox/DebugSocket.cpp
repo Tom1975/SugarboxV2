@@ -218,6 +218,7 @@ void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std:
 void DebugThread::InitMap()
 {
    AddCommand(new RemoteCommandAbout(), { "about" });
+   AddCommand(new RemoteCommandBreak(), { "break", "b" });
    AddCommand(new RemoteCommandClearMembreakpoints(), { "clear-membreakpoints" });
    AddCommand(new RemoteCommandCpuStep(), { "cpu-step", "cs" });
    AddCommand(new RemoteCommandDisableBreakpoint(), { "disable-breakpoint", "db" });
@@ -335,6 +336,11 @@ void DebugThread::EnterCpuStep()
    worker_->EnterCpuStep();
 }
 
+void DebugThread::ExitCpuStep()
+{
+   worker_->ExitCpuStep();
+}
+
 void DebugThread::Log(const char* log)
 {
    qDebug() << socketDescriptor_ << log;
@@ -372,6 +378,12 @@ void DebugWorker::EnterCpuStep()
    state_ = STATE_STEP;
 }
 
+void DebugWorker::ExitCpuStep()
+{
+   prompt_ = "";
+   state_ = STATE_NONE;
+}
+
 void DebugWorker::WritePrompt()
 {
    socket_->write("command");
@@ -391,16 +403,20 @@ void DebugWorker::Break(unsigned int nb_opcodes)
    sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
    qDebug() << out;
    socket_->write(out);
+   EnterCpuStep();
    WritePrompt();
 }
 
 void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
 {
    // Done. Send ... something : todo
-   char out[64];
-   sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
-   qDebug() << out;
-   socket_->write(out);
-   WritePrompt();
+   if (breakpoint != nullptr)
+   {
+      char out[64];
+      sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
+      qDebug() << out;
+      socket_->write(out);
+      WritePrompt();
+   }
 }
  

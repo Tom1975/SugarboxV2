@@ -10,7 +10,9 @@ class ICommandResponse
 public:
    virtual void SendResponse(const char*) = 0;
    virtual void SendEoL() = 0;
+
    virtual void EnterCpuStep() = 0;
+   virtual void ExitCpuStep() = 0;
 
    virtual void Log(const char*) = 0;
 };
@@ -38,6 +40,15 @@ protected:
 class RemoteCommandAbout : public IRemoteCommand
 {
 public :
+   virtual bool Execute(std::deque<std::string>&);
+   virtual std::string Help();
+};
+
+////////////////////////////////////////////////////////
+/// Break
+class RemoteCommandBreak : public IRemoteCommand
+{
+public:
    virtual bool Execute(std::deque<std::string>&);
    virtual std::string Help();
 };

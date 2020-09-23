@@ -135,11 +135,16 @@ void Emulation::EmulationLoop()
             {
                debug_action_ = DBG_BREAK;
 
-               // Break notification : 
-               for (auto &it : notifier_list_)
+               // Break notification :
+               IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
+               if (bp !=nullptr)
                {
-                  // Send : Number of opcodes
-                  it->BreakpointEncountered(emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint());
+                  for (auto &it : notifier_list_)
+                  {
+                     // Send : Number of opcodes
+
+                     it->BreakpointEncountered(bp);
+                  }
                }
             }
             break;

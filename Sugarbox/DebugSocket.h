@@ -44,6 +44,7 @@ public slots:
 public:
    // Debug commands
    void EnterCpuStep();
+   void ExitCpuStep();
 
 protected:
    // State machine
@@ -72,6 +73,7 @@ public:
    void SendResponse(const char* response);
    void SendEoL();
    void EnterCpuStep();
+   void ExitCpuStep();
    void Log(const char*);
    bool Help(std::deque<std::string> param);
    

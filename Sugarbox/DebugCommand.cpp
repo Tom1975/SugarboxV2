@@ -31,6 +31,21 @@ std::string RemoteCommandAbout::Help()
 }
 
 ////////////////////////////////////////////////////////
+/// Break
+///
+bool RemoteCommandBreak::Execute(std::deque<std::string>&)
+{
+   emulation_->Break();
+   callback_->EnterCpuStep();
+   return true;
+}
+
+std::string RemoteCommandBreak::Help()
+{
+   return "Break running emulation";
+}
+
+////////////////////////////////////////////////////////
 /// Disassemble
 bool RemoteCommandDisassemble::Execute(std::deque<std::string>& param)
 {
@@ -273,7 +288,7 @@ bool RemoteCommandRun::Execute(std::deque<std::string>& param)
          nb_opcodes_to_run = strtoul(param[i].c_str(), &endptr, 10);
       }
    }
-
+   callback_->ExitCpuStep();
    emulation_->Run(nb_opcodes_to_run);
 
    return false;
