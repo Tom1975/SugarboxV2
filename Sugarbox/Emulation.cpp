@@ -353,6 +353,12 @@ int Emulation::LoadCpr(const char* file_path)
    return emulator_engine_->LoadCpr(file_path);
 }
 
+int Emulation::LoadXpr(const char* file_path)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->LoadXpr(file_path);
+}
 
 void Emulation::TapeRecord()
 {

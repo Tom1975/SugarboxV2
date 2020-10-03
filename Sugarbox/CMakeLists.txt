@@ -28,6 +28,7 @@ set(CompilerFlags
 		_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING 
         )
 
+
 find_package(Qt5 COMPONENTS Widgets WebSockets REQUIRED)
 qt5_add_resources(QRCS resources.qrc)
 

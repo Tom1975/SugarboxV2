@@ -763,6 +763,7 @@ void SugarboxApp::dropEvent(QDropEvent *event)
       list_of_types.push_back(MediaManager::MEDIA_TAPE);
       list_of_types.push_back(MediaManager::MEDIA_BIN);
       list_of_types.push_back(MediaManager::MEDIA_CPR);
+      list_of_types.push_back(MediaManager::MEDIA_XPR);
 
       int media_type = mediaMgr.GetType(list_of_types);
 
@@ -808,6 +809,9 @@ void SugarboxApp::dropEvent(QDropEvent *event)
          break;
       case 8:
          emulation_->LoadCpr(path.c_str());
+         break;
+      case MediaManager::MEDIA_XPR:
+         emulation_->LoadXpr(path.c_str());
          break;
       }
    }

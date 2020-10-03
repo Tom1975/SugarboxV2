@@ -5,7 +5,6 @@ if (MSVC)
    set (CMAKE_INSTALL_BINDIR ".")
 endif()
 
-
 #no config util
 set ( ALSOFT_NO_CONFIG_UTIL ON CACHE BOOL "" FORCE)
 set ( ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
