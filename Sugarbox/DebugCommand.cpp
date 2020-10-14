@@ -1,6 +1,5 @@
 
 #include "DebugCommand.h"
-#include <qlogging.h>
 
 // Cross compilation : use stricmp / strcasecmp depending on windows / linux
 #ifndef _WIN32
@@ -19,7 +18,7 @@
 ////////////////////////////////////////////////////////
 /// About
 ///
-bool RemoteCommandAbout::Execute(std::deque<std::string>&)
+bool RemoteCommandAbout::Execute(std::vector<std::string>&)
 {
    callback_->SendResponse(ABOUT_STRING);
    return true;
@@ -33,7 +32,7 @@ std::string RemoteCommandAbout::Help()
 ////////////////////////////////////////////////////////
 /// Break
 ///
-bool RemoteCommandBreak::Execute(std::deque<std::string>&)
+bool RemoteCommandBreak::Execute(std::vector<std::string>&)
 {
    emulation_->Break();
    callback_->EnterCpuStep();
@@ -47,7 +46,7 @@ std::string RemoteCommandBreak::Help()
 
 ////////////////////////////////////////////////////////
 /// Disassemble
-bool RemoteCommandDisassemble::Execute(std::deque<std::string>& param)
+bool RemoteCommandDisassemble::Execute(std::vector<std::string>& param)
 {
    if (param.size() > 1)
    {
@@ -79,7 +78,7 @@ bool RemoteCommandDisassemble::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// EnterCpuStep
-bool RemoteCommandCpuStep::Execute(std::deque<std::string>& param)
+bool RemoteCommandCpuStep::Execute(std::vector<std::string>& param)
 {
    // Stop emulation
    emulation_->Break();
@@ -89,7 +88,7 @@ bool RemoteCommandCpuStep::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// ExtendedStack
-bool RemoteCommandExtendedStack::Execute(std::deque<std::string>& param)
+bool RemoteCommandExtendedStack::Execute(std::vector<std::string>& param)
 {
    // Depending on the parameters
    if (param[1] == std::string("get"))
@@ -114,7 +113,7 @@ bool RemoteCommandExtendedStack::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// ExtendedStack
-bool RemoteCommandClearMembreakpoints::Execute(std::deque<std::string>& param)
+bool RemoteCommandClearMembreakpoints::Execute(std::vector<std::string>& param)
 {
    emulation_->ClearBreakpoints();
    return true;
@@ -122,7 +121,7 @@ bool RemoteCommandClearMembreakpoints::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Disable Breakpoint
-bool RemoteCommandDisableBreakpoint::Execute(std::deque<std::string>& param)
+bool RemoteCommandDisableBreakpoint::Execute(std::vector<std::string>& param)
 {
    if (param.size() > 1)
    {
@@ -140,7 +139,7 @@ bool RemoteCommandDisableBreakpoint::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Disable Breakpoints
-bool RemoteCommandDisableBreakpoints::Execute(std::deque<std::string>& param)
+bool RemoteCommandDisableBreakpoints::Execute(std::vector<std::string>& param)
 {
    emulation_->DisableBreakpoints();
    callback_->Log ("Clear Breakpoints");
@@ -149,7 +148,7 @@ bool RemoteCommandDisableBreakpoints::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Enable breakpoint
-bool RemoteCommandEnableBreakpoint::Execute(std::deque<std::string>& param)
+bool RemoteCommandEnableBreakpoint::Execute(std::vector<std::string>& param)
 {
    // Get breakpoint number
    if (param.size() > 1)
@@ -169,7 +168,7 @@ bool RemoteCommandEnableBreakpoint::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Enable breakpoints
-bool RemoteCommandEnableBreakpoints::Execute(std::deque<std::string>& param)
+bool RemoteCommandEnableBreakpoints::Execute(std::vector<std::string>& param)
 {
    emulation_->EnableBreakpoints();
    callback_->Log("Enable all breakpoints");
@@ -178,7 +177,7 @@ bool RemoteCommandEnableBreakpoints::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Get CPU Frequency
-bool RemoteCommandGetCPUFrequency::Execute(std::deque<std::string>& param)
+bool RemoteCommandGetCPUFrequency::Execute(std::vector<std::string>& param)
 {
    callback_->SendResponse("4000000");
    return true;
@@ -186,7 +185,7 @@ bool RemoteCommandGetCPUFrequency::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Get current machine
-bool RemoteCommandGetCurrentMachine::Execute(std::deque<std::string>& param)
+bool RemoteCommandGetCurrentMachine::Execute(std::vector<std::string>& param)
 {
    callback_->SendResponse(CURRENT_MACHINE);
    return true;
@@ -194,7 +193,7 @@ bool RemoteCommandGetCurrentMachine::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Get registers
-bool RemoteCommandGetRegisters::Execute(std::deque<std::string>& param)
+bool RemoteCommandGetRegisters::Execute(std::vector<std::string>& param)
 {
    std::vector<std::string> reg_list = emulation_->GetZ80Registers();
 
@@ -216,7 +215,7 @@ bool RemoteCommandGetRegisters::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Get version
-bool RemoteCommandGetVersion::Execute(std::deque<std::string>& param)
+bool RemoteCommandGetVersion::Execute(std::vector<std::string>& param)
 {
    callback_->SendResponse(CURRENT_VERSION);
    return true;
@@ -224,7 +223,7 @@ bool RemoteCommandGetVersion::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Hard Reset
-bool RemoteCommandHardReset::Execute(std::deque<std::string>& param)
+bool RemoteCommandHardReset::Execute(std::vector<std::string>& param)
 {
    emulation_->HardReset();
    callback_->Log("Hard reset CPU");
@@ -232,7 +231,7 @@ bool RemoteCommandHardReset::Execute(std::deque<std::string>& param)
 }
 ////////////////////////////////////////////////////////
 /// Read Memory
-bool RemoteCommandReadMemory::Execute(std::deque<std::string>& param)
+bool RemoteCommandReadMemory::Execute(std::vector<std::string>& param)
 {
    if (param.size() < 3)
       return true;
@@ -259,7 +258,7 @@ bool RemoteCommandReadMemory::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Run
-bool RemoteCommandRun::Execute(std::deque<std::string>& param)
+bool RemoteCommandRun::Execute(std::vector<std::string>& param)
 {
    unsigned int nb_opcodes_to_run = 0;
 
@@ -296,7 +295,7 @@ bool RemoteCommandRun::Execute(std::deque<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// RemoteCommandSetBreakpoint
-bool RemoteCommandSetBreakpoint::Execute(std::deque<std::string>& param)
+bool RemoteCommandSetBreakpoint::Execute(std::vector<std::string>& param)
 {
    // Indice
    if (param.size() < 3)
@@ -314,10 +313,8 @@ bool RemoteCommandSetBreakpoint::Execute(std::deque<std::string>& param)
    }
 
    // Remove command name
-   param.pop_front();
-   // Remove indice
-   param.pop_front();
-   emulation_->CreateBreakpoint(indice, param);
+   std::vector sub_param = std::vector(param.begin() + 2, param.end());
+   emulation_->CreateBreakpoint(indice, sub_param);
 
    return true;
 }

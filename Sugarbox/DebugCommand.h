@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <deque>
+#include <vector>
 #include "Emulation.h"
 
 ////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ public:
       emulation_ = emulation;
    }
 
-   virtual bool Execute(std::deque<std::string>&) = 0;
+   virtual bool Execute(std::vector<std::string>&) = 0;
    virtual std::string Help() = 0;
 protected:
    ICommandResponse* callback_;
@@ -40,7 +40,7 @@ protected:
 class RemoteCommandAbout : public IRemoteCommand
 {
 public :
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help();
 };
 
@@ -49,7 +49,7 @@ public :
 class RemoteCommandBreak : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help();
 };
 
@@ -58,7 +58,7 @@ public:
 class RemoteCommandCpuStep : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Run single opcode cpu step."; };
 };
 
@@ -67,7 +67,7 @@ public:
 class RemoteCommandDisassemble : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help(){ return "Disassemble at address. If no address specified, disassemble from PC register. If no lines specified, disassembles one line"; }
 };
 
@@ -76,7 +76,7 @@ public:
 class RemoteCommandExtendedStack : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Sets extended stack parameters, which allows you to see what kind of values are in the stack. Action and parameters are the following:\n	get     n[index]  Get n values.The index default value is the SP register\n"; }
 };
 
@@ -85,7 +85,7 @@ public:
 class RemoteCommandClearMembreakpoints : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Clear all memory breakpoints"; }
 };
 
@@ -94,7 +94,7 @@ public:
 class RemoteCommandDisableBreakpoint: public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Disable specific breakpoint"; }
 };
 
@@ -103,7 +103,7 @@ public:
 class RemoteCommandDisableBreakpoints : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Disable breakpoints"; }
 };
 
@@ -112,7 +112,7 @@ public:
 class RemoteCommandEnableBreakpoint : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Enable specific breakpoint"; }
 };
 
@@ -121,7 +121,7 @@ public:
 class RemoteCommandEnableBreakpoints : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Enable breakpoints"; }
 };
 
@@ -130,7 +130,7 @@ public:
 class RemoteCommandGetCPUFrequency : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Get cpu frequency in hz"; }
 };
 
@@ -139,7 +139,7 @@ public:
 class RemoteCommandGetCurrentMachine : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Returns current machine name"; }
 };
 
@@ -148,7 +148,7 @@ public:
 class RemoteCommandGetRegisters : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Get CPU registers"; }
 }; 
 
@@ -157,7 +157,7 @@ public:
 class RemoteCommandGetVersion : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Shows emulator version"; }
 };
 
@@ -166,7 +166,7 @@ public:
 class RemoteCommandHardReset : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Hard resets the machine"; }
 };
 
@@ -175,7 +175,7 @@ public:
 class RemoteCommandReadMemory : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Dumps memory at address"; }
 };
 
@@ -184,7 +184,7 @@ public:
 class RemoteCommandRun : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Run cpu when on cpu step mode. Returns when a breakpoint is fired."; }
 };
 
@@ -193,6 +193,6 @@ public:
 class RemoteCommandSetBreakpoint : public IRemoteCommand
 {
 public:
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled"; }
 }; 

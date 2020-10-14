@@ -1,6 +1,5 @@
 #pragma once
 
-#include <deque>
 #include <functional>
 
 #include <QtWebSockets/QtWebSockets>
@@ -75,7 +74,7 @@ public:
    void EnterCpuStep();
    void ExitCpuStep();
    void Log(const char*);
-   bool Help(std::deque<std::string> param);
+   bool Help(std::vector<std::string> param);
    
 
 signals:
@@ -102,7 +101,7 @@ protected:
 
    std::map<std::string, IRemoteCommand* > function_map_;
    std::map<std::string, IRemoteCommand* > alternate_command_;
-   std::map<IRemoteCommand*, std::deque<std::string>> command_list_;
+   std::map<IRemoteCommand*, std::vector<std::string>> command_list_;
 
    IRemoteCommand* current_command_;
    void InitMap();
@@ -114,7 +113,7 @@ class RemoteCommandHelp : public IRemoteCommand
 {
 public:
    RemoteCommandHelp(DebugThread* debug);
-   virtual bool Execute(std::deque<std::string>&);
+   virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help();
 protected:
    DebugThread* debug_;

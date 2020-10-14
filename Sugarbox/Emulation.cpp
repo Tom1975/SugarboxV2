@@ -572,7 +572,7 @@ void Emulation::ClearBreakpoints()
    emulator_engine_->GetBreakpointHandler()->ClearBreakpoints();
 }
 
-void Emulation::CreateBreakpoint(int indice, std::deque<std::string> param)
+void Emulation::CreateBreakpoint(int indice, std::vector<std::string> param)
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);

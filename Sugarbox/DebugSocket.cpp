@@ -160,7 +160,7 @@ void DebugThread::ReadyRead()
          {
             qDebug() << socketDescriptor_ << " Command : " << it.c_str();
 
-            std::deque<std::string> command_parameters;
+            std::vector<std::string> command_parameters;
             split(processed_command, ' ', std::back_inserter(command_parameters));
             current_command_ = nullptr;
             if (function_map_.find(command_parameters[0]) != function_map_.end())
@@ -204,7 +204,7 @@ void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std:
    if (it == commands.end())
       return;
 
-   std::deque<std::string> command_list;
+   std::vector<std::string> command_list;
    function_map_[*it] = action;
    command_list.push_back(*it);
    while (++it != commands.end())
@@ -264,7 +264,7 @@ void DebugThread::SendMultilineString(std::string str)
    }
 }
 
-bool DebugThread::Help(std::deque<std::string> param)
+bool DebugThread::Help(std::vector<std::string> param)
 {
    std::string output = "";
 
@@ -353,7 +353,7 @@ RemoteCommandHelp::RemoteCommandHelp(DebugThread* debug):debug_(debug)
    
 }
 
-bool RemoteCommandHelp::Execute(std::deque<std::string>& param)
+bool RemoteCommandHelp::Execute(std::vector<std::string>& param)
 {
    return debug_->Help(param);
 }
