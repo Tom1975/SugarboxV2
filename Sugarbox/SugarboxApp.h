@@ -20,6 +20,7 @@
 #include "SettingsList.h"
 #include "DlgSettings.h"
 #include "SoundControl.h"
+#include "DebugSocket.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -134,14 +135,6 @@ protected:
    QWidget *widget_;
    QVBoxLayout  *mainLayout_;
    QMenuBar *menubar_;
-   // Gui related
-   enum {
-      POPUP_NONE,
-      POPUP_ASK_SAVE
-   } PopupType;
-   unsigned int PopupArg;
-   std::function<void()> popup_associated_function_;
-
 
    //////////////
    // File dialogs
@@ -189,5 +182,7 @@ protected:
 
    ConfigurationManager key_mgr, key_mgr_out;
 
+   // Debugger
+   DebugSocket* debugger_link_;
 };
 

@@ -1,6 +1,7 @@
 
 #include <chrono>
 #include <thread>
+#include <sstream>
 
 #include "Emulation.h"
 #include "wav.h"
@@ -16,11 +17,13 @@
 //////////////////////////////////////////////
 /// ctor/dtor
 Emulation::Emulation(INotifier* notifier) :
+   debug_action_(DBG_NONE),
    notifier_(notifier),
    motherboard_(nullptr), 
    sna_handler_(nullptr),
    running_thread_(false),
    pause_(false),
+   nb_opcode_to_run_(0),
    worker_thread_(nullptr),
    command_waiting_(false),
    sound_mixer_(nullptr),
@@ -90,7 +93,8 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    sound_mixer_->AddWav(SND_INSERT_DISK, insert_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_EJECT_DISK, eject_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_MOTOR_ON, drive_mo_wav, sizeof(seek_short_wav));
-   
+
+   disassembler_ = new Z80Desassember(emulator_engine_);
 }
 
 void Emulation::Stop()
@@ -104,15 +108,65 @@ void Emulation::EmulationLoop()
 {
    const std::lock_guard<std::mutex> lock(command_mutex_);
 
+   emulator_engine_->GetProc()->stop_on_fetch_ = false;
    while (running_thread_)
    {
-      if (!pause_)
+      if (pause_)
       {
-         emulator_engine_->RunTimeSlice(true);
-      }
-      else
-      {
+         // Pause : just wait for something to happen
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+      else 
+      {
+         // Debug mode : what can be done : 
+         switch (debug_action_)
+         {
+         case DBG_NONE:
+            emulator_engine_->RunFullSpeed();
+            break;
+         case DBG_STEP:
+            // - Step : Execute one command (Step in)
+            emulator_engine_->RunDebugMode(1);
+            debug_action_ = DBG_BREAK;
+            break;
+         case DBG_RUN:
+            // - run until next breakpoint
+            if (emulator_engine_->RunTimeSlice(false) == 1)
+            {
+               debug_action_ = DBG_BREAK;
+
+               // Break notification :
+               IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
+               if (bp !=nullptr)
+               {
+                  for (auto &it : notifier_list_)
+                  {
+                     // Send : Number of opcodes
+
+                     it->BreakpointEncountered(bp);
+                  }
+               }
+            }
+            break;
+
+         case DBG_RUN_FIXED_OP:
+            // xx opcodes run : stop now
+            emulator_engine_->RunDebugMode(nb_opcode_to_run_);
+            debug_action_ = DBG_BREAK;
+
+            // Break notification
+            for (auto &it : notifier_list_)
+            {
+               // Send : Number of opcodes 
+               it->NotifyBreak(0);
+            }
+            break;
+            
+         case DBG_BREAK:
+            // - break : Stop emulation until next command
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            break;
+         }
       }
 
       // Command waiting ? 
@@ -156,6 +210,8 @@ void Emulation::HardReset()
 
 DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
 {
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
    return emulator_engine_->CanLoad(file, list_of_types);
 }
 
@@ -297,6 +353,12 @@ int Emulation::LoadCpr(const char* file_path)
    return emulator_engine_->LoadCpr(file_path);
 }
 
+int Emulation::LoadXpr(const char* file_path)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   return emulator_engine_->LoadXpr(file_path);
+}
 
 void Emulation::TapeRecord()
 {
@@ -382,7 +444,7 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
       case IDisk::AUTO_FILE:
       {
          char wcsCmdLine[256];
-         sprintf (wcsCmdLine, "RUN\"%s", fileToLoad);
+         std::snprintf(wcsCmdLine, sizeof(wcsCmdLine), "RUN\"%s", fileToLoad);
          emulator_engine_->Paste(wcsCmdLine);
          emulator_engine_->Paste("\r");
       }
@@ -413,5 +475,193 @@ void Emulation::TrackChanged(int nb_tracks)
    else
       sound_mixer_->PlayWav(SND_SEEK_LONG);
       
+}
+
+void Emulation::Break()
+{
+   debug_action_ = DBG_BREAK;
+   emulator_engine_->SetRun(false);
+}
+
+std::vector<std::string> Emulation::GetZ80Registers()
+{
+   std::vector<std::string> reg_list;
+   Z80 * z80 = emulator_engine_->GetProc();
+
+   char reg_buffer[24];
+
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "PC=%4.4Xh", z80->GetPC());
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "SP=%4.4Xh", z80->sp_);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "AF=%4.4Xh", z80->af_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "BC=%4.4Xh", z80->bc_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "HL=%4.4Xh", z80->hl_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "DE=%4.4Xh", z80->de_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IX=%4.4Xh", z80->ix_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IY=%4.4Xh", z80->iy_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "AF'=%4.4Xh", z80->af_p_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "BC'=%4.4Xh", z80->bc_p_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "HL'=%4.4Xh", z80->hl_p_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "DE'=%4.4Xh", z80->de_p_.w);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "I=%2.2Xhh", z80->ir_.b.h);
+   reg_list.push_back(reg_buffer);
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "R=%2.2Xhh", z80->ir_.b.l);
+   reg_list.push_back(reg_buffer);
+
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "F=%c%c%c%c%c%c%c%c",
+      (z80->af_.b.l&SF) ? 'S' : '-',
+      (z80->af_.b.l&ZF) ? 'Z' : '-',
+      (z80->af_.b.l&YF) ? '5' : '-',
+      (z80->af_.b.l&HF) ? 'H' : '-',
+      (z80->af_.b.l&XF) ? '3' : '-',
+      (z80->af_.b.l&PF) ? 'P' : '-',
+      (z80->af_.b.l&NF) ? 'N' : '-',
+      (z80->af_.b.l&CF) ? 'C' : '-'
+   ) ;
+   reg_list.push_back(reg_buffer);
+
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "F'=%c%c%c%c%c%c%c%c",
+      (z80->af_p_.b.l&SF) ? 'S' : '-',
+      (z80->af_p_.b.l&ZF) ? 'Z' : '-',
+      (z80->af_p_.b.l&YF) ? '5' : '-',
+      (z80->af_p_.b.l&HF) ? 'H' : '-',
+      (z80->af_p_.b.l&XF) ? '3' : '-',
+      (z80->af_p_.b.l&PF) ? 'P' : '-',
+      (z80->af_p_.b.l&NF) ? 'N' : '-',
+      (z80->af_p_.b.l&CF) ? 'C' : '-'
+   );
+   reg_list.push_back(reg_buffer);
+
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "MEMPTR=%4.4Xh", z80->mem_ptr_.w);
+   reg_list.push_back(reg_buffer);
+
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IM=%d", z80->interrupt_mode_);
+   reg_list.push_back(reg_buffer);
+   
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "IFF=%c%c", z80->iff1_?'1':'-', z80->iff2_ ? '2' : '-');
+   reg_list.push_back(reg_buffer);
+   
+   std::snprintf(reg_buffer, sizeof(reg_buffer), "Q=%2.2X", z80->q_);
+   reg_list.push_back(reg_buffer);
+
+   return reg_list;
+}
+unsigned int Emulation::ReadMemory( unsigned short address, unsigned char * buffer, unsigned int size)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetMem()->GetDebugValue(buffer, address, size, Memory::MEM_READ, 0);
+   return size;
+}
+
+void Emulation::ClearBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->ClearBreakpoints();
+}
+
+void Emulation::CreateBreakpoint(int indice, std::vector<std::string> param)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->CreateBreakpoint(indice, param);
+
+}
+
+void Emulation::EnableBreakpoint(int bp_number)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->EnableBreakpoint(bp_number);
+}
+
+void Emulation::EnableBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->EnableBreakpoints();
+}
+
+void Emulation::DisableBreakpoint(int bp_number)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->DisableBreakpoint(bp_number);
+}
+
+void Emulation::DisableBreakpoints()
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->GetBreakpointHandler()->DisableBreakpoints();
+}
+
+const char* Emulation::GetStackType(unsigned int index)
+{
+   // depend on the type of call. TBD !
+   // can be : 'call' or 'rst', or 'interrupt'
+   return "pushed";
+}
+
+unsigned short Emulation::GetStackShort(unsigned int index)
+{
+   // address : 
+   unsigned short stack_address = emulator_engine_->GetProc()->sp_ += index * 2;
+   return emulator_engine_->GetMem()->GetWord(stack_address);
+}
+
+int Emulation::Disassemble(unsigned short address, char* buffer, int buffer_size)
+{
+   char mnemonic[16];
+   char argument[16];
+   int size_disassembled = disassembler_->DasmMnemonic(address, mnemonic, argument);
+
+   std::snprintf(buffer, buffer_size, "%s %s", mnemonic, argument);
+   return size_disassembled;
+}
+
+void Emulation::AddNotifier(IBeakpointNotifier* notifier)
+{
+   notifier_list_.push_back(notifier);
+}
+
+void Emulation::RemoveNotifier(IBeakpointNotifier* notifier)
+{
+   notifier_list_.remove(notifier);
+}
+
+
+void Emulation::Step()
+{
+   emulator_engine_->SetStepIn(true);
+   emulator_engine_->SetRun(true);
+   debug_action_ = DBG_STEP;
+}
+
+void Emulation::Run(int nb_opcodes )   
+{
+   emulator_engine_->SetRun(true);
+   if (nb_opcodes == 0)
+   {
+      debug_action_ = DBG_RUN;
+   }
+   else
+   {
+      debug_action_ = DBG_RUN_FIXED_OP;
+      nb_opcode_to_run_ = nb_opcodes;
+
+   }
 }
 

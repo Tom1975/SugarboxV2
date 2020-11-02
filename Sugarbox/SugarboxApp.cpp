@@ -9,7 +9,7 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr)
 {
    emulation_ = new Emulation(this);
 
@@ -25,6 +25,9 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    menuBar()->setFocusPolicy(Qt::ClickFocus);
    setCentralWidget(&display_);
    clear();
+
+   debugger_link_ = new DebugSocket(this, emulation_);
+   debugger_link_->StartServer();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -294,7 +297,7 @@ void SugarboxApp::DrawStatusBar()
    {
       // Update
 
-      sprintf(str_speed_, "%i %%%%", emulation_->GetSpeed());
+      std::snprintf(str_speed_, sizeof(str_speed_), "%i %%%%", emulation_->GetSpeed());
       counter_ = 0;
       statusBar()->showMessage(tr(str_speed_), 2000);
    }
@@ -746,7 +749,8 @@ void SugarboxApp::dropEvent(QDropEvent *event)
    foreach(const QUrl &url, event->mimeData()->urls())
    {
       QString fileName = url.toLocalFile();
-      std::string path = fileName.toStdString();
+      std::string path = fileName.toUtf8().constData();
+      
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)
@@ -759,6 +763,7 @@ void SugarboxApp::dropEvent(QDropEvent *event)
       list_of_types.push_back(MediaManager::MEDIA_TAPE);
       list_of_types.push_back(MediaManager::MEDIA_BIN);
       list_of_types.push_back(MediaManager::MEDIA_CPR);
+      list_of_types.push_back(MediaManager::MEDIA_XPR);
 
       int media_type = mediaMgr.GetType(list_of_types);
 
@@ -804,6 +809,9 @@ void SugarboxApp::dropEvent(QDropEvent *event)
          break;
       case 8:
          emulation_->LoadCpr(path.c_str());
+         break;
+      case MediaManager::MEDIA_XPR:
+         emulation_->LoadXpr(path.c_str());
          break;
       }
    }

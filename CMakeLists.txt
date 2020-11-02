@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
-# Project name
-project(Sugarbox)
-
-set(CMAKE_INSTALL_PREFIX libs)
+if (MSVC)
+   set( CMAKE_INSTALL_PREFIX bin)
+   set (CMAKE_INSTALL_BINDIR ".")
+endif()
 
 #no config util
 set ( ALSOFT_NO_CONFIG_UTIL ON CACHE BOOL "" FORCE)

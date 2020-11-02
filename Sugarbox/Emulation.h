@@ -9,11 +9,19 @@
 #include "ISound.h"
 #include "Inotify.h"
 #include "ALSoundMixer.h"
+#include "Z80Desassember.h"
 
 class INotifier
 {
 public:
    virtual void DiskLoaded() = 0;
+};
+
+class IBeakpointNotifier
+{
+public:
+   virtual void NotifyBreak(unsigned int nb_opcodes) = 0;
+   virtual void BreakpointEncountered(IBreakpointItem*) = 0;
 };
 
 class Emulation  : public IDirectories, IFdcNotify
@@ -55,7 +63,7 @@ public :
    void ToggleAutoload();
    bool IsDiskPresent(unsigned int drive);
    void InsertBlankDisk(int drive, IDisk::DiskType type);
-   DataContainer* CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types = { MediaManager::MEDIA_DISK, MediaManager::MEDIA_SNA, MediaManager::MEDIA_SNR, MediaManager::MEDIA_TAPE, MediaManager::MEDIA_BIN,MediaManager::MEDIA_CPR });
+   DataContainer* CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types = { MediaManager::MEDIA_DISK, MediaManager::MEDIA_SNA, MediaManager::MEDIA_SNR, MediaManager::MEDIA_TAPE, MediaManager::MEDIA_BIN,MediaManager::MEDIA_CPR ,MediaManager::MEDIA_XPR });
    bool LoadSnapshot(const char* file_path);
    void SaveSnapshot(const char* file_path);
    void QuickLoadsnapshot();
@@ -71,6 +79,7 @@ public :
    int LoadTape(const char* file_path);
    int LoadTape(IContainedElement* container);
    int LoadCpr(const char* file_path);
+   int LoadXpr(const char* file_path);
 
    // Tape
    void TapeRecord();
@@ -80,6 +89,36 @@ public :
    void TapePause();
    void TapeStop();
 
+   //////////////////////////////////
+   // Debug access
+   enum
+   {
+      DBG_NONE,
+      DBG_RUN,
+      DBG_RUN_FIXED_OP,
+      DBG_STEP,
+      DBG_BREAK,
+   }debug_action_;
+
+   void AddNotifier(IBeakpointNotifier*);
+   void RemoveNotifier(IBeakpointNotifier*);
+   std::list< IBeakpointNotifier*> notifier_list_;
+
+   void Step();
+   void Run( int nb_opcodes = 0);
+   void Break();
+
+   int Disassemble(unsigned short address, char* buffer, int buffer_size);
+   std::vector<std::string> GetZ80Registers();
+   unsigned int ReadMemory(unsigned short address, unsigned char * buffer, unsigned int size);
+   void ClearBreakpoints();
+   void CreateBreakpoint(int indice, std::vector<std::string> param);
+   void EnableBreakpoint(int bp_number);
+   void EnableBreakpoints();
+   void DisableBreakpoint(int bp_number);
+   void DisableBreakpoints();
+   const char* GetStackType(unsigned int index);
+   unsigned short GetStackShort(unsigned int index);
 
    //Auto type
    void AutoType(const char* clipboard);
@@ -99,6 +138,7 @@ protected:
    INotifier* notifier_;
 
    Motherboard* motherboard_;
+   Z80Desassember* disassembler_;
 
    EmulatorEngine* emulator_engine_;
    CSnapshot sna_handler_;
@@ -112,6 +152,9 @@ protected:
 
    // Emulation control
    bool pause_;
+
+   unsigned nb_opcode_to_run_;
+
 
    std::thread* worker_thread_;
    bool running_thread_;
