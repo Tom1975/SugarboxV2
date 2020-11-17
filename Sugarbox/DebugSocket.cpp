@@ -24,6 +24,7 @@ QT_USE_NAMESPACE
 
 DebugSocket::DebugSocket(QObject* parent, Emulation* emulation) :emulation_(emulation), QTcpServer(parent)
 {
+   connect(this, SIGNAL( newConnection()), this, SLOT(thereIsnewConnection()));
 }
 
 void DebugSocket::StartServer()
@@ -38,7 +39,13 @@ void DebugSocket::StartServer()
    }
 }
 
-void DebugSocket::incomingConnection(int socketDescriptor)
+void DebugSocket::thereIsnewConnection()
+{
+   qDebug() << " thereIsnewConnection...";
+
+}
+
+void DebugSocket::incomingConnection(qintptr socketDescriptor)
 {
    qDebug() << socketDescriptor << " Connecting...";
    DebugThread *thread = new DebugThread(emulation_, socketDescriptor, this);

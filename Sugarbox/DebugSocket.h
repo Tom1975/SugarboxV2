@@ -20,8 +20,8 @@ signals:
 
 public slots:
 
-protected:
-   void incomingConnection(int socketDescriptor);
+protected:   
+   void incomingConnection(qintptr socketDescriptor);
 protected:
    Emulation* emulation_;
 
