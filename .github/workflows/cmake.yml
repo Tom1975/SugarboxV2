@@ -27,7 +27,6 @@ jobs:
         target: 'desktop'
         arch: 'win32_msvc2017'
         install-deps: 'true'
-        modules: 'qtcore qtwidget qtwebsockets'
         
     - name: Checkout submodules
       run: git submodule update --init --recursive 
