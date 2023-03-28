@@ -22,7 +22,13 @@ jobs:
     
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
-      
+      with:
+        version: '5.14.2'
+        target: 'desktop'
+        arch: 'win32_msvc2017'
+        install-deps: 'true'
+        modules: 'qtcore qtwidget qtwebsockets'
+        
     - name: Checkout submodules
       run: git submodule update --init --recursive 
 
