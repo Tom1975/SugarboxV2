@@ -28,7 +28,7 @@ jobs:
       with:
         version: '5.14.2'
         target: 'desktop'
-        arch: ${{ matrix.os.qt_arch }}
+        arch: 'win32_msvc2017'
         install-deps: 'true'
         
     - name: Checkout submodules
