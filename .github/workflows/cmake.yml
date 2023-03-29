@@ -18,11 +18,8 @@ jobs:
     runs-on:  ${{ matrix.os.host }}
     strategy:
       matrix:
-        os:
-          - name: windows_x86
-            host: windows-latest
-            qt_arch: win32_msvc2017
-            cmake_arg: -AWin32
+        os: [ windows-latest, Ubuntu-latest]
+
     steps:
     - uses: actions/checkout@v3
     
