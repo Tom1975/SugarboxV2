@@ -52,6 +52,8 @@ jobs:
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
+          name: SugarboxV2Win32
           path: ${{github.workspace}}\build\*.7z
+          
           
           
