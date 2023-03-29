@@ -22,10 +22,10 @@ jobs:
         include:
           - os: windows-latest
             qt_version: 'win32_msvc2017'
-            cmake_arg: '-AWin32'
+            cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
           - os: Ubuntu-latest
             qt_version: 'gcc_64'            
-
+            cmake_arg: '-DGENERATE_UNITTESTS=TRUE' 
     steps:
     - uses: actions/checkout@v3
     
