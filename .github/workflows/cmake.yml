@@ -48,3 +48,10 @@ jobs:
       # CPack time
       working-directory: ${{github.workspace}}\build
       run: CPack -G 7Z .
+      
+    - name: Archive zip
+      uses: actions/upload-artifact@v3
+      with:
+          path: ${{github.workspace}}\build\*.7z
+          
+          
