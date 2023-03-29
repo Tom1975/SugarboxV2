@@ -19,6 +19,12 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest, Ubuntu-latest]
+        include:
+          - os: windows-latest
+            qt_version: 'win32_msvc2017'
+            cmake_arg: -AWin32
+          - os: Ubuntu-latest
+            qt_version: 'gcc_64'            
 
     steps:
     - uses: actions/checkout@v3
@@ -28,7 +34,7 @@ jobs:
       with:
         version: '5.14.2'
         target: 'desktop'
-        arch: 'win32_msvc2017'
+        arch: ${{ matrix.qt_version }}
         install-deps: 'true'
         
     - name: Checkout submodules
