@@ -38,8 +38,8 @@ jobs:
         install-deps: 'true'
         
     - name: Install udev
-      if: ${{ matrix.os }} == 'Ubuntu-latest'
       run: sudo apt-get install -y libudev-dev
+      if: ${{ matrix.os }} == 'Ubuntu-latest'
         
     - name: Checkout submodules
       run: git submodule update --init --recursive 
