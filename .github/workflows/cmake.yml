@@ -40,7 +40,7 @@ jobs:
         install-deps: 'true'
         
     - name: Install udev
-      run: ${{ other_installer }}
+      run: ${{ matrix.other_installer }}
         
     - name: Checkout submodules
       run: git submodule update --init --recursive 
