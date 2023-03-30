@@ -29,6 +29,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Install udev
+      run: sudo apt-get install -y libudev-dev
+        
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
@@ -38,6 +41,7 @@ jobs:
         install-deps: 'true'
         
     - name: Checkout submodules
+      if: ${{ matrix.os }} == Ubuntu-latest
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
