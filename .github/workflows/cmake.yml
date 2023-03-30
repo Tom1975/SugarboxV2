@@ -23,9 +23,11 @@ jobs:
           - os: windows-latest
             qt_version: 'win32_msvc2017'
             cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
+            other_installer: 'echo No more installer needed'
           - os: Ubuntu-latest
             qt_version: 'gcc_64'            
             cmake_arg: '' 
+            other_installer: 'sudo apt-get install -y libudev-dev'
     steps:
     - uses: actions/checkout@v3
     
@@ -38,8 +40,7 @@ jobs:
         install-deps: 'true'
         
     - name: Install udev
-      run: sudo apt-get install -y libudev-dev
-      if: ${{ matrix.os }} == 'Ubuntu-latest'
+      run: ${{ other_installer }}
         
     - name: Checkout submodules
       run: git submodule update --init --recursive 
