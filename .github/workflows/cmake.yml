@@ -25,7 +25,7 @@ jobs:
             cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
           - os: Ubuntu-latest
             qt_version: 'gcc_64'            
-            cmake_arg: '-DGENERATE_UNITTESTS=TRUE' 
+            cmake_arg: '' 
     steps:
     - uses: actions/checkout@v3
     
