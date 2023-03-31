@@ -31,7 +31,7 @@ jobs:
             cmake_arg: '' 
             other_installer: 'sudo apt-get install -y libudev-dev'
             build_folder: ${{github.workspace}}/build 
-            install_folder: ${{github.workspace}}\install
+            install_folder: ${{github.workspace}}/install
     steps:
     - uses: actions/checkout@v3
     
