@@ -50,7 +50,7 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
+      run: cmake -B ${{github.workspace}}${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
 
     - name: Build
       # Build your program with the given configuration
