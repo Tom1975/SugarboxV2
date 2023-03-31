@@ -24,10 +24,14 @@ jobs:
             qt_version: 'win32_msvc2017'
             cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
             other_installer: 'echo No more installer needed'
+            build_folder: ${{github.workspace}}\build 
+            install_folder: ${{github.workspace}}\install
           - os: Ubuntu-latest
             qt_version: 'gcc_64'            
             cmake_arg: '' 
             other_installer: 'sudo apt-get install -y libudev-dev'
+            build_folder: ${{github.workspace}}/build 
+            install_folder: ${{github.workspace}}\install
     steps:
     - uses: actions/checkout@v3
     
@@ -46,26 +50,26 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\build\ ${{ matrix.cmake_arg }}
+      run: cmake -B ${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}} 
+      run: cmake --build ${{matrix.build_folder}} --config ${{env.BUILD_TYPE}} 
 
     - name: Install
       # Make install
-      run: cmake --install ${{github.workspace}}\build 
+      run: cmake --install ${{matrix.build_folder}}
 
     - name: Packaging
       # CPack time
-      working-directory: ${{github.workspace}}\build
+      working-directory: ${{matrix.build_folder}}
       run: CPack -G 7Z .
       
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
           name: SugarboxV2Win32
-          path: ${{github.workspace}}\build\*.7z
+          path: ${{github.workspace}}/build/*.7z
           
           
           
