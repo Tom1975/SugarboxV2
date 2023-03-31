@@ -24,14 +24,14 @@ jobs:
             qt_version: 'win32_msvc2017'
             cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
             other_installer: 'echo No more installer needed'
-            build_folder: ${{github.workspace}}\build 
-            install_folder: ${{github.workspace}}\install
+            build_folder: \build 
+            install_folder: \install
           - os: Ubuntu-latest
             qt_version: 'gcc_64'            
             cmake_arg: '' 
             other_installer: 'sudo apt-get install -y libudev-dev'
-            build_folder: ${{github.workspace}}/build 
-            install_folder: ${{github.workspace}}/install
+            build_folder: /build 
+            install_folder: /install
     steps:
     - uses: actions/checkout@v3
     
@@ -50,19 +50,19 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
+      run: cmake -B ${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{matrix.build_folder}} --config ${{env.BUILD_TYPE}} 
+      run: cmake --build ${{github.workspace}}${{matrix.build_folder}} --config ${{env.BUILD_TYPE}} 
 
     - name: Install
       # Make install
-      run: cmake --install ${{matrix.build_folder}}
+      run: cmake --install ${{github.workspace}}${{matrix.build_folder}}
 
     - name: Packaging
       # CPack time
-      working-directory: ${{matrix.build_folder}}
+      working-directory: ${{github.workspace}}${{matrix.build_folder}}
       run: CPack -G 7Z .
       
     - name: Archive zip
