@@ -18,8 +18,14 @@ jobs:
     runs-on:  ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ windows-latest, Ubuntu-latest]
+        os: [ macOS-latest, windows-latest, Ubuntu-latest, ]
         include:
+          - os: macOS-latest
+            qt_version: 'clang_64'            
+            cmake_arg: '' 
+            other_installer: 'brew install openal-soft && brew install qt5 && export Qt5_DIR=$(brew --prefix)/opt/qt5'
+            build_folder: /build 
+            install_folder: /install
           - os: windows-latest
             qt_version: 'win32_msvc2017'
             cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
@@ -32,6 +38,7 @@ jobs:
             other_installer: 'sudo apt-get install -y libudev-dev'
             build_folder: /build 
             install_folder: /install
+          
     steps:
     - uses: actions/checkout@v3
     
