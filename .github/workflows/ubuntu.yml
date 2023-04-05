@@ -1,0 +1,44 @@
+name: CMake
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Prepare Environement
+      run: |
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 50;  
+        sudo apt install qtbase5-dev
+        sudo apt-get install libqt5websockets5-dev
+        sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev
+        sudo apt-get install libxinerama-dev libxcursor-dev 
+        sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev
+        sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3 freeglut3-dev libcairo2-dev
+        sudo apt-get install libgconf2-dev
+
+    - name: Configure CMake
+      run: |
+        echo 'Generating makefile'
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        make package
+        ls -l
+
+    - name: Archive
+      uses: actions/upload-artifact@v3
+      with:
+          name: SugarboxV2Ubuntu
+          path: ${{github.workspace}}/build/*.tar.gz
