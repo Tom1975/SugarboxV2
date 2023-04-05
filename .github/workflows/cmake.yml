@@ -44,13 +44,13 @@ jobs:
 
     - name: Install
       # Make install
-      run: cmake --install ${{github.workspace}}${{matrix.build_folder}}
+      run: cmake --install ${{github.workspace}}\build
 
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
           name: SugarboxV2Win32
-          path: ${{github.workspace}}/build/*.7z
+          path: ${{github.workspace}}\build\*.7z
           
           
           
