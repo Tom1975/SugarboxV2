@@ -36,14 +36,14 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DGENERATE_UNITTESTS=TRUE'
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DGENERATE_UNITTESTS=TRUE
 
     - name: Configure CMake
       run: |
         echo 'Generating makefile'
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -AWin32 -DGENERATE_UNITTESTS=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install 
+        cmake .. -DCMAKE_BUILD_TYPE=Release -AWin32 -DGENERATE_UNITTESTS=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install
         make package
         dir
 
