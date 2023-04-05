@@ -1,10 +1,9 @@
 
-![Sugarbox V2](https://raw.githubusercontent.com/Tom1975/SugarboxV2/master/SplashScreen.bmp)
+![Sugarbox V2](https://raw.githubusercontent.com/Tom1975/SugarboxV2/master/SplashScreen.bmp) 
 
-[![Build](https://github.com/Tom1975/SugarboxV2/actions/workflows/cmake.yml/badge.svg)](https://github.com/Tom1975/SugarboxV2/actions/workflows/cmake.yml)
-
+[![Windows](https://github.com/Tom1975/SugarboxV2/actions/workflows/cmake.yml/badge.svg)](https://github.com/Tom1975/SugarboxV2/actions/workflows/cmake.yml)
 [![Ubuntu](https://github.com/Tom1975/SugarboxV2/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Tom1975/SugarboxV2/actions/workflows/ubuntu.yml)
-
+[![MacOS](https://github.com/Tom1975/SugarboxV2/actions/workflows/macos.yml/badge.svg)](https://github.com/Tom1975/SugarboxV2/actions/workflows/macos.yml)
 
 # Install
 
