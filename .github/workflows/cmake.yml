@@ -19,7 +19,7 @@ jobs:
     runs-on:  ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macOS-latest, windows-latest, Ubuntu-latest, ]
+        os: [ macOS-latest, windows-latest]
         include:
           - os: macOS-latest
             qt_version: 'clang_64'            
@@ -33,12 +33,6 @@ jobs:
             other_installer: 'echo No more installer needed'
             build_folder: \build 
             install_folder: \install
-          - os: Ubuntu-latest
-            qt_version: 'gcc_64'            
-            cmake_arg: '' 
-            other_installer: 'sudo apt-get install -y libudev-dev'
-            build_folder: /build 
-            install_folder: /install
           
     steps:
     - uses: actions/checkout@v3
