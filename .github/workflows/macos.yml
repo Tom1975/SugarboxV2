@@ -14,16 +14,6 @@ env:
 jobs:
   build:
     runs-on:  macOS-latest
-
-            other_installer: 'brew install openal-soft && brew install qt5 && export Qt5_DIR=$(brew --prefix)/opt/qt5'
-            build_folder: /build 
-            install_folder: /install
-          - os: windows-latest
-            qt_version: 'win32_msvc2017'
-            cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
-            other_installer: 'echo No more installer needed'
-            build_folder: \build 
-            install_folder: \install
           
     steps:
     - uses: actions/checkout@v3
