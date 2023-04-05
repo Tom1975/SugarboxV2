@@ -1,4 +1,4 @@
-name: CMake
+name: Ubuntu_package
 
 on:
   push:
