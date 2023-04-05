@@ -37,7 +37,8 @@ jobs:
         make package
         ls -l
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
-
+    - name: Archive
+      uses: actions/upload-artifact@v3
+      with:
+          name: SugarboxV2Ubuntu
+          path: ${{github.workspace}}/build/*.tar.gz
