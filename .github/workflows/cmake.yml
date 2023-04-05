@@ -36,13 +36,15 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: |
-        echo 'Generating makefile'
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -AWin32 -DGENERATE_UNITTESTS=TRUE -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install
-        make package
-        dir
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DGENERATE_UNITTESTS=TRUE'
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}${{matrix.build_folder}} --config ${{env.BUILD_TYPE}} 
+
+    - name: Install
+      # Make install
+      run: cmake --install ${{github.workspace}}${{matrix.build_folder}}
 
     - name: Archive zip
       uses: actions/upload-artifact@v3
