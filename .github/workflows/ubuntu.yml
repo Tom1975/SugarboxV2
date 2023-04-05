@@ -1,4 +1,4 @@
-name: Ubuntu_package
+name: Ubuntu
 
 on:
   push:
