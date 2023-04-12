@@ -48,7 +48,7 @@ jobs:
 
     - name: Packaging
       # CPack time
-      working-directory: ${{github.workspace}}${{matrix.build_folder}}
+      working-directory: ${{github.workspace}}\build
       run: cpack -G 7Z .
       
     - name: Archive zip
