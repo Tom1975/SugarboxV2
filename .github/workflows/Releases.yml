@@ -7,21 +7,22 @@ on:
     branches: [ "master", "develop" ]
     
 jobs:
-  call-workflow:
+  runs-on: windows-latest
+    
+    call-workflow:
     uses:  ./.github/workflows/windows.yml
     
-  notify:
-    needs: call-workflow
-
-  steps:
-      - name: Download artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: windows.yml
-          name: SugarboxV2Win32
-          path: ${{github.workspace}}
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: SugarboxV2Win32
+    notify:
+      needs: call-workflow
+      steps:
+        - name: Download artifact
+          uses: dawidd6/action-download-artifact@v2
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            workflow: windows.yml
+            name: SugarboxV2Win32
+            path: ${{github.workspace}}
+        - name: Release
+          uses: softprops/action-gh-release@v1
+          with:
+            files: SugarboxV2Win32
