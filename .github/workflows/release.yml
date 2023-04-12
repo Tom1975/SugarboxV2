@@ -16,7 +16,7 @@ jobs:
     
   deploy:
     runs-on: ubuntu-latest
-    needs: [all-workflow-windows, call-workflow-ubuntu, call-workflow-macos]
+    needs: [call-workflow-windows, call-workflow-ubuntu, call-workflow-macos]
     steps:
       - name: Download artifact Ubuntu
         uses: actions/download-artifact@v3
