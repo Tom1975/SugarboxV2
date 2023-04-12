@@ -46,6 +46,11 @@ jobs:
       # Make install
       run: cmake --install ${{github.workspace}}\build
 
+    - name: Packaging
+      # CPack time
+      working-directory: ${{github.workspace}}${{matrix.build_folder}}
+      run: cpack -G 7Z .
+      
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
