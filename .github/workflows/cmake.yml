@@ -1,10 +1,11 @@
-name: CMake
+name: Windows
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
+  workflow_call:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -15,30 +16,8 @@ jobs:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on:  ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ macOS-latest, windows-latest, Ubuntu-latest, ]
-        include:
-          - os: macOS-latest
-            qt_version: 'clang_64'            
-            cmake_arg: '' 
-            other_installer: 'brew install openal-soft && brew install qt5 && export Qt5_DIR=$(brew --prefix)/opt/qt5'
-            build_folder: /build 
-            install_folder: /install
-          - os: windows-latest
-            qt_version: 'win32_msvc2017'
-            cmake_arg: '-AWin32 -DGENERATE_UNITTESTS=TRUE' 
-            other_installer: 'echo No more installer needed'
-            build_folder: \build 
-            install_folder: \install
-          - os: Ubuntu-latest
-            qt_version: 'gcc_64'            
-            cmake_arg: '' 
-            other_installer: 'sudo apt-get install -y libudev-dev'
-            build_folder: /build 
-            install_folder: /install
-          
+    runs-on:  windows-latest
+
     steps:
     - uses: actions/checkout@v3
     
@@ -47,7 +26,7 @@ jobs:
       with:
         version: '5.14.2'
         target: 'desktop'
-        arch: ${{ matrix.qt_version }}
+        arch: win32_msvc2017
         install-deps: 'true'
         
     - name: Install udev
@@ -57,26 +36,21 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}${{matrix.build_folder}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}${{ matrix.install_folder }} ${{ matrix.cmake_arg }}
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DGENERATE_UNITTESTS=TRUE
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}${{matrix.build_folder}} --config ${{env.BUILD_TYPE}} 
+      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}} 
 
     - name: Install
       # Make install
-      run: cmake --install ${{github.workspace}}${{matrix.build_folder}}
+      run: cmake --install ${{github.workspace}}\build
 
-    - name: Packaging
-      # CPack time
-      working-directory: ${{github.workspace}}${{matrix.build_folder}}
-      run: cpack -G 7Z .
-      
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
           name: SugarboxV2Win32
-          path: ${{github.workspace}}/build/*.7z
+          path: ${{github.workspace}}\build\*.7z
           
           
           
