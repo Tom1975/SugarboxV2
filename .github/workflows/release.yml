@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch :
   push:
     # Sequence of patterns matched against refs/tags
     tags:
@@ -18,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [call-workflow-windows, call-workflow-ubuntu, call-workflow-macos]
     steps:
+      - name: Prepare Release directory
+        run: |
+          mkdir release_bin
+          cd release_bin
+          
       - name: Download artifact Ubuntu
         uses: actions/download-artifact@v3
         id: art-ubuntu
@@ -40,9 +46,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            - ${{steps.art-ubuntu.outputs.download-path}}
-            - ${{steps.art-windows.outputs.download-path}}
-            - ${{steps.art-macos.outputs.download-path}}
+          files: release_bin/*
+#            - ${{steps.art-ubuntu.outputs.download-path}}
+#            - ${{steps.art-windows.outputs.download-path}}
+#            - ${{steps.art-macos.outputs.download-path}}
             
           
