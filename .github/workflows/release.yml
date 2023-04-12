@@ -8,11 +8,11 @@ on:
 
 jobs:
   call-workflow-windows:
-    uses:  ./.github/workflows/build_windows.yml
+    uses:  ./.github/workflows/windows.yml
   call-workflow-ubuntu:
-    uses:  ./.github/workflows/build_ubuntu.yml
+    uses:  ./.github/workflows/ubuntu.yml
   call-workflow-macos:
-    uses:  ./.github/workflows/build_macos.yml
+    uses:  ./.github/workflows/macos.yml
     
   deploy:
     runs-on: ubuntu-latest
