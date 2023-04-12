@@ -23,6 +23,8 @@ jobs:
         run: |
           mkdir release_bin
           cd release_bin
+          pwd
+          ls -l
           
       - name: Download artifact Ubuntu
         uses: actions/download-artifact@v3
@@ -46,7 +48,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: release_bin/*
+          files: ${{steps.art-ubuntu.outputs.download-path}}/*
 #            - ${{steps.art-ubuntu.outputs.download-path}}
 #            - ${{steps.art-windows.outputs.download-path}}
 #            - ${{steps.art-macos.outputs.download-path}}
