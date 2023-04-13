@@ -10,21 +10,25 @@ on:
 jobs:
   extract-version:
     runs-on: ubuntu-latest
+    outputs:
+      Sugarbox_version: ${{ steps.vars.outputs.version }}    
     steps:
       - name: Get tag/branch name
         id: vars
         run: |
           echo version=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
+          echo "version=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
           echo 'updated version : ' ${{ env.output.version }}
           echo 'updated vars.version : ' ${{ vars.output.version }}
+          echo 'updated vars.version 4 :' ${{ steps.vars.outputs.version }}    
         env:
           Sugarbox_version: ${{ vars.output.version }}
         
   call-workflow-windows:
-    #needs: extract-version
+    needs: extract-version
     uses:  ./.github/workflows/windows.yml
     with:
-      version:  ${GITHUB_REF#refs/*/}
+      version:  ${{ extract-version.steps.vars.}}
   call-workflow-ubuntu:
     #needs: extract-version
     uses:  ./.github/workflows/ubuntu.yml
