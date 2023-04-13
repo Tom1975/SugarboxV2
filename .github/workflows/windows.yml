@@ -1,12 +1,17 @@
 name: Windows
 
 on:
+  workflow_call:
+    inputs: 
+      version:
+        description: 'Version to build'
+        default: 2.x.x
+        type: string      
   push:
     branches: [ "master", "develop" ]
   pull_request:
     branches: [ "master", "develop" ]
-  workflow_call:
-
+  
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
@@ -36,7 +41,9 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DGENERATE_UNITTESTS=TRUE
+      run: |
+        echo 'Version : '  ${{ inputs.version }}
+        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
       # Build your program with the given configuration
@@ -46,11 +53,15 @@ jobs:
       # Make install
       run: cmake --install ${{github.workspace}}\build
 
+    - name: Packaging
+      # CPack time
+      working-directory: ${{github.workspace}}\build
+      run: cpack -G 7Z .
+      
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
           name: SugarboxV2Win32
           path: ${{github.workspace}}\build\*.7z
-          
           
           
