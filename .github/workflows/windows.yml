@@ -2,6 +2,8 @@ name: Windows
 
 on:
   workflow_call:
+    inputs: 
+      version:
   push:
     branches: [ "master", "develop" ]
   pull_request:
