@@ -9,7 +9,7 @@ on:
     inputs: 
       version:
         description: 'Version to build'
-        default: '2.x.x'
+        default: 2.x.x
         type: string
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -46,7 +46,7 @@ jobs:
         mkdir build
         cd build
         echo 'Version : '  ${{ inputs.version }}
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION=${{ inputs.version }}
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
         make package
         ls -l
       
