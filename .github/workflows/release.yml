@@ -11,7 +11,7 @@ jobs:
   extract-version:
     runs-on: ubuntu-latest
     outputs:
-      Sugarbox_version: ${{ steps.vars.outputs.version }}    
+      Sugarbox_version: "${{ steps.vars.outputs.version }}"
     steps:
       - name: Get tag/branch name
         id: vars
