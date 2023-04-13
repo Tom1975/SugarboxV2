@@ -5,7 +5,7 @@ on:
     inputs: 
       version:
         description: 'Version to build'
-        default: '2.x.x'
+        default: '2.x.x
         type: string      
   push:
     branches: [ "master", "develop" ]
@@ -43,7 +43,7 @@ jobs:
     - name: Configure CMake
       run: |
         echo 'Version : '  ${{ inputs.version }}
-        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DSUGARBOX_VERSION=${{ inputs.version }}
+        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
       # Build your program with the given configuration
