@@ -2,10 +2,13 @@ name: Windows
 
 on:
   workflow_call:
+    inputs: 
+      version:
+        description: 'Version to build'
+        default: 2.x.x
+        type: string      
   push:
     branches: [ "master", "develop" ]
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches: [ "master", "develop" ]
   
@@ -38,7 +41,9 @@ jobs:
       run: git submodule update --init --recursive 
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32
+      run: |
+        echo 'Version : '  ${{ inputs.version }}
+        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
       # Build your program with the given configuration
@@ -58,11 +63,5 @@ jobs:
       with:
           name: SugarboxV2Win32
           path: ${{github.workspace}}\build\*.7z
-          
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: ${{github.workspace}}\build\*.7z          
           
           

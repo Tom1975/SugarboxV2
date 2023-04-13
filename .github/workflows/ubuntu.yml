@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "master", "develop" ]
   workflow_call:
+    inputs: 
+      version:
+        description: 'Version to build'
+        default: 2.x.x
+        type: string
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -37,7 +42,8 @@ jobs:
         echo 'Generating makefile'
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release
+        echo 'Version : '  ${{ inputs.version }}
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
         make package
         ls -l
 
