@@ -8,14 +8,16 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-#  extract-version:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Get tag/branch name
-#        id: vars
-#        run: echo version=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
-#        env:
-#          Sugarbox_version: ${GITHUB_REF#refs/*/}
+  extract-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get tag/branch name
+        id: vars
+        run: |
+          echo version=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
+          echo 'updated version : ' {{ $env.outputversion }}
+        env:
+          Sugarbox_version: ${GITHUB_REF#refs/*/}
         
   call-workflow-windows:
     #needs: extract-version
