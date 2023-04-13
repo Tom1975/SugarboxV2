@@ -24,7 +24,7 @@ jobs:
     needs: extract-version
     uses:  ./.github/workflows/ubuntu.yml
     with:
-      version: ${{ steps.vars.outputs.tag }}
+      version: ${{ jobs.extract-version.steps.vars.outputs.tag }}
   call-workflow-macos:
     needs: extract-version
     uses:  ./.github/workflows/macos.yml
