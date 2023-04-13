@@ -5,7 +5,7 @@ on:
     inputs: 
       version:
         description: 'Version to build'
-        default: '2.x.x
+        default: 2.x.x
         type: string      
   push:
     branches: [ "master", "develop" ]
