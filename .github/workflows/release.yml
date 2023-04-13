@@ -21,14 +21,13 @@ jobs:
           echo 'updated version : ' ${{ env.output.version }}
           echo 'updated vars.version : ' ${{ vars.output.version }}
           echo 'updated vars.version 4 :' ${{ steps.vars.outputs.version }}    
-        env:
-          Sugarbox_version: ${{ vars.output.version }}
+
         
   call-workflow-windows:
     needs: extract-version
     uses:  ./.github/workflows/windows.yml
     with:
-      version:  ${{ extract-version.steps.vars.}}
+      version: ${{ needs.extract-version.outputs.Sugarbox_version }}
   call-workflow-ubuntu:
     #needs: extract-version
     uses:  ./.github/workflows/ubuntu.yml
