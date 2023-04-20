@@ -9,6 +9,7 @@
 #include "ISound.h"
 #include "Inotify.h"
 #include "ALSoundMixer.h"
+#include "IUpdate.h"
 #include "Z80Desassember.h"
 
 class INotifier
@@ -40,6 +41,7 @@ public :
    } TapeFormat;
 
    virtual void ChangeConfig(MachineSettings* settings);
+   virtual void AddUpdateListener(IUpdate* listener);
 
    // IFdcNotify
    virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
@@ -135,6 +137,9 @@ public :
    
 
 protected:
+   // Listener list
+   std::vector< IUpdate*> listeners_;
+
    INotifier* notifier_;
 
    Motherboard* motherboard_;

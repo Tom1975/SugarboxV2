@@ -9,7 +9,7 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this)
 {
    emulation_ = new Emulation(this);
 
@@ -25,6 +25,10 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    menuBar()->setFocusPolicy(Qt::ClickFocus);
    setCentralWidget(&display_);
    clear();
+
+   // Create debug window
+   debug_.SetEmulator(emulation_);
+
 
    debugger_link_ = new DebugSocket(this, emulation_);
    debugger_link_->StartServer();
@@ -397,6 +401,13 @@ void SugarboxApp::ConfigurationSettings()
 {
 }
 
+
+void SugarboxApp::OpenDebugger()
+{
+   // Open debugger windows
+   debug_.show();
+}
+
 void SugarboxApp::InitFileDialogs()
 {
    std::vector<FormatType*> format_list = disk_builder_.GetFormatsList(DiskBuilder::WRITE);
@@ -653,6 +664,8 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&SugarboxApp::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 0));
 
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&SugarboxApp::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
+
+   AddAction(IFunctionInterface::FN_DEBUG_DEBUGGER, std::bind(&SugarboxApp::OpenDebugger, this), "L_DEBUG_OPEN_DBG");
 
    AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&SugarboxApp::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&SugarboxApp::Eject, this, 0), "L_FN_DISK_1_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 0));

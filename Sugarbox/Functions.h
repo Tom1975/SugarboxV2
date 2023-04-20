@@ -83,6 +83,8 @@ public:
       // DISPLAY
       FN_DIS_FULLSCREEN,
       // DEBUGER
+      FN_DEBUG_DEBUGGER,
+
    }FunctionType;
 
    // Get all action

@@ -14,6 +14,7 @@
 #include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
+#include "DebugDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
@@ -71,6 +72,7 @@ public:
    virtual void ToggleAutoload();
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
+   virtual void OpenDebugger();
 
    // INotifier 
    virtual void DiskLoaded();
@@ -184,5 +186,7 @@ protected:
 
    // Debugger
    DebugSocket* debugger_link_;
+
+   DebugDialog debug_;
 };
 

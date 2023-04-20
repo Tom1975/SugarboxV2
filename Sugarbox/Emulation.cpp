@@ -665,3 +665,7 @@ void Emulation::Run(int nb_opcodes )
    }
 }
 
+void Emulation::AddUpdateListener(IUpdate* listener)
+{
+   listeners_.push_back(listener);
+}

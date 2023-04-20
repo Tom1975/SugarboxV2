@@ -72,6 +72,7 @@ function(windeployqt target)
         COMMENT "Deploying Qt libraries using windeployqt for compilation target '${target}' ..."
     )
 
+
 endfunction()
 
 file(GLOB HEADERS
@@ -85,7 +86,7 @@ file(GLOB SRCS
 file(GLOB RES
    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*
 )
-            
+          
 set (HEADERS 
    ${HEADERS}
 )
@@ -95,6 +96,7 @@ set (SRCS
 
 set ( UIS
  SugarboxApp.ui
+ DebugDialog.ui
 )
 
 
