@@ -27,11 +27,6 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    clear();
 
    // Create debug window
-   debug_.SetEmulator(emulation_);
-
-
-   debugger_link_ = new DebugSocket(this, emulation_);
-   debugger_link_->StartServer();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -144,6 +139,10 @@ int SugarboxApp::RunApp()
 
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
+   debug_.SetEmulator(emulation_);
+   debugger_link_ = new DebugSocket(this, emulation_);
+   debugger_link_->StartServer();
+
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
 

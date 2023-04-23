@@ -57,7 +57,7 @@ DebugDialog::DebugDialog(QWidget *parent) :
    {
       ui->registers_list_->setItem(i, 1, new QTableWidgetItem("--"));
    }
-
+   
 }
 
 DebugDialog::~DebugDialog()
@@ -93,6 +93,7 @@ void DebugDialog::SetEmulator(Emulation* emu_handler)
 {
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
+   ui->listWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
 }
 
 void DebugDialog::Break()

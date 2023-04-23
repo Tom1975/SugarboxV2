@@ -3,6 +3,9 @@
 #include <QWidget>
 #include <QScrollBar>
 
+#include "Emulation.h"
+
+
 class DisassemblyWidget : public QWidget
 {
    Q_OBJECT
@@ -10,13 +13,16 @@ class DisassemblyWidget : public QWidget
 public:
    explicit DisassemblyWidget(QWidget* parent = nullptr);
 
-   void SetDisassemblyInfo(unsigned int max_adress);
+   void SetDisassemblyInfo(Emulation* machine, unsigned int max_adress);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* e) override;
 
     void ComputeScrollArea();
+
+    void InitOpcodeShortcuts();
+    const int DasmMnemonic(unsigned short Addr, char pMnemonic[16], char pArgument[16]) const;
 
 public slots:
     void OnValueChange(int valueScrollBar);
@@ -27,7 +33,32 @@ private:
    QScrollBar vertical_sb_;
    QScrollBar horizontal_sb_;
 
-   unsigned int max_adress_;
+   EmulatorEngine* machine_;
+   unsigned short max_adress_;
    unsigned int current_address_;
+   unsigned int nb_lines_;
+   unsigned int line_height_;
+   std::vector<unsigned short> line_address_;
    
+   // Disassembly values
+#define MAX_MSTATE_NB 6
+#define MAX_DISASSEMBLY_SIZE 32
+   struct Opcode
+   {
+      unsigned char Size;
+      char Disassembly[MAX_DISASSEMBLY_SIZE];
+   };
+
+   Opcode FillStructOpcode(unsigned char Size, char* Disassembly)
+   {
+      Opcode op;
+      op.Size = Size;
+      strcpy(op.Disassembly, Disassembly);
+      return op;
+   };
+   Opcode ListeOpcodes[256];
+   Opcode ListeOpcodesCB[256];
+   Opcode ListeOpcodesED[256];
+   Opcode ListeOpcodesDD[256];
+   Opcode ListeOpcodesFD[256];
 };
