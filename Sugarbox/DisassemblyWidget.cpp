@@ -9,7 +9,7 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    vertical_sb_(Qt::Vertical, this),
    horizontal_sb_(Qt::Horizontal, this),
    machine_(nullptr),
-   max_adress_(0xFFFF),
+   max_address_(0xFFFF),
    current_address_(0),
    nb_lines_(0)
 {
@@ -18,10 +18,10 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    InitOpcodeShortcuts();
 }
 
-void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned int max_adress)
+void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned int max_address)
 {
    machine_ = machine->GetEngine();
-   max_adress_ = max_adress;
+   max_address_ = max_address;
 }
 
 void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
@@ -43,6 +43,13 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    QFontMetrics fm(property("font").value<QFont>());
    unsigned int address_size = fm.horizontalAdvance(address);
    unsigned int char_size = fm.horizontalAdvance(' ');
+
+   // Generic display : A line is composed of :
+   // A flag/breakpoint
+   // Current address
+   // Mnemonic / argument of the code
+   // Bytes of the current command (5 max)
+   // Ascii char, if relevant (otherwise, a basic '.' )
    for (unsigned int i = 0; i < nb_lines_; i++)
    {
       // Display flag ?
@@ -53,10 +60,10 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       painter.drawText(10, 10 + line_height_ * i, address);
 
       // Mnemonic
-      int size = DasmMnemonic(line_addres, mnemonic, arg);
+      const int size = DasmMnemonic(line_addres, mnemonic, arg);
       painter.drawText(10 + address_size, 10 + line_height_ * i, mnemonic);
       // Arguments
-      unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
+      const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
       painter.drawText(10 + address_size + mnemonic_size + char_size, 10 + line_height_ * i, arg);
 
       // Bytes 
@@ -121,90 +128,89 @@ void DisassemblyWidget::OnValueChange(int valueScrollBar)
 void DisassemblyWidget::ComputeScrollArea()
 {
    // Number of displayed lines
-   QFontMetrics fm (property("font").value<QFont>());
+   const QFontMetrics fm (property("font").value<QFont>());
 
    line_height_ = fm.lineSpacing();
    nb_lines_ = (size().height() - horizontal_sb_.sizeHint().height()) / line_height_;
    line_address_.resize(nb_lines_);
 
    // Vertical:
-   // Compute number of lines : 0 -> max_adress_
-   vertical_sb_.setMaximum(max_adress_ - (nb_lines_-1));
+   // Compute number of lines : 0 -> max_address_
+   vertical_sb_.setMaximum(max_address_ - (nb_lines_-1));
    vertical_sb_.setMinimum(0);
    vertical_sb_.setSingleStep(1);
-   vertical_sb_.setPageStep(nb_lines_);
+   vertical_sb_.setPageStep(static_cast<int>(nb_lines_));
 
 }
 
 
-const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16], char pArgument[16]) const
+const int DisassemblyWidget::DasmMnemonic(unsigned short addr, char mnemonic[16], char argument[16]) const
 {
-   // Disassemble the memory from Addr, to Addr+size
-   unsigned short currentAddr = Addr;
+   // Disassemble the memory from addr, to addr+size
+   unsigned short current_addr = addr;
 
-   memset(pMnemonic, 0, 16);
-   memset(pArgument, 0, 16);
-   if (machine_->GetMem() == NULL)
+   memset(mnemonic, 0, 16);
+   memset(argument, 0, 16);
+   if (machine_->GetMem() == nullptr)
    {
       return 1;
    }
-   unsigned char nextInstr_L = machine_->GetMem()->Get(currentAddr);
+   unsigned char nextInstr_L = machine_->GetMem()->Get(current_addr);
    unsigned char size = ListeOpcodes[nextInstr_L].Size;
 
-   // Disassembly
-   const char* Opcode_L;
+   const char* opcode;
    if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%CB") == 0)
    {
       // CB ?
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
-      Opcode_L = ListeOpcodesCB[nextInstr_L].Disassembly;
+      nextInstr_L = machine_->GetMem()->Get(current_addr + 1);
+      opcode = ListeOpcodesCB[nextInstr_L].Disassembly;
       size += ListeOpcodesCB[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%ED") == 0)
    {
       // ED ?
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
-      Opcode_L = ListeOpcodesED[nextInstr_L].Disassembly;
+      nextInstr_L = machine_->GetMem()->Get(current_addr + 1);
+      opcode = ListeOpcodesED[nextInstr_L].Disassembly;
       size += ListeOpcodesED[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%DD") == 0)
    {
       // DD
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
-      Opcode_L = ListeOpcodesDD[nextInstr_L].Disassembly;
+      nextInstr_L = machine_->GetMem()->Get(current_addr + 1);
+      opcode = ListeOpcodesDD[nextInstr_L].Disassembly;
       size += ListeOpcodesDD[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly, "%FD") == 0)
    {
       // FD
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
-      Opcode_L = ListeOpcodesFD[nextInstr_L].Disassembly;
+      nextInstr_L = machine_->GetMem()->Get(current_addr + 1);
+      opcode = ListeOpcodesFD[nextInstr_L].Disassembly;
       size += ListeOpcodesFD[nextInstr_L].Size;
    }
    else
    {
-      Opcode_L = ListeOpcodes[nextInstr_L].Disassembly;
+      opcode = ListeOpcodes[nextInstr_L].Disassembly;
    }
 
    // First word of Disassembly is opcode
-   const char* pEndOfMnemonic = strchr(Opcode_L, ' ');
+   const char* pEndOfMnemonic = strchr(opcode, ' ');
 
-   if (pEndOfMnemonic != NULL)
+   if (pEndOfMnemonic != nullptr)
    {
-      memcpy(pMnemonic, Opcode_L, (pEndOfMnemonic - Opcode_L) * sizeof(char));
+      memcpy(mnemonic, opcode, (pEndOfMnemonic - opcode) * sizeof(char));
 
-      char* pAddr = pArgument;
+      char* pAddr = argument;
       strcpy(pAddr, &pEndOfMnemonic[1]);
 
       //  Next
       char* pReplace_L = strchr(pAddr, '%');
-      while (pReplace_L != NULL)
+      while (pReplace_L != nullptr)
       {
          // Replace %nn__ by adress
          if (pReplace_L[1] == 'n' && pReplace_L[2] == 'n')
          {
             char minibuf[6];
-            sprintf(minibuf, "$%2.2X%2.2X", machine_->GetMem()->Get(currentAddr + size - 1), machine_->GetMem()->Get(currentAddr + size - 2));
+            sprintf(minibuf, "$%2.2X%2.2X", machine_->GetMem()->Get(current_addr + size - 1), machine_->GetMem()->Get(current_addr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 5 * sizeof (char));
          }
@@ -212,7 +218,7 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
          else if (pReplace_L[1] == 'n' && pReplace_L[2] == '2')
          {
             char minibuf[4];
-            sprintf(minibuf, "%2.2X ", machine_->GetMem()->Get(currentAddr + size - 2));
+            sprintf(minibuf, "%2.2X ", machine_->GetMem()->Get(current_addr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 3 * sizeof (char));
          }
@@ -220,7 +226,7 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
          else if (pReplace_L[1] == 'n')
          {
             char minibuf[3];
-            sprintf(minibuf, "%2.2X", machine_->GetMem()->Get(currentAddr + size - 1));
+            sprintf(minibuf, "%2.2X", machine_->GetMem()->Get(current_addr + size - 1));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 2 * sizeof (char));
          }
@@ -228,8 +234,8 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
          else if (pReplace_L[1] == 'j')
          {
             char minibuf[5];
-            char dec_L = machine_->GetMem()->Get(currentAddr + size - 1);
-            unsigned short relative_adress = Addr + dec_L + size;
+            char dec_L = machine_->GetMem()->Get(current_addr + size - 1);
+            unsigned short relative_adress = addr + dec_L + size;
             sprintf(minibuf, "%4.4X", relative_adress);
             // 2 then 1
             memcpy(pReplace_L, minibuf, 4 * sizeof (char));
@@ -239,7 +245,7 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
          else if (pReplace_L[1] == 'r')
          {
             // get previous value
-            int indexReg = currentAddr + size - 1;
+            int indexReg = current_addr + size - 1;
             unsigned char reg = machine_->GetMem()->Get(indexReg);
             // mask the 3 first bits
             switch (reg & 0x7)
@@ -260,7 +266,7 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
          else if (pReplace_L[1] == 'b')
          {
             // get previous value
-            int indexReg = currentAddr + size - 1;
+            int indexReg = current_addr + size - 1;
             unsigned char bit = machine_->GetMem()->Get(indexReg);
             bit = (bit >> 3) & 0x7;
             ((char*)pReplace_L)[0] = '0' + bit;
@@ -271,7 +277,7 @@ const int DisassemblyWidget::DasmMnemonic(unsigned short Addr, char pMnemonic[16
    }
    else
    {
-      strcpy(pMnemonic, Opcode_L);
+      strcpy(mnemonic, opcode);
    }
 
    return size;

@@ -13,7 +13,7 @@ class DisassemblyWidget : public QWidget
 public:
    explicit DisassemblyWidget(QWidget* parent = nullptr);
 
-   void SetDisassemblyInfo(Emulation* machine, unsigned int max_adress);
+   void SetDisassemblyInfo(Emulation* machine, unsigned int max_address);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -22,7 +22,7 @@ protected:
     void ComputeScrollArea();
 
     void InitOpcodeShortcuts();
-    const int DasmMnemonic(unsigned short Addr, char pMnemonic[16], char pArgument[16]) const;
+    const int DasmMnemonic(unsigned short addr, char mnemonic[16], char argument[16]) const;
 
 public slots:
     void OnValueChange(int valueScrollBar);
@@ -34,7 +34,7 @@ private:
    QScrollBar horizontal_sb_;
 
    EmulatorEngine* machine_;
-   unsigned short max_adress_;
+   unsigned short max_address_;
    unsigned int current_address_;
    unsigned int nb_lines_;
    unsigned int line_height_;
