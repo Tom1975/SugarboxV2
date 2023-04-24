@@ -11,11 +11,15 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    machine_(nullptr),
    max_address_(0xFFFF),
    current_address_(0),
-   nb_lines_(0)
+   nb_lines_(0),
+   bp_pixmap_(":/img/bp.bmp"),
+   flag_pixmap_(":/img/Flag.bmp"),
+   pc_pixmap_(":/img/PC.bmp")
 {
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
 
    InitOpcodeShortcuts();
+   
 }
 
 void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned int max_address)
@@ -33,16 +37,19 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    painter.fillRect(0, 0, width, height, QColor(220, 220, 220));
 
    // Draw every lines 
-   unsigned short line_addres = current_address_;
+   unsigned short line_address = current_address_;
    line_address_.clear();
    char mnemonic[16];
    char address[16];
    char arg[16];     
 
    sprintf(address, "0x%4.4X: ", 0xFFFF);
-   QFontMetrics fm(property("font").value<QFont>());
-   unsigned int address_size = fm.horizontalAdvance(address);
-   unsigned int char_size = fm.horizontalAdvance(' ');
+   const QFontMetrics fm(property("font").value<QFont>());
+   const unsigned int address_size = fm.horizontalAdvance(address);
+   const unsigned int char_size = fm.horizontalAdvance(' ');
+
+   unsigned int margin_size = 10;
+   const unsigned int top_margin = 10;
 
    // Generic display : A line is composed of :
    // A flag/breakpoint
@@ -53,18 +60,26 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    for (unsigned int i = 0; i < nb_lines_; i++)
    {
       // Display flag ?
+      painter.drawPixmap(0, top_margin + line_height_ * i, flag_pixmap_);
       // Display breakpoint ?
+      painter.drawPixmap(0, top_margin + line_height_ * i,  bp_pixmap_);
+
+      // Display execution arrow
+      if (true)
+      {
+         painter.drawPixmap(0, top_margin + line_height_ * i, pc_pixmap_);
+      }
 
       // Address 
-      sprintf(address, "0x%4.4X: ", line_addres);
-      painter.drawText(10, 10 + line_height_ * i, address);
+      sprintf(address, "%4.4X: ", line_address);
+      painter.drawText(margin_size, top_margin + line_height_ * i, address);
 
       // Mnemonic
-      const int size = DasmMnemonic(line_addres, mnemonic, arg);
-      painter.drawText(10 + address_size, 10 + line_height_ * i, mnemonic);
+      const int size = DasmMnemonic(line_address, mnemonic, arg);
+      painter.drawText(margin_size + address_size, top_margin + line_height_ * i, mnemonic);
       // Arguments
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
-      painter.drawText(10 + address_size + mnemonic_size + char_size, 10 + line_height_ * i, arg);
+      painter.drawText(margin_size + address_size + mnemonic_size + char_size, top_margin + line_height_ * i, arg);
 
       // Bytes 
       char byte_buffer[16] = { 0 };
@@ -72,7 +87,7 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       for (int j = 0; j < size && j < 5; j++)
       {
          char byte[4] = { 0 };
-         unsigned char b = machine_->GetMem()->Get(line_addres + j);
+         unsigned char b = machine_->GetMem()->Get(line_address + j);
          sprintf(byte, "%2.2X ", b);
          strcat(byte_buffer, byte);
 
@@ -85,15 +100,16 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
             char_buffer[j] = '.';
          }
       }
-      painter.drawText(200, 10 + line_height_ * i, byte_buffer);
-      painter.drawText(200 + char_size*15, 10 + line_height_ * i, char_buffer);
 
+      painter.drawText(margin_size + char_size * 30, top_margin + line_height_ * i, byte_buffer);
       // Character (if displayable)
+      painter.drawText(margin_size + char_size * 45, top_margin  + line_height_ * i, char_buffer);
+
       // Current selected line
 
-      line_address_.push_back(line_addres);
+      line_address_.push_back(line_address);
 
-      line_addres += size;
+      line_address += size;
    }
 
 }

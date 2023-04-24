@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
         <file>Resources/SplashScreen.bmp</file>
+        <file>Resources/bp.bmp</file>
+        <file>Resources/Flag.bmp</file>
+        <file>Resources/PC.bmp</file>
     </qresource>
 </RCC>

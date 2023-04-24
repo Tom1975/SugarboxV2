@@ -39,7 +39,12 @@ private:
    unsigned int nb_lines_;
    unsigned int line_height_;
    std::vector<unsigned short> line_address_;
-   
+
+   // Ressources
+   QPixmap bp_pixmap_;
+   QPixmap flag_pixmap_;
+   QPixmap pc_pixmap_;
+
    // Disassembly values
 #define MAX_MSTATE_NB 6
 #define MAX_DISASSEMBLY_SIZE 32
