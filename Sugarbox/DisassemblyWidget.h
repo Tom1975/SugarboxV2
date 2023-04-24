@@ -40,6 +40,8 @@ private:
    unsigned int line_height_;
    std::vector<unsigned short> line_address_;
 
+   unsigned int margin_size_ ;
+
    // Ressources
    QPixmap bp_pixmap_;
    QPixmap flag_pixmap_;

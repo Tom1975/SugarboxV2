@@ -12,14 +12,15 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    max_address_(0xFFFF),
    current_address_(0),
    nb_lines_(0),
-   bp_pixmap_(":/img/bp.bmp"),
-   flag_pixmap_(":/img/Flag.bmp"),
-   pc_pixmap_(":/img/PC.bmp")
+   bp_pixmap_(":/Resources/bp.png"),
+   flag_pixmap_(":/Resources/Flag.png"),
+   pc_pixmap_(":/Resources/PC.png") 
 {
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
 
    InitOpcodeShortcuts();
-   
+
+   margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
 }
 
 void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned int max_address)
@@ -48,7 +49,7 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    const unsigned int address_size = fm.horizontalAdvance(address);
    const unsigned int char_size = fm.horizontalAdvance(' ');
 
-   unsigned int margin_size = 10;
+   
    const unsigned int top_margin = 10;
 
    // Generic display : A line is composed of :
@@ -72,14 +73,14 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 
       // Address 
       sprintf(address, "%4.4X: ", line_address);
-      painter.drawText(margin_size, top_margin + line_height_ * i, address);
+      painter.drawText(margin_size_, top_margin + line_height_ * i, address);
 
       // Mnemonic
       const int size = DasmMnemonic(line_address, mnemonic, arg);
-      painter.drawText(margin_size + address_size, top_margin + line_height_ * i, mnemonic);
+      painter.drawText(margin_size_ + address_size, top_margin + line_height_ * i, mnemonic);
       // Arguments
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
-      painter.drawText(margin_size + address_size + mnemonic_size + char_size, top_margin + line_height_ * i, arg);
+      painter.drawText(margin_size_ + address_size + mnemonic_size + char_size, top_margin + line_height_ * i, arg);
 
       // Bytes 
       char byte_buffer[16] = { 0 };
@@ -101,9 +102,9 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
          }
       }
 
-      painter.drawText(margin_size + char_size * 30, top_margin + line_height_ * i, byte_buffer);
+      painter.drawText(margin_size_ + char_size * 30, top_margin + line_height_ * i, byte_buffer);
       // Character (if displayable)
-      painter.drawText(margin_size + char_size * 45, top_margin  + line_height_ * i, char_buffer);
+      painter.drawText(margin_size_ + char_size * 45, top_margin  + line_height_ * i, char_buffer);
 
       // Current selected line
 
