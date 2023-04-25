@@ -13,7 +13,8 @@ class DisassemblyWidget : public QWidget
 public:
    explicit DisassemblyWidget(QWidget* parent = nullptr);
 
-   void SetDisassemblyInfo(Emulation* machine, unsigned int max_address);
+   void SetDisassemblyInfo(Emulation* machine, unsigned short max_address);
+   void ForceTopAddress(unsigned short address);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

@@ -23,17 +23,27 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
 }
 
-void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned int max_address)
+void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned short max_address)
 {
    machine_ = machine->GetEngine();
    max_address_ = max_address;
 }
 
+void DisassemblyWidget::ForceTopAddress(unsigned short address)
+{
+   current_address_ = address;
+   // Set scroller
+   vertical_sb_.setValue(current_address_);
+
+   // Update
+   repaint();
+}
+
 void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 {
    QPainter painter(this);
-   int width = size().width() - 3;
-   int height = size().height() - 5;
+   const int width = size().width() - 3;
+   const int height = size().height() - 5;
 
    painter.fillRect(0, 0, width, height, QColor(220, 220, 220));
 
@@ -153,10 +163,11 @@ void DisassemblyWidget::ComputeScrollArea()
 
    // Vertical:
    // Compute number of lines : 0 -> max_address_
-   vertical_sb_.setMaximum(max_address_ - (nb_lines_-1));
+   vertical_sb_.setMaximum(static_cast<int>((max_address_ > (nb_lines_ - 1))?(max_address_ - (nb_lines_-1)):(0)));
    vertical_sb_.setMinimum(0);
    vertical_sb_.setSingleStep(1);
    vertical_sb_.setPageStep(static_cast<int>(nb_lines_));
+   vertical_sb_.setValue(static_cast<int>(current_address_));
 
 }
 
