@@ -35,6 +35,7 @@ private:
    QScrollBar horizontal_sb_;
 
    EmulatorEngine* machine_;
+   Z80Desassember* disassembler_;
    unsigned short max_address_;
    unsigned int current_address_;
    unsigned int nb_lines_;
@@ -47,26 +48,4 @@ private:
    QPixmap bp_pixmap_;
    QPixmap flag_pixmap_;
    QPixmap pc_pixmap_;
-
-   // Disassembly values
-#define MAX_MSTATE_NB 6
-#define MAX_DISASSEMBLY_SIZE 32
-   struct Opcode
-   {
-      unsigned char Size;
-      char Disassembly[MAX_DISASSEMBLY_SIZE];
-   };
-
-   Opcode FillStructOpcode(unsigned char Size, char* Disassembly)
-   {
-      Opcode op;
-      op.Size = Size;
-      strcpy(op.Disassembly, Disassembly);
-      return op;
-   };
-   Opcode ListeOpcodes[256];
-   Opcode ListeOpcodesCB[256];
-   Opcode ListeOpcodesED[256];
-   Opcode ListeOpcodesDD[256];
-   Opcode ListeOpcodesFD[256];
 };

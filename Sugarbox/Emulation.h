@@ -43,6 +43,9 @@ public :
    virtual void ChangeConfig(MachineSettings* settings);
    virtual void AddUpdateListener(IUpdate* listener);
 
+   // 
+   Z80Desassember* GetDisassembler(){ return disassembler_; };
+
    // IFdcNotify
    virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
    virtual void DiskEject();
