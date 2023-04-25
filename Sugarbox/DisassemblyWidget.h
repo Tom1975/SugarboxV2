@@ -17,6 +17,7 @@ public:
    void ForceTopAddress(unsigned short address);
 
 protected:
+   void wheelEvent(QWheelEvent* event);
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* e) override;
 

@@ -39,6 +39,24 @@ void DisassemblyWidget::ForceTopAddress(unsigned short address)
    repaint();
 }
 
+void DisassemblyWidget::wheelEvent(QWheelEvent* event)
+{
+   QPoint numPixels = event->pixelDelta();
+   QPoint numDegrees = event->angleDelta() / 8;
+
+   if (!numPixels.isNull()) 
+   {
+      // todo
+    
+   }
+   else if (!numDegrees.isNull()) 
+   {
+      // todo
+   }
+
+   event->accept();
+}
+
 void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 {
    QPainter painter(this);
@@ -71,12 +89,21 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    for (unsigned int i = 0; i < nb_lines_; i++)
    {
       // Display flag ?
-      painter.drawPixmap(0, top_margin + line_height_ * i, flag_pixmap_);
+      if (false)
+      {
+         // todo
+         painter.drawPixmap(0, top_margin + line_height_ * i, flag_pixmap_);
+      }
+      
       // Display breakpoint ?
-      painter.drawPixmap(0, top_margin + line_height_ * i,  bp_pixmap_);
+      if (false)
+      {
+         // todo
+         painter.drawPixmap(0, top_margin + line_height_ * i, bp_pixmap_);
+      }
 
       // Display execution arrow
-      if (true)
+      if (machine_->GetProc()->pc_ == line_address)
       {
          painter.drawPixmap(0, top_margin + line_height_ * i, pc_pixmap_);
       }
@@ -117,6 +144,7 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       painter.drawText(margin_size_ + char_size * 45, top_margin  + line_height_ * i, char_buffer);
 
       // Current selected line
+      // todo
 
       line_address_.push_back(line_address);
 
