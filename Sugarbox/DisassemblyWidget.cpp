@@ -51,7 +51,7 @@ void DisassemblyWidget::ForceTopAddress(unsigned short address)
 void DisassemblyWidget::wheelEvent(QWheelEvent* event)
 {
    QPoint numPixels = event->pixelDelta();
-   QPoint numDegrees = event->angleDelta() / 8;
+   QPoint numDegrees = event->angleDelta()/8;
 
    if (!numPixels.isNull()) 
    {
@@ -60,9 +60,23 @@ void DisassemblyWidget::wheelEvent(QWheelEvent* event)
    }
    else if (!numDegrees.isNull()) 
    {
-      // todo
+      if (numDegrees.y() > 0)
+      {
+         for (int i = 0; i < numDegrees.y() / 15;  i++) GoUp();
+      }
+      else
+      {
+         if ((-1*numDegrees.y() / 15) < nb_lines_)
+         {
+            current_address_ = line_address_[-1*numDegrees.y() / 15];
+         }
+         else
+         {
+            current_address_ = line_address_.back();
+         }
+      }
    }
-
+   repaint();
    event->accept();
 }
 
@@ -80,10 +94,7 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
       current_address_ = line_address_.back();
       break;
    case Qt::Key_PageUp:
-      for (int i = 0; i < nb_lines_;i++)
-      {
-         GoUp();
-      }
+      for (int i = 0; i < nb_lines_;i++) GoUp();
       break;
 
    case Qt::Key_F2:
@@ -97,6 +108,18 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
       break;
    }
    repaint();
+}
+
+void DisassemblyWidget::mousePressEvent(QMouseEvent* event)
+{
+   // Check line
+   unsigned int line = event->y() / line_height_;
+
+   // check position
+   unsigned int x = event->x();
+
+   // todo : set selection / breakpoints
+
 }
 
 unsigned short DisassemblyWidget::GetMaxedPreviousValidAdress(unsigned short Addr_P)

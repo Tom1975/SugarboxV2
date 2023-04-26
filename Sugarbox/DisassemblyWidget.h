@@ -21,6 +21,7 @@ protected:
    void paintEvent(QPaintEvent* event) override;
    void resizeEvent(QResizeEvent* e) override;
    void keyPressEvent(QKeyEvent* event) override;
+   void mousePressEvent(QMouseEvent* event)override;
 
    unsigned short GetMaxedPreviousValidAdress(unsigned short Addr_P);
    unsigned short GetPreviousValidAdress(unsigned short Addr_P);
