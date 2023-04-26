@@ -15,8 +15,17 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    nb_lines_(0),
    bp_pixmap_(":/Resources/bp.png"),
    flag_pixmap_(":/Resources/Flag.png"),
-   pc_pixmap_(":/Resources/PC.png") 
+   pc_pixmap_(":/Resources/PC.png"),
+   back_color_(220, 220, 220),
+   address_color_(Qt::blue),
+   mnemonic_color_(Qt::darkBlue),
+   arg_color_(Qt::darkMagenta),
+   byte_color_(Qt::darkGray),
+   char_color_(Qt::gray)
+
 {
+   setFocusPolicy(Qt::StrongFocus);
+
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
 
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
@@ -57,13 +66,105 @@ void DisassemblyWidget::wheelEvent(QWheelEvent* event)
    event->accept();
 }
 
+void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
+{
+   switch (event->key())
+   {
+   case Qt::Key_Down:
+      current_address_ = line_address_[1];
+      break;
+   case Qt::Key_Up:
+      GoUp();
+      break;
+   case Qt::Key_PageDown:
+      current_address_ = line_address_.back();
+      break;
+   case Qt::Key_PageUp:
+      for (int i = 0; i < nb_lines_;i++)
+      {
+         GoUp();
+      }
+      break;
+
+   case Qt::Key_F2:
+      // todo
+      break;
+   case Qt::Key_F9:
+      // todo
+      break;
+   default:
+      // todo
+      break;
+   }
+   repaint();
+}
+
+unsigned short DisassemblyWidget::GetMaxedPreviousValidAdress(unsigned short Addr_P)
+{
+   Z80* z80 = machine_->GetProc();
+   unsigned short address = Addr_P;
+   unsigned short best_address = Addr_P;
+   for (int i = 1; i <= 8; i++)
+   {
+      address = Addr_P - i;
+      if (z80->GetOpcodeSize(address) == i)
+      {
+         best_address = address;
+      }
+   }
+   return best_address;
+}
+
+unsigned short DisassemblyWidget::GetPreviousValidAdress(unsigned short Addr_P)
+{
+   Z80* z80 = machine_->GetProc();
+   unsigned short address = Addr_P;
+   unsigned short adress_degrade = 0;
+   unsigned short best_address = Addr_P;
+   unsigned int offset = 0;
+   bool bIsValid = false;
+   while ((!bIsValid) && address > 0 && offset < 8)
+   {
+      --address;
+      ++offset;
+      // Test if this adress size is ok
+      if (z80->GetOpcodeSize(address) == offset)
+      {
+         // it fits !
+         best_address = address;
+      }
+      else if (z80->GetOpcodeSize(address) < offset)
+      {
+         if (best_address == Addr_P)
+         {
+            best_address = address;
+         }
+      }
+   }
+   return best_address;
+}
+
+void DisassemblyWidget::GoUp()
+{
+   Z80* z80 = machine_->GetProc();
+   unsigned short addr_Tmp = GetMaxedPreviousValidAdress(current_address_);
+   if (addr_Tmp == current_address_)
+   {
+      current_address_ = GetPreviousValidAdress(current_address_);
+   }
+   else
+   {
+      current_address_ = addr_Tmp;
+   }
+}
+
 void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 {
    QPainter painter(this);
    const int width = size().width() - 3;
    const int height = size().height() - 5;
 
-   painter.fillRect(0, 0, width, height, QColor(220, 220, 220));
+   painter.fillRect(0, 0, width, height, back_color_);
 
    // Draw every lines 
    unsigned short line_address = current_address_;
@@ -110,13 +211,16 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 
       // Address 
       sprintf(address, "%4.4X: ", line_address);
+      painter.setPen(address_color_);
       painter.drawText(margin_size_, top_margin + line_height_ * i, address);
 
       // Mnemonic
       const int size = disassembler_->DasmMnemonic(line_address, mnemonic, arg);
+      painter.setPen(mnemonic_color_);
       painter.drawText(margin_size_ + address_size, top_margin + line_height_ * i, mnemonic);
       // Arguments
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
+      painter.setPen(arg_color_);
       painter.drawText(margin_size_ + address_size + mnemonic_size + char_size, top_margin + line_height_ * i, arg);
 
       // Bytes 
@@ -138,9 +242,10 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
             char_buffer[j] = '.';
          }
       }
-
+      painter.setPen(byte_color_);
       painter.drawText(margin_size_ + char_size * 30, top_margin + line_height_ * i, byte_buffer);
       // Character (if displayable)
+      painter.setPen(char_color_);
       painter.drawText(margin_size_ + char_size * 45, top_margin  + line_height_ * i, char_buffer);
 
       // Current selected line
@@ -198,5 +303,4 @@ void DisassemblyWidget::ComputeScrollArea()
    vertical_sb_.setValue(static_cast<int>(current_address_));
 
 }
-
 

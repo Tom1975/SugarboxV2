@@ -18,16 +18,20 @@ public:
 
 protected:
    void wheelEvent(QWheelEvent* event);
-    void paintEvent(QPaintEvent* event) override;
-    void resizeEvent(QResizeEvent* e) override;
+   void paintEvent(QPaintEvent* event) override;
+   void resizeEvent(QResizeEvent* e) override;
+   void keyPressEvent(QKeyEvent* event) override;
 
-    void ComputeScrollArea();
+   unsigned short GetMaxedPreviousValidAdress(unsigned short Addr_P);
+   unsigned short GetPreviousValidAdress(unsigned short Addr_P);
+   void GoUp();
+   void ComputeScrollArea();
 
-    void InitOpcodeShortcuts();
-    const int DasmMnemonic(unsigned short addr, char mnemonic[16], char argument[16]) const;
+   void InitOpcodeShortcuts();
+   const int DasmMnemonic(unsigned short addr, char mnemonic[16], char argument[16]) const;
 
 public slots:
-    void OnValueChange(int valueScrollBar);
+   void OnValueChange(int valueScrollBar);
 
 
 private:
@@ -49,4 +53,12 @@ private:
    QPixmap bp_pixmap_;
    QPixmap flag_pixmap_;
    QPixmap pc_pixmap_;
+
+   // Display Settings
+   QColor back_color_;
+   QColor address_color_;
+   QColor mnemonic_color_;
+   QColor arg_color_;
+   QColor byte_color_;
+   QColor char_color_;
 };
