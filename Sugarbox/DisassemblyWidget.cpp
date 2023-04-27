@@ -12,7 +12,11 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    disassembler_(nullptr),
    max_address_(0xFFFF),
    current_address_(0),
+   current_line_selected_(-1),
    nb_lines_(0),
+   line_height_(0),
+   margin_size_(0),
+   top_margin_(0),
    bp_pixmap_(":/Resources/bp.png"),
    flag_pixmap_(":/Resources/Flag.png"),
    pc_pixmap_(":/Resources/PC.png"),
@@ -21,7 +25,8 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    mnemonic_color_(Qt::darkBlue),
    arg_color_(Qt::darkMagenta),
    byte_color_(Qt::darkGray),
-   char_color_(Qt::gray)
+   char_color_(Qt::gray),
+   sel_color_(128, 128, 255, 128)
 
 {
    setFocusPolicy(Qt::StrongFocus);
@@ -29,6 +34,7 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
 
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
+   top_margin_ = std::max(std::max(pc_pixmap_.height(), flag_pixmap_.height()), bp_pixmap_.height());
 }
 
 void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned short max_address)
@@ -118,7 +124,20 @@ void DisassemblyWidget::mousePressEvent(QMouseEvent* event)
    // check position
    unsigned int x = event->x();
 
-   // todo : set selection / breakpoints
+   if ( line < nb_lines_ && x < width())
+   {
+      if (x < margin_size_)
+      {
+         // Add breakpoint
+         // todo
+      }
+      else
+      {
+         // Select line
+         current_line_selected_ = line;
+      }
+      repaint();
+   }
 
 }
 
@@ -202,7 +221,6 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    const unsigned int char_size = fm.horizontalAdvance(' ');
 
    
-   const unsigned int top_margin = 10;
 
    // Generic display : A line is composed of :
    // A flag/breakpoint
@@ -216,35 +234,35 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       if (false)
       {
          // todo
-         painter.drawPixmap(0, top_margin + line_height_ * i, flag_pixmap_);
+         painter.drawPixmap(0,  line_height_ * i, flag_pixmap_);
       }
       
       // Display breakpoint ?
       if (false)
       {
          // todo
-         painter.drawPixmap(0, top_margin + line_height_ * i, bp_pixmap_);
+         painter.drawPixmap(0,line_height_ * i, bp_pixmap_);
       }
 
       // Display execution arrow
       if (machine_->GetProc()->pc_ == line_address)
       {
-         painter.drawPixmap(0, top_margin + line_height_ * i, pc_pixmap_);
+         painter.drawPixmap(0, top_margin_ + line_height_ * i, pc_pixmap_);
       }
 
       // Address 
       sprintf(address, "%4.4X: ", line_address);
       painter.setPen(address_color_);
-      painter.drawText(margin_size_, top_margin + line_height_ * i, address);
+      painter.drawText(margin_size_, top_margin_ + line_height_ * i, address);
 
       // Mnemonic
       const int size = disassembler_->DasmMnemonic(line_address, mnemonic, arg);
       painter.setPen(mnemonic_color_);
-      painter.drawText(margin_size_ + address_size, top_margin + line_height_ * i, mnemonic);
+      painter.drawText(margin_size_ + address_size, top_margin_ + line_height_ * i, mnemonic);
       // Arguments
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
       painter.setPen(arg_color_);
-      painter.drawText(margin_size_ + address_size + mnemonic_size + char_size, top_margin + line_height_ * i, arg);
+      painter.drawText(margin_size_ + address_size + mnemonic_size + char_size, top_margin_ + line_height_ * i, arg);
 
       // Bytes 
       char byte_buffer[16] = { 0 };
@@ -266,13 +284,16 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
          }
       }
       painter.setPen(byte_color_);
-      painter.drawText(margin_size_ + char_size * 30, top_margin + line_height_ * i, byte_buffer);
+      painter.drawText(margin_size_ + char_size * 30, top_margin_ + line_height_ * i, byte_buffer);
       // Character (if displayable)
       painter.setPen(char_color_);
-      painter.drawText(margin_size_ + char_size * 45, top_margin  + line_height_ * i, char_buffer);
+      painter.drawText(margin_size_ + char_size * 45, top_margin_  + line_height_ * i, char_buffer);
 
       // Current selected line
-      // todo
+      if (current_line_selected_ == i)
+      {
+         painter.fillRect(margin_size_,  line_height_ * i, width - margin_size_, line_height_, QBrush(sel_color_));
+      }
 
       line_address_.push_back(line_address);
 
@@ -314,6 +335,8 @@ void DisassemblyWidget::ComputeScrollArea()
    const QFontMetrics fm (property("font").value<QFont>());
 
    line_height_ = fm.lineSpacing();
+   top_margin_ = line_height_ = std::max(top_margin_, fm.height());
+
    nb_lines_ = (size().height() - horizontal_sb_.sizeHint().height()) / line_height_;
    line_address_.resize(nb_lines_);
 

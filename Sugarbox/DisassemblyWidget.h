@@ -44,11 +44,13 @@ private:
    Z80Desassember* disassembler_;
    unsigned short max_address_;
    unsigned int current_address_;
+   unsigned int current_line_selected_;
    unsigned int nb_lines_;
    unsigned int line_height_;
    std::vector<unsigned short> line_address_;
 
-   unsigned int margin_size_ ;
+   int margin_size_ ;
+   int top_margin_;
 
    // Ressources
    QPixmap bp_pixmap_;
@@ -62,4 +64,5 @@ private:
    QColor arg_color_;
    QColor byte_color_;
    QColor char_color_;
+   QColor sel_color_;
 };
