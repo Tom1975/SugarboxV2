@@ -55,7 +55,6 @@ private:
    // Ressources
    QPixmap bp_pixmap_;
    QPixmap flag_pixmap_;
-   QPixmap pc_pixmap_;
 
    // Display Settings
    QColor back_color_;

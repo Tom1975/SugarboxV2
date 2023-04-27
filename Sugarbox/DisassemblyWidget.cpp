@@ -19,7 +19,6 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    top_margin_(0),
    bp_pixmap_(":/Resources/bp.png"),
    flag_pixmap_(":/Resources/Flag.png"),
-   pc_pixmap_(":/Resources/PC.png"),
    back_color_(220, 220, 220),
    address_color_(Qt::blue),
    mnemonic_color_(Qt::darkBlue),
@@ -33,8 +32,8 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
 
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
 
-   margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
-   top_margin_ = std::max(std::max(pc_pixmap_.height(), flag_pixmap_.height()), bp_pixmap_.height());
+   margin_size_ = std::max(flag_pixmap_.width(), bp_pixmap_.width());
+   top_margin_ = std::max(flag_pixmap_.height(), bp_pixmap_.height());
 }
 
 void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned short max_address)
@@ -108,6 +107,8 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
       break;
    case Qt::Key_F9:
       // todo
+      if (current_line_selected_ != -1)
+         machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]);
       break;
    default:
       // todo
@@ -244,12 +245,6 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
          painter.drawPixmap(0,line_height_ * i, bp_pixmap_);
       }
 
-      // Display execution arrow
-      if (machine_->GetProc()->pc_ == line_address)
-      {
-         painter.drawPixmap(0, top_margin_ + line_height_ * i, pc_pixmap_);
-      }
-
       // Address 
       sprintf(address, "%4.4X: ", line_address);
       painter.setPen(address_color_);
@@ -290,9 +285,9 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       painter.drawText(margin_size_ + char_size * 45, top_margin_  + line_height_ * i, char_buffer);
 
       // Current selected line
-      if (current_line_selected_ == i)
+      if (machine_->GetProc()->pc_ == line_address)
       {
-         painter.fillRect(margin_size_,  line_height_ * i, width - margin_size_, line_height_, QBrush(sel_color_));
+         painter.fillRect(margin_size_,  line_height_ * i + 2 , width - margin_size_, line_height_, QBrush(sel_color_));
       }
 
       line_address_.push_back(line_address);
