@@ -5,7 +5,6 @@
 
 DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    : QWidget(parent),
-   disasm_window_(this),
    vertical_sb_(Qt::Vertical, this),
    horizontal_sb_(Qt::Horizontal, this),
    machine_(nullptr),
@@ -33,6 +32,7 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    setFocusPolicy(Qt::StrongFocus);
 
    connect(&vertical_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChange(int)));
+   connect(&horizontal_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChangeHorizontal(int)));
 
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
@@ -311,12 +311,6 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 
 void DisassemblyWidget::resizeEvent(QResizeEvent* e)
 {
-   // If the widget's width has changed, we recalculate the new height
-   // of our widget.
-   if (e->size().width() == e->oldSize().width()) {
-      return;
-   }
-
    // Set scrollbar   
    vertical_sb_.move(e->size().width() - vertical_sb_.sizeHint().width(), 0);
    vertical_sb_.resize(vertical_sb_.sizeHint().width(), e->size().height() - horizontal_sb_.sizeHint().height());
@@ -335,6 +329,12 @@ void DisassemblyWidget::OnValueChange(int valueScrollBar)
    repaint();
 }
 
+void DisassemblyWidget::OnValueChangeHorizontal(int valueScrollBar)
+{
+   margin_size_ = valueScrollBar * -1;
+   // Update;
+   repaint();
+}
 
 void DisassemblyWidget::ComputeScrollArea()
 {
@@ -343,8 +343,29 @@ void DisassemblyWidget::ComputeScrollArea()
 
    line_height_ = std::max(fm.lineSpacing(), line_height_);
 
-   nb_lines_ = (size().height() - horizontal_sb_.sizeHint().height()) / line_height_;
+   nb_lines_ = (size().height() ) / line_height_;
    line_address_.resize(nb_lines_);
+
+   const unsigned int char_size = fm.horizontalAdvance(' ');
+
+   int used_width = char_size * 50;
+
+   // Horizontal
+   if (used_width > width())
+   {
+      horizontal_sb_.setMaximum(used_width - width());
+      horizontal_sb_.setMinimum(0);
+      horizontal_sb_.setSingleStep(1);
+      horizontal_sb_.setPageStep(1);
+      horizontal_sb_.setValue(0);
+      horizontal_sb_.show();
+      margin_size_ = 0;
+   }
+   else
+   {
+      margin_size_ = 0;
+      horizontal_sb_.hide();
+   }
 
    // Vertical:
    // Compute number of lines : 0 -> max_address_

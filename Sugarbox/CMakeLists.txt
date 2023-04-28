@@ -72,7 +72,6 @@ function(windeployqt target)
         COMMENT "Deploying Qt libraries using windeployqt for compilation target '${target}' ..."
     )
 
-
 endfunction()
 
 file(GLOB HEADERS

@@ -91,6 +91,8 @@ void DebugDialog::SetEmulator(Emulation* emu_handler)
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
    ui->listWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
+   ui->memoryWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
+   ui->stackWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
 
    // Set registers
    Z80* z80 = emu_handler->GetEngine()->GetProc();
@@ -131,6 +133,10 @@ void DebugDialog::Break()
 {
    // wait for the emulator to be in a stable state
 
+}
+void DebugDialog::on_dasm_address_returnPressed()
+{
+   on_set_top_address_clicked();
 }
 
 void DebugDialog::on_dbg_step__clicked()

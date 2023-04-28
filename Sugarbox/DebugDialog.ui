@@ -41,27 +41,6 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="set_top_address">
-             <property name="text">
-              <string>Set Top Address</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="dbg_run">
-             <property name="text">
-              <string>Run</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="dbg_step_">
-             <property name="text">
-              <string>Step in</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="0" colspan="2">
             <widget class="QLineEdit" name="dasm_address"/>
            </item>
@@ -72,10 +51,24 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0" colspan="4">
-            <widget class="DisassemblyWidget" name="listWidget" native="true">
-             <property name="styleSheet">
-              <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="dbg_step_">
+             <property name="text">
+              <string>Step in</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QPushButton" name="dbg_run">
+             <property name="text">
+              <string>Run</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="set_top_address">
+             <property name="text">
+              <string>Set Top Address</string>
              </property>
             </widget>
            </item>
@@ -83,32 +76,61 @@
          </item>
         </layout>
        </item>
+       <item>
+        <widget class="DisassemblyWidget" name="listWidget" native="true">
+         <property name="styleSheet">
+          <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="MemoryViewWidget" name="memoryWidget" native="true">
+         <property name="styleSheet">
+          <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
-      <widget class="QTableWidget" name="registers_list_">
-       <property name="maximumSize">
-        <size>
-         <width>256</width>
-         <height>16777215</height>
-        </size>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
        </property>
-       <column>
-        <property name="text">
-         <string>Register</string>
-        </property>
-        <property name="font">
-         <font>
-          <bold>true</bold>
-         </font>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Value</string>
-        </property>
-       </column>
-      </widget>
+       <item>
+        <widget class="QTableWidget" name="registers_list_">
+         <property name="maximumSize">
+          <size>
+           <width>256</width>
+           <height>450</height>
+          </size>
+         </property>
+         <column>
+          <property name="text">
+           <string>Register</string>
+          </property>
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Value</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+         <item>
+            <widget class="MemoryViewWidget" name="stackWidget" native="true">
+               <property name="styleSheet">
+                  <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
+               </property>
+            </widget>
+         </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -124,6 +146,11 @@
    <class>DisassemblyWidget</class>
    <extends>QWidget</extends>
    <header>disassemblywidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>MemoryViewWidget</class>
+   <extends>QWidget</extends>
+   <header>memoryviewwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
