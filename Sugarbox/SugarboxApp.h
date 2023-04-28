@@ -22,6 +22,7 @@
 #include "DlgSettings.h"
 #include "SoundControl.h"
 #include "DebugSocket.h"
+#include "FlagHandler.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -188,5 +189,8 @@ protected:
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;
+
+   // Flag handler
+   FlagHandler flag_handler_;
 };
 

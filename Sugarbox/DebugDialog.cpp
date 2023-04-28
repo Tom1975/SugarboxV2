@@ -9,55 +9,56 @@
 #include <QDebug>
 #include <QMouseEvent>
 
+#include <format>
+template<typename T>
+DebugDialog::RegisterView<T>::RegisterView(std::string label, T* reg) : label_(label), register_(reg), value_("----")
+{
+
+}
+
+template<typename T>
+std::string& DebugDialog::RegisterView<T>::GetLabel()
+{
+   return label_;
+}
+
+template<>
+std::string& DebugDialog::RegisterView<unsigned short>::GetValue()
+{
+   std::snprintf(&value_[0], value_.size(), "%4.4X", register_);
+   return value_;
+}
+
+template<>
+std::string& DebugDialog::RegisterView<Z80::Register>::GetValue()
+{
+   std::snprintf(&value_[0], value_.size(), "%4.4X", register_->w);
+   return value_;
+}
+
+DebugDialog::FlagView::FlagView(std::string label, Z80::Register* reg) : RegisterView(label, reg)
+{
+   value_ = "--------";
+}
+
+
+std::string& DebugDialog::FlagView::GetValue()
+{
+   // Draw the full flags
+   return value_;
+}
+
+
 DebugDialog::DebugDialog(QWidget *parent) :
    QDialog(parent),
    ui(new Ui::DebugDialog)
 {
    ui->setupUi(this);
    ui->listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-   ui->callStack->viewport()->installEventFilter(this);
 
    connect(ui->listWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(DasmShowContextMenu(QPoint)));
 
-
-   QMetaObject::Connection result = connect(ui->callStack, SIGNAL(itemDoubleClicked(QListWidgetItem*, int)), SLOT(itemDoubleClicked(QListWidgetItem*)));
-
-   ui->registers_list_->clear();
-   ui->registers_list_->setColumnCount(2);
-   ui->registers_list_->setRowCount(20);
-
-   QTableWidgetItem  * item = new QTableWidgetItem("pc");
-   ui->registers_list_->setItem(0, 0, item);
-
-   item = new QTableWidgetItem("D0");
-   ui->registers_list_->setItem(1, 0, item);
-   ui->registers_list_->setItem(2, 0, new QTableWidgetItem("D1"));
-   ui->registers_list_->setItem(3, 0, new QTableWidgetItem("D2"));
-   ui->registers_list_->setItem(4, 0, new QTableWidgetItem("D3"));
-   ui->registers_list_->setItem(5, 0, new QTableWidgetItem("D4"));
-   ui->registers_list_->setItem(6, 0, new QTableWidgetItem("D5"));
-   ui->registers_list_->setItem(7, 0, new QTableWidgetItem("D6"));
-   ui->registers_list_->setItem(8, 0, new QTableWidgetItem("D7"));
-
-   ui->registers_list_->setItem(9, 0, new QTableWidgetItem("A0"));
-   ui->registers_list_->setItem(10, 0, new QTableWidgetItem("A1"));
-   ui->registers_list_->setItem(11, 0, new QTableWidgetItem("A2"));
-   ui->registers_list_->setItem(12, 0, new QTableWidgetItem("A3"));
-   ui->registers_list_->setItem(13, 0, new QTableWidgetItem("A4"));
-   ui->registers_list_->setItem(14, 0, new QTableWidgetItem("A5"));
-   ui->registers_list_->setItem(15, 0, new QTableWidgetItem("A6"));
-   ui->registers_list_->setItem(16, 0, new QTableWidgetItem("A7"));
-
-   ui->registers_list_->setItem(17, 0, new QTableWidgetItem("SSP"));
-   ui->registers_list_->setItem(18, 0, new QTableWidgetItem("USP"));
-
-   ui->registers_list_->setItem(19, 0, new QTableWidgetItem("SR"));
-
-   for (int i = 0; i < 20; i++)
-   {
-      ui->registers_list_->setItem(i, 1, new QTableWidgetItem("--"));
-   }
-   
+   // Set registers
 }
 
 DebugDialog::~DebugDialog()
@@ -82,10 +83,6 @@ void DebugDialog::itemDoubleClicked(QListWidgetItem* item)
 
 bool DebugDialog::eventFilter(QObject* watched, QEvent* event)
 {
-   if (watched == ui->callStack->viewport() && event->type() == QEvent::MouseButtonDblClick) {
-      QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-      qDebug() << "MouseButtonDblClick" << mouseEvent->pos();
-   }
    return QDialog::eventFilter(watched, event);
 }
 
@@ -94,11 +91,46 @@ void DebugDialog::SetEmulator(Emulation* emu_handler)
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
    ui->listWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
+
+   // Set registers
+   Z80* z80 = emu_handler->GetEngine()->GetProc();
+   register_list_.push_back(new DebugDialog::FlagView("FLAG", &z80->af_));
+   register_list_.push_back(new DebugDialog::RegisterView("AF", &z80->af_));
+   register_list_.push_back(new DebugDialog::RegisterView("HL", &z80->hl_));
+   register_list_.push_back(new DebugDialog::RegisterView("DE", &z80->de_));
+   register_list_.push_back(new DebugDialog::RegisterView("BC", &z80->bc_));
+   register_list_.push_back(new DebugDialog::RegisterView("AF'", &z80->af_p_));
+   register_list_.push_back(new DebugDialog::RegisterView("HL'", &z80->hl_p_));
+   register_list_.push_back(new DebugDialog::RegisterView("DE'", &z80->de_p_));
+   register_list_.push_back(new DebugDialog::RegisterView("BC'", &z80->bc_p_));
+   register_list_.push_back(new DebugDialog::RegisterView("IX", &z80->ix_));
+   register_list_.push_back(new DebugDialog::RegisterView("IY", &z80->iy_));
+   register_list_.push_back(new DebugDialog::RegisterView("SP", &z80->sp_));
+   register_list_.push_back(new DebugDialog::RegisterView("PC", &z80->pc_));
+   register_list_.push_back(new DebugDialog::RegisterView("I", &z80->ir_));
+
+   ui->registers_list_->clear();
+   ui->registers_list_->setColumnCount(2);
+   ui->registers_list_->setRowCount(register_list_.size());
+
+   for (unsigned int i = 0; i < register_list_.size(); i++)
+   {
+      ui->registers_list_->setItem(i, 0, new QTableWidgetItem(register_list_[i]->GetLabel().c_str()));
+      ui->registers_list_->setItem(i, 1, new QTableWidgetItem(register_list_[i]->GetValue().c_str()));
+   }
+
+}
+
+void DebugDialog::SetFlagHandler(FlagHandler* flag_handler)
+{
+   flag_handler_ = flag_handler;
+   ui->listWidget->SetFlagHandler(flag_handler_);
 }
 
 void DebugDialog::Break()
 {
    // wait for the emulator to be in a stable state
+
 }
 
 void DebugDialog::on_dbg_step__clicked()
@@ -182,41 +214,6 @@ void DebugDialog::AddBreakpoint()
    UpdateDebug();
 }
 
-void DebugDialog::on_bpAddress_returnPressed()
-{
-   on_add_bp_clicked();
-}
-
-void DebugDialog::on_add_bp_clicked()
-{
-   QString text = ui->bpAddress->text();
-   if (text.length() > 0)
-   {
-      //BreakPointHandler* pb_handler = emu_handler_->GetBreakpointHandler();
-      //pb_handler->CreateBreakpoint(text.toUtf8().constData());
-      UpdateDebug();
-   }
-}
-
-void DebugDialog::on_remove_bp_clicked()
-{
-   QList<QListWidgetItem *> list_of_items = ui->list_breakpoints->selectedItems();
-   if (list_of_items.size() > 0)
-   {
-      //BreakPointHandler* pb_handler = emu_handler_->GetBreakpointHandler();
-      // todo : handle multiple selection
-      //emu_handler_->RemoveBreakpoint(pb_handler->GetBreakpoint(list_of_items[0]->data(Qt::UserRole).toUInt()));
-      UpdateDebug();
-   }
-}
-
-void DebugDialog::on_clear_bp_clicked()
-{
-   //BreakPointHandler* pb_handler = emu_handler_->GetBreakpointHandler();
-   //pb_handler->Clear();
-   UpdateDebug();
-}
-
 void DebugDialog::UpdateDebug()
 {
    unsigned int offset, offset_old;
@@ -228,89 +225,22 @@ void DebugDialog::UpdateDebug()
    Z80* z80 = emu_handler_->GetEngine()->GetProc();
 
    // Registers
+
    QString str = QString("%1").arg(z80->GetPC(), 6, 16);
-   ui->registers_list_->item(0, 1)->setText( str );
 
-   /*unsigned int stack_pointer = (m68k->GetDataSr() & 0x2000) ? z80->GetDataSsp() : m68k->GetDataUsp();
-   for (int i = 0; i < 8; i++)
+   for (unsigned int i = 0; i < register_list_.size(); i++)
    {
-      if (i != 7)
-      {
-         str = QString("%1").arg(m68k->GetAddressRegister(i), 6, 16);
-      }
-      else
-      {
-         
-         // A7 is the stackpointer. Depends on either usp/ssp
-         str = QString("%1").arg(stack_pointer, 6, 16);
-      }
-
-      ui->registers_list_->item(9+i, 1)->setText(str);
-
-      str = QString("%1").arg(m68k->GetDataRegister(i), 6, 16);
-      ui->registers_list_->item(1+i, 1)->setText(str);
+      ui->registers_list_->item(i, 0)->setText(register_list_[i]->GetLabel().c_str());
+      ui->registers_list_->item(i, 1)->setText(register_list_[i]->GetValue().c_str());
    }
 
-   str = QString("%1").arg(m68k->GetDataSsp(), 6, 16);
-   ui->registers_list_->item(17, 1)->setText(str);
-   str = QString("%1").arg(m68k->GetDataUsp(), 6, 16);
-   ui->registers_list_->item(18, 1)->setText(str);
-   str = QString("%1").arg(m68k->GetDataSr(), 6, 16);
-   ui->registers_list_->item(19, 1)->setText(str);
 
-   // CallStack
-   unsigned char* mem = emu_handler_->GetMotherboard()->GetBus()->GetRam();
-   str = QString("%1").arg(stack_pointer, 6, 16);
-   offset = stack_pointer;
-   ui->callStack->clear();
-   if (stack_pointer < 512 * 1024)
-   {
-      for (int i = 0; i < 16; i++)
-      {
-         std::stringstream sstream;
-         QListWidgetItem* stackitem = new QListWidgetItem;
-         stackitem->setData(Qt::UserRole, offset);
-
-         unsigned int dword_value = mem[offset+3] |
-            (mem[offset + 2] << 8) |
-            (mem[offset + 1] << 16) |
-            (mem[offset] << 24);
-                                    
-         sstream << std::hex << std::uppercase << std::setfill('0') << std::setw(8) << offset;
-         sstream << "  ";
-         sstream << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << dword_value;
-
-         stackitem->setText(sstream.str().c_str());
-         stackitem->setData(Qt::UserRole, (int)dword_value);
-
-         ui->callStack->addItem(stackitem);
-         offset += 4;
-      }
-   }
-
-   offset = offset_old = emu_handler_->GetMotherboard()->GetCpu()->GetPc() - 4; // -2 because of prefetch
-   UpdateDisassembly(offset);
-
-   // Breakpoints list
-   BreakPointHandler* pb_handler = emu_handler_->GetBreakpointHandler();
-   ui->list_breakpoints->clear();
-   // Update breakpoints list
-   for (int i = 0; i < pb_handler->GetBreakpointNumber(); i++)
-   {
-      QListWidgetItem* item = new QListWidgetItem;
-      item->setText(pb_handler->GetBreakpoint(i)->GetLabel());
-      item->setData(Qt::UserRole, i);
-      
-      ui->list_breakpoints->addItem(item);
-   }
-   */
 }
 
 // Update the disassembly windows : From offset, until the number of lines are completed
 void DebugDialog::UpdateDisassembly(unsigned int offset)
 {
-
-
+   ui->listWidget->ForceTopAddress(offset);
 }
 
 void DebugDialog::SetAddress(unsigned int addr)

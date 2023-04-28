@@ -4,7 +4,7 @@
 #include <QScrollBar>
 
 #include "Emulation.h"
-
+#include "FlagHandler.h"
 
 class DisassemblyWidget : public QWidget
 {
@@ -14,6 +14,8 @@ public:
    explicit DisassemblyWidget(QWidget* parent = nullptr);
 
    void SetDisassemblyInfo(Emulation* machine, unsigned short max_address);
+   void SetFlagHandler(FlagHandler* flag_handler);
+
    void ForceTopAddress(unsigned short address);
 
 protected:
@@ -42,11 +44,13 @@ private:
 
    EmulatorEngine* machine_;
    Z80Desassember* disassembler_;
+
+   FlagHandler* flag_handler_;
    unsigned short max_address_;
-   unsigned int current_address_;
-   unsigned int current_line_selected_;
-   unsigned int nb_lines_;
-   unsigned int line_height_;
+   int current_address_;
+   int current_line_selected_;
+   int nb_lines_;
+   int line_height_;
    std::vector<unsigned short> line_address_;
 
    int margin_size_ ;
@@ -55,6 +59,7 @@ private:
    // Ressources
    QPixmap bp_pixmap_;
    QPixmap flag_pixmap_;
+   QPixmap pc_pixmap_;
 
    // Display Settings
    QColor back_color_;

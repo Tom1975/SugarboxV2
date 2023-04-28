@@ -9,6 +9,7 @@
 #include "DisassemblyWidget.h"
 #include "Emulation.h"
 #include "Z80Desassember.h"
+#include "FlagHandler.h"
 
 namespace Ui {
 class DebugDialog;
@@ -24,6 +25,7 @@ public:
 
     // Init dialog
     void SetEmulator(Emulation* emu_handler);
+    void SetFlagHandler(FlagHandler* flag_handler);
     virtual void SetAddress(unsigned int addr);
     virtual bool event(QEvent *event);
     void Break();
@@ -39,10 +41,6 @@ public:
       void StackToDasm();
       void AddBreakpoint();
       void RemoveBreakpoint();
-      void on_add_bp_clicked();
-      void on_remove_bp_clicked();
-      void on_clear_bp_clicked();
-      void on_bpAddress_returnPressed();
       void itemDoubleClicked(QListWidgetItem*);
 
     // Update the view
@@ -61,5 +59,40 @@ private:
    DisassemblyWidget* disassembly_widget_;
    Ui::DebugDialog *ui;
    Emulation* emu_handler_;
+   FlagHandler* flag_handler_;
+
+   ///////////////////////////////
+   // Register data
+   class IRegisterView
+   {
+   public:
+      virtual std::string& GetLabel() = 0;
+      virtual std::string& GetValue() = 0;
+   };
+
+   template<typename T>
+   class RegisterView :public IRegisterView
+   {
+   public:
+      RegisterView(std::string label, T*);
+
+      virtual std::string& GetLabel();
+      virtual std::string& GetValue();
+
+   protected:
+      std::string label_;
+      std::string value_;
+      T* register_;
+   };
+
+   class FlagView: public RegisterView<Z80::Register>
+   {
+   public:
+      FlagView(std::string label, Z80::Register* reg);
+      std::string& GetValue() override;
+   private:
+   };
+
+   std::vector< IRegisterView* > register_list_;
 
 };

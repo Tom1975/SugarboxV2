@@ -140,6 +140,7 @@ int SugarboxApp::RunApp()
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
    debug_.SetEmulator(emulation_);
+   debug_.SetFlagHandler(&flag_handler_);
    debugger_link_ = new DebugSocket(this, emulation_);
    debugger_link_->StartServer();
 
