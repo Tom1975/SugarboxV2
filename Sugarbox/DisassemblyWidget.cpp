@@ -35,7 +35,6 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    connect(&horizontal_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChangeHorizontal(int)));
 
    margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
-   margin_size_ = std::max(std::max(pc_pixmap_.width(), flag_pixmap_.width()), bp_pixmap_.width());
    line_height_ = std::max(std::max(pc_pixmap_.height(), flag_pixmap_.height()), bp_pixmap_.height());
 }
 

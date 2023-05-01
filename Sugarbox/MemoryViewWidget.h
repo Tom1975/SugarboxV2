@@ -31,7 +31,7 @@ public slots:
    
 
 
-private:
+protected:
    QScrollBar vertical_sb_;
    QScrollBar horizontal_sb_;
 

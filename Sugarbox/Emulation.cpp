@@ -481,6 +481,9 @@ void Emulation::Break()
 {
    debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
+
+   // wait for break to occur
+
 }
 
 std::vector<std::string> Emulation::GetZ80Registers()

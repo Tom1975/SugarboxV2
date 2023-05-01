@@ -45,6 +45,16 @@ DebugDialog::FlagView::FlagView(std::string label, Z80::Register* reg) : Registe
 std::string& DebugDialog::FlagView::GetValue()
 {
    // Draw the full flags
+   unsigned short w = register_->w;
+   value_ = w & 0x80 ? "S" : "-";
+   value_ += w & 0x40 ? "Z" : "-";
+   value_ += w & 0x20 ? "X" : "-";
+   value_ += w & 0x10 ? "H" : "-";
+   value_ += w & 0x08 ? "Y" : "-";
+   value_ += w & 0x04 ? "V" : "-";
+   value_ += w & 0x02 ? "N" : "-";
+   value_ += w & 0x01 ? "C" : "-";
+
    return value_;
 }
 
@@ -115,12 +125,14 @@ void DebugDialog::SetEmulator(Emulation* emu_handler)
    ui->registers_list_->setColumnCount(2);
    ui->registers_list_->setRowCount(register_list_.size());
 
+   ui->registers_list_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+   ui->registers_list_->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
    for (unsigned int i = 0; i < register_list_.size(); i++)
    {
       ui->registers_list_->setItem(i, 0, new QTableWidgetItem(register_list_[i]->GetLabel().c_str()));
       ui->registers_list_->setItem(i, 1, new QTableWidgetItem(register_list_[i]->GetValue().c_str()));
    }
-
+   ui->registers_list_->setHorizontalHeaderLabels({"Register", "Value"});
 }
 
 void DebugDialog::SetFlagHandler(FlagHandler* flag_handler)
@@ -231,16 +243,15 @@ void DebugDialog::UpdateDebug()
    Z80* z80 = emu_handler_->GetEngine()->GetProc();
 
    // Registers
-
-   QString str = QString("%1").arg(z80->GetPC(), 6, 16);
-
    for (unsigned int i = 0; i < register_list_.size(); i++)
    {
       ui->registers_list_->item(i, 0)->setText(register_list_[i]->GetLabel().c_str());
       ui->registers_list_->item(i, 1)->setText(register_list_[i]->GetValue().c_str());
    }
 
-
+   // set top address at the upper tier of the screen
+   ui->listWidget->ForceTopAddress(z80->GetPC());
+   ui->stackWidget->ForceTopAddress(z80->GetPC() - 8);   
 }
 
 // Update the disassembly windows : From offset, until the number of lines are completed

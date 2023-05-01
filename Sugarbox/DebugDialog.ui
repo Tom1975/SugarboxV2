@@ -99,12 +99,51 @@
        </property>
        <item>
         <widget class="QTableWidget" name="registers_list_">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>256</width>
-           <height>450</height>
+           <width>160</width>
+           <height>350</height>
           </size>
          </property>
+         <property name="autoScrollMargin">
+          <number>14</number>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="showGrid">
+          <bool>true</bool>
+         </property>
+         <attribute name="horizontalHeaderVisible">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="horizontalHeaderCascadingSectionResizes">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderDefaultSectionSize">
+          <number>70</number>
+         </attribute>
+         <attribute name="horizontalHeaderHighlightSections">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="horizontalHeaderMinimumSectionSize">
+          <number>39</number>
+         </attribute>
+         <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+          <bool>false</bool>
+         </attribute>
+         <attribute name="horizontalHeaderStretchLastSection">
+          <bool>true</bool>
+         </attribute>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
          <column>
           <property name="text">
            <string>Register</string>
@@ -123,13 +162,19 @@
          </column>
         </widget>
        </item>
-         <item>
-            <widget class="MemoryViewWidget" name="stackWidget" native="true">
-               <property name="styleSheet">
-                  <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
-               </property>
-            </widget>
-         </item>
+       <item>
+        <widget class="StackViewWidget" name="stackWidget" native="true">
+         <property name="maximumSize">
+          <size>
+           <width>160</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">font: 8pt &quot;Courier New&quot;;</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>
@@ -151,6 +196,11 @@
    <class>MemoryViewWidget</class>
    <extends>QWidget</extends>
    <header>memoryviewwidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>StackViewWidget</class>
+   <extends>QWidget</extends>
+   <header>stackviewwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
