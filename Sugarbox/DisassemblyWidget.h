@@ -44,13 +44,14 @@ private:
 
    FlagHandler* flag_handler_;
    unsigned short max_address_;
-   int current_address_;
+   unsigned short current_address_;
    int current_line_selected_;
    int nb_lines_;
    int line_height_;
    std::vector<unsigned short> line_address_;
 
    int margin_size_ ;
+   int horizontal_offset_;
    int top_margin_;
 
    // Ressources
@@ -60,6 +61,7 @@ private:
 
    // Display Settings
    QColor back_color_;
+   QColor margin_color_;
    QColor address_color_;
    QColor mnemonic_color_;
    QColor arg_color_;

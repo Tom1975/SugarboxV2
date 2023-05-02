@@ -16,11 +16,13 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    nb_lines_(0),
    line_height_(0),
    margin_size_(0),
+   horizontal_offset_(0),
    top_margin_(0),
    bp_pixmap_(":/Resources/bp.png"),
    flag_pixmap_(":/Resources/Flag.png"),
    pc_pixmap_(":/Resources/PC.png"),
-   back_color_(220, 220, 220),
+   back_color_(Qt::white),
+   margin_color_(220, 220, 220),
    address_color_(Qt::blue),
    mnemonic_color_(Qt::darkBlue),
    arg_color_(Qt::darkMagenta),
@@ -169,11 +171,9 @@ unsigned short DisassemblyWidget::GetPreviousValidAdress(unsigned short Addr_P)
 {
    Z80* z80 = machine_->GetProc();
    unsigned short address = Addr_P;
-   unsigned short adress_degrade = 0;
    unsigned short best_address = Addr_P;
    unsigned int offset = 0;
-   bool bIsValid = false;
-   while ((!bIsValid) && address > 0 && offset < 8)
+   while (address > 0 && offset < 8)
    {
       --address;
       ++offset;
@@ -197,7 +197,7 @@ unsigned short DisassemblyWidget::GetPreviousValidAdress(unsigned short Addr_P)
 void DisassemblyWidget::GoUp()
 {
    Z80* z80 = machine_->GetProc();
-   unsigned short addr_Tmp = GetMaxedPreviousValidAdress(current_address_);
+   const unsigned short addr_Tmp = GetMaxedPreviousValidAdress(current_address_);
    if (addr_Tmp == current_address_)
    {
       current_address_ = GetPreviousValidAdress(current_address_);
@@ -225,50 +225,25 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
 
    sprintf(address, "0x%4.4X: ", 0xFFFF);
    const QFontMetrics fm(property("font").value<QFont>());
-   const unsigned int address_size = fm.horizontalAdvance(address);
-   const unsigned int char_size = fm.horizontalAdvance(' ');
+   const int address_size = fm.horizontalAdvance(address);
+   const int char_size = fm.horizontalAdvance(' ');
 
    // Generic display : A line is composed of :
-   // A flag/breakpoint
-   // Current address
-   // Mnemonic / argument of the code
-   // Bytes of the current command (5 max)
-   // Ascii char, if relevant (otherwise, a basic '.' )
    for (int i = 0; i < nb_lines_; i++)
    {
-      // Display flag ?
-      if (flag_handler_->IsFlagged(line_address))
-      {
-         // todo
-         painter.drawPixmap(0,  line_height_ * i, flag_pixmap_);
-      }
-      
-      // Display breakpoint ?
-      if ( machine_->GetBreakpointHandler()->IsThereBreakOnAdress(line_address))
-      {
-         // todo
-         painter.drawPixmap(0, top_margin_ + line_height_ * i, bp_pixmap_);
-      }
-
-      // Display execution arrow
-      if (machine_->GetProc()->pc_ == line_address)
-      {
-         painter.drawPixmap(0, top_margin_ + line_height_ * i, pc_pixmap_);
-      }
-
       // Address 
       sprintf(address, "%4.4X: ", line_address);
       painter.setPen(address_color_);
-      painter.drawText(margin_size_, top_margin_ + line_height_ * i, address_size, line_height_,Qt::AlignLeft|Qt::AlignVCenter, address);
+      painter.drawText(margin_size_ + horizontal_offset_, top_margin_ + line_height_ * i, address_size, line_height_,Qt::AlignLeft|Qt::AlignVCenter, address);
 
       // Mnemonic
       const int size = disassembler_->DasmMnemonic(line_address, mnemonic, arg);
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
       painter.setPen(mnemonic_color_);
-      painter.drawText(margin_size_ + address_size, top_margin_ + line_height_ * i, mnemonic_size, line_height_, Qt::AlignLeft|Qt::AlignVCenter, mnemonic);
+      painter.drawText(margin_size_ + horizontal_offset_ + address_size, top_margin_ + line_height_ * i, mnemonic_size, line_height_, Qt::AlignLeft|Qt::AlignVCenter, mnemonic);
       // Arguments
       painter.setPen(arg_color_);
-      painter.drawText(margin_size_ + address_size + mnemonic_size + char_size, top_margin_ + line_height_ * i, margin_size_ + char_size * 30 - (address_size + mnemonic_size + char_size), line_height_, Qt::AlignLeft|Qt::AlignVCenter, arg);
+      painter.drawText(margin_size_ + horizontal_offset_ + address_size + mnemonic_size + char_size, top_margin_ + line_height_ * i, margin_size_ + char_size * 30 - (address_size + mnemonic_size + char_size), line_height_, Qt::AlignLeft|Qt::AlignVCenter, arg);
 
       // Bytes 
       char byte_buffer[16] = { 0 };
@@ -290,10 +265,30 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
          }
       }
       painter.setPen(byte_color_);
-      painter.drawText(margin_size_ + char_size * 30, top_margin_ + line_height_ * i, char_size*15, line_height_, Qt::AlignLeft|Qt::AlignVCenter, byte_buffer);
+      painter.drawText(margin_size_ + horizontal_offset_ + char_size * 30, top_margin_ + line_height_ * i, char_size*15, line_height_, Qt::AlignLeft|Qt::AlignVCenter, byte_buffer);
       // Character (if displayable)
       painter.setPen(char_color_);
-      painter.drawText(margin_size_ + char_size * 45, top_margin_ + line_height_ * i, char_size * 5, line_height_, Qt::AlignLeft|Qt::AlignVCenter, char_buffer);
+      painter.drawText(margin_size_ + horizontal_offset_ + char_size * 45, top_margin_ + line_height_ * i, char_size * 5, line_height_, Qt::AlignLeft|Qt::AlignVCenter, char_buffer);
+
+      // Margin
+      painter.fillRect(0, 0, margin_size_, height, margin_color_);
+      // Display flag ?
+      if (flag_handler_->IsFlagged(line_address))
+      {
+         painter.drawPixmap(0, line_height_ * i, flag_pixmap_);
+      }
+
+      // Display breakpoint ?
+      if (machine_->GetBreakpointHandler()->IsThereBreakOnAdress(line_address))
+      {
+         painter.drawPixmap(0, top_margin_ + line_height_ * i, bp_pixmap_);
+      }
+
+      // Display execution arrow
+      if (machine_->GetProc()->pc_ == line_address)
+      {
+         painter.drawPixmap(0, top_margin_ + line_height_ * i, pc_pixmap_);
+      }
 
       // Current selected line
       if (current_line_selected_ == i)
@@ -318,20 +313,17 @@ void DisassemblyWidget::resizeEvent(QResizeEvent* e)
    horizontal_sb_.resize(e->size().width() - vertical_sb_.sizeHint().width(), horizontal_sb_.sizeHint().height());
 
    ComputeScrollArea();
-
 }
 
 void DisassemblyWidget::OnValueChange(int valueScrollBar)
 {
-   current_address_ = static_cast<unsigned int>(valueScrollBar);
-   // Update;
+   current_address_ = static_cast<unsigned short>(valueScrollBar);
    repaint();
 }
 
 void DisassemblyWidget::OnValueChangeHorizontal(int valueScrollBar)
 {
-   margin_size_ = valueScrollBar * -1;
-   // Update;
+   horizontal_offset_ = valueScrollBar * -1;
    repaint();
 }
 
@@ -345,9 +337,9 @@ void DisassemblyWidget::ComputeScrollArea()
    nb_lines_ = (size().height() ) / line_height_;
    line_address_.resize(nb_lines_);
 
-   const unsigned int char_size = fm.horizontalAdvance(' ');
+   const int char_size = fm.horizontalAdvance(' ');
 
-   int used_width = char_size * 50;
+   const int used_width = char_size * 50;
 
    // Horizontal
    if (used_width > width())
@@ -358,11 +350,11 @@ void DisassemblyWidget::ComputeScrollArea()
       horizontal_sb_.setPageStep(1);
       horizontal_sb_.setValue(0);
       horizontal_sb_.show();
-      margin_size_ = 0;
+      horizontal_offset_ = 0;
    }
    else
    {
-      margin_size_ = 0;
+      horizontal_offset_ = 0;
       horizontal_sb_.hide();
    }
 
