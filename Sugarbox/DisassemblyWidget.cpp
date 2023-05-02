@@ -271,7 +271,8 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       painter.drawText(margin_size_ + horizontal_offset_ + char_size * 45, top_margin_ + line_height_ * i, char_size * 5, line_height_, Qt::AlignLeft|Qt::AlignVCenter, char_buffer);
 
       // Margin
-      painter.fillRect(0, 0, margin_size_, height, margin_color_);
+      painter.fillRect(0, top_margin_ + line_height_ * i, margin_size_, line_height_, margin_color_);
+
       // Display flag ?
       if (flag_handler_->IsFlagged(line_address))
       {
