@@ -120,7 +120,7 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
          machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]);
       break;
    default:
-      // todo
+      event->ignore();
       break;
    }
    repaint();
@@ -151,7 +151,7 @@ void DisassemblyWidget::mousePressEvent(QMouseEvent* event)
 
 }
 
-unsigned short DisassemblyWidget::GetMaxedPreviousValidAdress(unsigned short Addr_P)
+unsigned short DisassemblyWidget::GetMaxedPreviousValidAddress(unsigned short Addr_P)
 {
    Z80* z80 = machine_->GetProc();
    unsigned short address = Addr_P;
@@ -167,7 +167,7 @@ unsigned short DisassemblyWidget::GetMaxedPreviousValidAdress(unsigned short Add
    return best_address;
 }
 
-unsigned short DisassemblyWidget::GetPreviousValidAdress(unsigned short Addr_P)
+unsigned short DisassemblyWidget::GetPreviousValidAddress(unsigned short Addr_P)
 {
    Z80* z80 = machine_->GetProc();
    unsigned short address = Addr_P;
@@ -197,10 +197,10 @@ unsigned short DisassemblyWidget::GetPreviousValidAdress(unsigned short Addr_P)
 void DisassemblyWidget::GoUp()
 {
    Z80* z80 = machine_->GetProc();
-   const unsigned short addr_Tmp = GetMaxedPreviousValidAdress(current_address_);
+   const unsigned short addr_Tmp = GetMaxedPreviousValidAddress(current_address_);
    if (addr_Tmp == current_address_)
    {
-      current_address_ = GetPreviousValidAdress(current_address_);
+      current_address_ = GetPreviousValidAddress(current_address_);
    }
    else
    {

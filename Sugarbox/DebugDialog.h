@@ -30,7 +30,9 @@ public:
     virtual bool event(QEvent *event);
     void Break();
 
-    bool eventFilter(QObject* watched, QEvent* event);
+
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
    public slots:
       void on_set_top_address_clicked();

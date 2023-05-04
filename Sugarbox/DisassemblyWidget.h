@@ -19,14 +19,14 @@ public:
    void ForceTopAddress(unsigned short address);
 
 protected:
-   void wheelEvent(QWheelEvent* event);
+   void wheelEvent(QWheelEvent* event) override;
    void paintEvent(QPaintEvent* event) override;
    void resizeEvent(QResizeEvent* e) override;
    void keyPressEvent(QKeyEvent* event) override;
-   void mousePressEvent(QMouseEvent* event)override;
+   void mousePressEvent(QMouseEvent* event) override;
 
-   unsigned short GetMaxedPreviousValidAdress(unsigned short Addr_P);
-   unsigned short GetPreviousValidAdress(unsigned short Addr_P);
+   unsigned short GetMaxedPreviousValidAddress(unsigned short Addr_P);
+   unsigned short GetPreviousValidAddress(unsigned short Addr_P);
    void GoUp();
    void ComputeScrollArea();
 

@@ -91,6 +91,10 @@ void DebugDialog::itemDoubleClicked(QListWidgetItem* item)
    SetAddress(addr);
 }
 
+void DebugDialog::keyPressEvent(QKeyEvent* event)
+{
+}
+
 bool DebugDialog::eventFilter(QObject* watched, QEvent* event)
 {
    return QDialog::eventFilter(watched, event);
