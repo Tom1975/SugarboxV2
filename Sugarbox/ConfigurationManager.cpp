@@ -33,6 +33,11 @@ void ConfigurationManager::Clear()
    config_file_.clear();
 }
 
+void ConfigurationManager::OpenNewFile(const char* config_file)
+{
+   current_config_file_ = config_file;
+}
+
 void ConfigurationManager::OpenFile(const char* config_file)
 {
    if (current_config_file_ == config_file)
