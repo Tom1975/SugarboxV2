@@ -14,6 +14,14 @@ public:
    virtual void SettingsHadChanged() = 0;
 };
 
+class Action
+{
+public:
+   std::string label_;
+   Qt::Key shortcut_;
+   std::function<void(void)> function_;
+};
+
 class Settings
 {
 public:
@@ -41,6 +49,17 @@ public:
       MEMORY_FONT,
    };
 
+   enum ActionType
+   {
+      DBG_BREAK_ACTION,
+      DBG_STEP_ACTION,
+      DBG_STEPIN_ACTION,
+      DBG_STEPOUT_ACTION,
+      DBG_TOGGLE_FLAG_ACTION,
+      DBG_TOGGLE_BREAKPOINT_ACTION,
+
+   };
+
    // Serialization
    void Load(const char* path);
    void Save(const char* path);
@@ -54,6 +73,7 @@ public:
    // Access to values
    QColor GetColor(ColorType);
    QFont GetFont(FontType);
+   Action GetAction(ActionType);
 
 protected:
 
@@ -61,17 +81,8 @@ protected:
    std::vector<ISettingsListener*> listeners_;
 
    // Values
-
-   class Action
-   {
-   public:
-      std::string label_;
-      Qt::Key shortcut_;
-      std::function<void(void)> function_;
-   };
-
    std::map<ColorType, QColor > color_list_;
-   std::map<unsigned int, QFont> font_list_;
-   std::map<unsigned int, Action> action_list_;
+   std::map<FontType, QFont> font_list_;
+   std::map<ActionType, Action> action_list_;
 
 };

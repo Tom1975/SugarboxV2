@@ -98,6 +98,7 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
 {
    switch (event->key())
    {
+      
    case Qt::Key_Down:
       current_address_ = line_address_[1];
       break;

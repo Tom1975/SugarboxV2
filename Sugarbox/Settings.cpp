@@ -32,7 +32,12 @@ Settings::Settings()
       {REGISTER_FONT, },
       {MEMORY_FONT, },
 
-   }*/
+   };*/
+
+   action_list_ =
+   {
+      {DBG_TOGGLE_BREAKPOINT_ACTION, {"TGL_BKP", Qt::Key_F9, }},
+   };
 }
 
 Settings::~Settings()
@@ -76,4 +81,9 @@ QColor Settings::GetColor(ColorType id)
 QFont Settings::GetFont(FontType id)
 {
    return font_list_[id];
+}
+
+Action Settings::GetAction(ActionType id)
+{
+   return action_list_[id];
 }

@@ -19,6 +19,7 @@
 #include "MultiLanguage.h"
 #include "Functions.h"
 #include "SettingsList.h"
+#include "Settings.h"
 #include "DlgSettings.h"
 #include "SoundControl.h"
 #include "DebugSocket.h"
@@ -107,6 +108,8 @@ signals:
 
 protected:
 
+   void InitSettings();
+
    // Drag'n'drop
    void dragEnterEvent(QDragEnterEvent *event) override;
    void dragMoveEvent(QDragMoveEvent *event) override;
@@ -192,5 +195,8 @@ protected:
 
    // Flag handler
    FlagHandler flag_handler_;
+
+   // Settings
+   Settings settings_;
 };
 

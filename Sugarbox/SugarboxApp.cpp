@@ -126,6 +126,11 @@ void SugarboxApp::InitMenu()
    connect(this, SIGNAL(MenuChanged()), this, SLOT(UpdateMenu()));
 }
 
+void SugarboxApp::InitSettings()
+{
+
+}
+
 int SugarboxApp::RunApp()
 {
    std::filesystem::path current_path_exe = std::filesystem::current_path();
@@ -141,6 +146,10 @@ int SugarboxApp::RunApp()
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
    debug_.SetEmulator(emulation_);
    debug_.SetFlagHandler(&flag_handler_);
+
+   // Settings
+   InitSettings();
+
    debugger_link_ = new DebugSocket(this, emulation_);
    debugger_link_->StartServer();
 
