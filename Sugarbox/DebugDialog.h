@@ -10,6 +10,8 @@
 #include "Emulation.h"
 #include "Z80Desassember.h"
 #include "FlagHandler.h"
+#include "SettingsValues.h"
+#include "Settings.h"
 
 namespace Ui {
 class DebugDialog;
@@ -26,6 +28,8 @@ public:
     // Init dialog
     void SetEmulator(Emulation* emu_handler);
     void SetFlagHandler(FlagHandler* flag_handler);
+    void SetSettings(Settings* settings);
+
     virtual void SetAddress(unsigned int addr);
     virtual bool event(QEvent *event);
     void Break();
@@ -62,6 +66,7 @@ private:
    Ui::DebugDialog *ui;
    Emulation* emu_handler_;
    FlagHandler* flag_handler_;
+   Settings* settings_;
 
    ///////////////////////////////
    // Register data

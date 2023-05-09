@@ -142,9 +142,12 @@ void SugarboxApp::InitSettings()
 
    //
    settings_.AddAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION, { "TGL_BKP", Qt::Key_F9 });
+   settings_.AddAction(SettingsValues::DBG_TOGGLE_FLAG_ACTION, { "TGL_FLAG", Qt::Key_F2 });
    
    // Load saved settings
    // 
+
+   debug_.SetSettings(&settings_);
 }
 
 int SugarboxApp::RunApp()

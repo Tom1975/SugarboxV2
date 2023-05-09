@@ -51,6 +51,12 @@ void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned short ma
 void DisassemblyWidget::SetSettings(Settings* settings)
 {
    settings_ = settings;
+
+   // Add automatic shortcuts
+   auto action = settings_->GetAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION);
+   shortcuts_[action.shortcut_] = [this]() { if (current_line_selected_ != -1)machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]); };
+   action = settings_->GetAction(SettingsValues::DBG_TOGGLE_FLAG_ACTION);
+   shortcuts_[action.shortcut_] = [this]() { if (current_line_selected_ != -1 && flag_handler_ != nullptr)flag_handler_->ToggleFlag(line_address_[current_line_selected_]); };
 }
 
 void DisassemblyWidget::SetFlagHandler(FlagHandler* flag_handler)
@@ -102,33 +108,32 @@ void DisassemblyWidget::wheelEvent(QWheelEvent* event)
 
 void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
 {
-   switch (event->key())
+   Qt::Key k = static_cast<Qt::Key>(event->key());
+   if (shortcuts_.find(k) != shortcuts_.end())
    {
-      
-   case Qt::Key_Down:
-      current_address_ = line_address_[1];
-      break;
-   case Qt::Key_Up:
-      GoUp();
-      break;
-   case Qt::Key_PageDown:
-      current_address_ = line_address_.back();
-      break;
-   case Qt::Key_PageUp:
-      for (int i = 0; i < nb_lines_;i++) GoUp();
-      break;
+      shortcuts_[k]();
+   }
+   else
+   {
+      switch (k)
+      {
 
-   case Qt::Key_F2:
-      if (current_line_selected_ != -1 && flag_handler_ != nullptr)
-         flag_handler_->ToggleFlag(line_address_[current_line_selected_]);
-      break;
-   case Qt::Key_F9:
-      if (current_line_selected_ != -1)
-         machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]);
-      break;
-   default:
-      event->ignore();
-      break;
+      case Qt::Key_Down:
+         current_address_ = line_address_[1];
+         break;
+      case Qt::Key_Up:
+         GoUp();
+         break;
+      case Qt::Key_PageDown:
+         current_address_ = line_address_.back();
+         break;
+      case Qt::Key_PageUp:
+         for (int i = 0; i < nb_lines_; i++) GoUp();
+         break;
+      default:
+         event->ignore();
+         break;
+      }
    }
    repaint();
 }

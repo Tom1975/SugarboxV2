@@ -1,7 +1,11 @@
 #pragma once
 
+#include <map>
+#include <functional>
+
 #include <QWidget>
 #include <QScrollBar>
+
 
 #include "Emulation.h"
 #include "FlagHandler.h"
@@ -73,4 +77,7 @@ private:
    QColor byte_color_;
    QColor char_color_;
    QColor sel_color_;
+
+   // automatic shortcuts
+   std::map<Qt::Key, std::function<void()> > shortcuts_;
 };

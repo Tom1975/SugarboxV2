@@ -145,6 +145,12 @@ void DebugDialog::SetFlagHandler(FlagHandler* flag_handler)
    ui->listWidget->SetFlagHandler(flag_handler_);
 }
 
+void DebugDialog::SetSettings(Settings* settings)
+{
+   settings_ = settings;
+   ui->listWidget->SetSettings(settings);
+}
+
 void DebugDialog::Break()
 {
    // wait for the emulator to be in a stable state
