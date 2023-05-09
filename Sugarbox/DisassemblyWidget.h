@@ -5,6 +5,9 @@
 
 #include "Emulation.h"
 #include "FlagHandler.h"
+#include "SettingsValues.h"
+#include "Settings.h"
+
 
 class DisassemblyWidget : public QWidget
 {
@@ -15,6 +18,7 @@ public:
 
    void SetDisassemblyInfo(Emulation* machine, unsigned short max_address);
    void SetFlagHandler(FlagHandler* flag_handler);
+   void SetSettings(Settings* settings);
 
    void ForceTopAddress(unsigned short address);
 
@@ -41,6 +45,7 @@ private:
 
    EmulatorEngine* machine_;
    Z80Desassember* disassembler_;
+   Settings* settings_;
 
    FlagHandler* flag_handler_;
    unsigned short max_address_;

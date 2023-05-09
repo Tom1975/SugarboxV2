@@ -9,6 +9,7 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    horizontal_sb_(Qt::Horizontal, this),
    machine_(nullptr),
    disassembler_(nullptr),
+   settings_(nullptr),
    flag_handler_(nullptr),
    max_address_(0xFFFF),
    current_address_(0),
@@ -45,6 +46,11 @@ void DisassemblyWidget::SetDisassemblyInfo(Emulation* machine, unsigned short ma
    disassembler_ = machine->GetDisassembler();
    machine_ = machine->GetEngine();
    max_address_ = max_address;
+}
+
+void DisassemblyWidget::SetSettings(Settings* settings)
+{
+   settings_ = settings;
 }
 
 void DisassemblyWidget::SetFlagHandler(FlagHandler* flag_handler)

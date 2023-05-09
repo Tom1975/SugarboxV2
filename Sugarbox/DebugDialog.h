@@ -59,7 +59,6 @@ protected:
 
 
 private:
-   DisassemblyWidget* disassembly_widget_;
    Ui::DebugDialog *ui;
    Emulation* emu_handler_;
    FlagHandler* flag_handler_;

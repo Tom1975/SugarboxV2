@@ -1,6 +1,8 @@
 #include "SugarboxApp.h"
 #include "ui_SugarboxApp.h"
 
+#include "SettingsValues.h"
+
 #include <filesystem>
 #include <QMouseEvent>
 
@@ -128,7 +130,21 @@ void SugarboxApp::InitMenu()
 
 void SugarboxApp::InitSettings()
 {
+   // Init standard settings.
+   settings_.AddColor(SettingsValues::BACK_COLOR, Qt::white);
+   settings_.AddColor(SettingsValues::MARGIN_COLOR, QColor(220, 220, 220));
+   settings_.AddColor(SettingsValues::ADDRESS_COLOR,Qt::blue);
+   settings_.AddColor(SettingsValues::MNEMONIC_COLOR,Qt::darkBlue);
+   settings_.AddColor(SettingsValues::ARGUMENT_COLOR,Qt::darkMagenta);
+   settings_.AddColor(SettingsValues::BYTE_COLOR,Qt::darkGray);
+   settings_.AddColor(SettingsValues::CHAR_SOLOR,Qt::gray);
+   settings_.AddColor(SettingsValues::SELECTION_COLOR, QColor(128, 128, 255, 128));
 
+   //
+   settings_.AddAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION, { "TGL_BKP", Qt::Key_F9 });
+   
+   // Load saved settings
+   // 
 }
 
 int SugarboxApp::RunApp()

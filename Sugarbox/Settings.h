@@ -19,7 +19,6 @@ class Action
 public:
    std::string label_;
    Qt::Key shortcut_;
-   std::function<void(void)> function_;
 };
 
 class Settings
@@ -30,35 +29,12 @@ public:
    virtual ~Settings();
 
    // Value used
-   enum ColorType
-   {
-      BACK_COLOR,
-      MARGIN_COLOR,
-      ADDRESS_COLOR,
-      MNEMONIC_COLOR,
-      ARGUMENT_COLOR,
-      BYTE_COLOR,
-      CHAR_SOLOR,
-      SELECTION_COLOR
-   };
 
-   enum FontType
-   {
-      DISASSEMBLY_FONT,
-      REGISTER_FONT,
-      MEMORY_FONT,
-   };
 
-   enum ActionType
-   {
-      DBG_BREAK_ACTION,
-      DBG_STEP_ACTION,
-      DBG_STEPIN_ACTION,
-      DBG_STEPOUT_ACTION,
-      DBG_TOGGLE_FLAG_ACTION,
-      DBG_TOGGLE_BREAKPOINT_ACTION,
-
-   };
+   // Creation / Modify / Update 
+   void AddColor(unsigned int , QColor);
+   void AddFont(unsigned int, QFont);
+   void AddAction(unsigned int, Action);
 
    // Serialization
    void Load(const char* path);
@@ -67,13 +43,11 @@ public:
    // Register listener
    void RegisterListener(ISettingsListener*);
 
-   // Modify / update 
-   // todo
 
    // Access to values
-   QColor GetColor(ColorType);
-   QFont GetFont(FontType);
-   Action GetAction(ActionType);
+   QColor GetColor(unsigned int);
+   QFont GetFont(unsigned int);
+   Action GetAction(unsigned int);
 
 protected:
 
@@ -81,8 +55,8 @@ protected:
    std::vector<ISettingsListener*> listeners_;
 
    // Values
-   std::map<ColorType, QColor > color_list_;
-   std::map<FontType, QFont> font_list_;
-   std::map<ActionType, Action> action_list_;
+   std::map<unsigned int, QColor > color_list_;
+   std::map<unsigned int, QFont> font_list_;
+   std::map<unsigned int, Action> action_list_;
 
 };

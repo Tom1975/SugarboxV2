@@ -14,30 +14,6 @@
 /// Helper functions
 Settings::Settings()
 {
-   color_list_ =
-   {
-      {BACK_COLOR, Qt::white, },
-      {MARGIN_COLOR, QColor(220, 220, 220)},
-      {ADDRESS_COLOR,Qt::blue},
-      {MNEMONIC_COLOR,Qt::darkBlue},
-      {ARGUMENT_COLOR,Qt::darkMagenta},
-      {BYTE_COLOR,Qt::darkGray},
-      {CHAR_SOLOR,Qt::gray},
-      {SELECTION_COLOR, QColor(128, 128, 255, 128)},
-   };
-
-   /*font_list_ =
-   {
-      {DISASSEMBLY_FONT, QFont()},
-      {REGISTER_FONT, },
-      {MEMORY_FONT, },
-
-   };*/
-
-   action_list_ =
-   {
-      {DBG_TOGGLE_BREAKPOINT_ACTION, {"TGL_BKP", Qt::Key_F9, }},
-   };
 }
 
 Settings::~Settings()
@@ -72,18 +48,32 @@ void Settings::RegisterListener(ISettingsListener* listener)
    listeners_.push_back(listener);
 }
 
+void Settings::AddColor(unsigned int id, QColor color)
+{
+   color_list_[id] = color;
+}
 
-QColor Settings::GetColor(ColorType id)
+void Settings::AddFont(unsigned int id, QFont font)
+{
+   font_list_[id] = font;
+}
+
+void Settings::AddAction(unsigned int id, Action action)
+{
+   action_list_[id] = action;
+}
+
+QColor Settings::GetColor(unsigned int  id)
 {
    return color_list_[id];
 }
 
-QFont Settings::GetFont(FontType id)
+QFont Settings::GetFont(unsigned int  id)
 {
    return font_list_[id];
 }
 
-Action Settings::GetAction(ActionType id)
+Action Settings::GetAction(unsigned int  id)
 {
    return action_list_[id];
 }
