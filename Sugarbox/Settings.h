@@ -17,8 +17,17 @@ public:
 class Action
 {
 public:
+
+
+   Action(const char* label = "", Qt::Key shortcut = Qt::Key_Escape, Qt::KeyboardModifier modifiers = Qt::NoModifier) :
+      label_(label), shortcut_(shortcut), modifiers_(modifiers)
+   {
+
+   }
+
    std::string label_;
    Qt::Key shortcut_;
+   Qt::KeyboardModifier modifiers_;
 };
 
 class Settings
@@ -48,6 +57,7 @@ public:
    QColor GetColor(unsigned int);
    QFont GetFont(unsigned int);
    Action GetAction(unsigned int);
+   unsigned int GetActionShortcut(unsigned int);
 
 protected:
 

@@ -12,7 +12,7 @@ public:
       MNEMONIC_COLOR,
       ARGUMENT_COLOR,
       BYTE_COLOR,
-      CHAR_SOLOR,
+      CHAR_COLOR,
       SELECTION_COLOR,
    };
 
@@ -25,6 +25,7 @@ public:
 
    enum ActionType
    {
+      DBG_RUN_ACTION,
       DBG_BREAK_ACTION,
       DBG_STEP_ACTION,
       DBG_STEPIN_ACTION,

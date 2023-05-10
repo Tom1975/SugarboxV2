@@ -21,16 +21,7 @@ DisassemblyWidget::DisassemblyWidget(QWidget* parent )
    top_margin_(0),
    bp_pixmap_(":/Resources/bp.png"),
    flag_pixmap_(":/Resources/Flag.png"),
-   pc_pixmap_(":/Resources/PC.png"),
-   back_color_(Qt::white),
-   margin_color_(220, 220, 220),
-   address_color_(Qt::blue),
-   mnemonic_color_(Qt::darkBlue),
-   arg_color_(Qt::darkMagenta),
-   byte_color_(Qt::darkGray),
-   char_color_(Qt::gray),
-   sel_color_(128, 128, 255, 128)
-
+   pc_pixmap_(":/Resources/PC.png")
 {
    setFocusPolicy(Qt::StrongFocus);
 
@@ -53,10 +44,15 @@ void DisassemblyWidget::SetSettings(Settings* settings)
    settings_ = settings;
 
    // Add automatic shortcuts
-   auto action = settings_->GetAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION);
-   shortcuts_[action.shortcut_] = [this]() { if (current_line_selected_ != -1)machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]); };
-   action = settings_->GetAction(SettingsValues::DBG_TOGGLE_FLAG_ACTION);
-   shortcuts_[action.shortcut_] = [this]() { if (current_line_selected_ != -1 && flag_handler_ != nullptr)flag_handler_->ToggleFlag(line_address_[current_line_selected_]); };
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION)] = [this]() { if (current_line_selected_ != -1)machine_->GetBreakpointHandler()->ToggleBreakpoint(line_address_[current_line_selected_]); };
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_TOGGLE_FLAG_ACTION)] = [this]() { if (current_line_selected_ != -1 && flag_handler_ != nullptr)flag_handler_->ToggleFlag(line_address_[current_line_selected_]); };
+
+   // Arrow keys : These can not be redefined !
+   shortcuts_[Qt::Key_Down] = [this]() { current_address_ = line_address_[1]; };
+   shortcuts_[Qt::Key_Up] = [this]() {GoUp(); };
+   shortcuts_[Qt::Key_Up] = [this]() {GoUp(); };
+   shortcuts_[Qt::Key_PageDown] = [this]() {current_address_ = line_address_.back(); };
+   shortcuts_[Qt::Key_PageUp] = [this]() {for (int i = 0; i < nb_lines_; i++) GoUp(); };
 }
 
 void DisassemblyWidget::SetFlagHandler(FlagHandler* flag_handler)
@@ -108,34 +104,18 @@ void DisassemblyWidget::wheelEvent(QWheelEvent* event)
 
 void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
 {
-   Qt::Key k = static_cast<Qt::Key>(event->key());
-   if (shortcuts_.find(k) != shortcuts_.end())
+   unsigned int k = ((event->key()) | event->modifiers());
+
+   auto it = shortcuts_.find(k);
+   if (it != shortcuts_.end())
    {
-      shortcuts_[k]();
+      it->second();
+      repaint();
    }
    else
    {
-      switch (k)
-      {
-
-      case Qt::Key_Down:
-         current_address_ = line_address_[1];
-         break;
-      case Qt::Key_Up:
-         GoUp();
-         break;
-      case Qt::Key_PageDown:
-         current_address_ = line_address_.back();
-         break;
-      case Qt::Key_PageUp:
-         for (int i = 0; i < nb_lines_; i++) GoUp();
-         break;
-      default:
-         event->ignore();
-         break;
-      }
+      event->ignore();
    }
-   repaint();
 }
 
 void DisassemblyWidget::mousePressEvent(QMouseEvent* event)
@@ -226,7 +206,7 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    const int width = size().width() - 3;
    const int height = size().height() - 5;
 
-   painter.fillRect(0, 0, width, height, back_color_);
+   painter.fillRect(0, 0, width, height, settings_->GetColor(SettingsValues::BACK_COLOR));
 
    // Draw every lines 
    unsigned short line_address = current_address_;
@@ -245,16 +225,16 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
    {
       // Address 
       sprintf(address, "%4.4X: ", line_address);
-      painter.setPen(address_color_);
+      painter.setPen(settings_->GetColor(SettingsValues::ADDRESS_COLOR));
       painter.drawText(margin_size_ + horizontal_offset_, top_margin_ + line_height_ * i, address_size, line_height_,Qt::AlignLeft|Qt::AlignVCenter, address);
 
       // Mnemonic
       const int size = disassembler_->DasmMnemonic(line_address, mnemonic, arg);
       const unsigned int mnemonic_size = fm.horizontalAdvance(mnemonic);
-      painter.setPen(mnemonic_color_);
+      painter.setPen(settings_->GetColor(SettingsValues::MNEMONIC_COLOR));
       painter.drawText(margin_size_ + horizontal_offset_ + address_size, top_margin_ + line_height_ * i, mnemonic_size, line_height_, Qt::AlignLeft|Qt::AlignVCenter, mnemonic);
       // Arguments
-      painter.setPen(arg_color_);
+      painter.setPen(settings_->GetColor(SettingsValues::ARGUMENT_COLOR));
       painter.drawText(margin_size_ + horizontal_offset_ + address_size + mnemonic_size + char_size, top_margin_ + line_height_ * i, margin_size_ + char_size * 30 - (address_size + mnemonic_size + char_size), line_height_, Qt::AlignLeft|Qt::AlignVCenter, arg);
 
       // Bytes 
@@ -276,14 +256,14 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
             char_buffer[j] = '.';
          }
       }
-      painter.setPen(byte_color_);
+      painter.setPen(settings_->GetColor(SettingsValues::BYTE_COLOR));
       painter.drawText(margin_size_ + horizontal_offset_ + char_size * 30, top_margin_ + line_height_ * i, char_size*15, line_height_, Qt::AlignLeft|Qt::AlignVCenter, byte_buffer);
       // Character (if displayable)
-      painter.setPen(char_color_);
+      painter.setPen(settings_->GetColor(SettingsValues::CHAR_COLOR));
       painter.drawText(margin_size_ + horizontal_offset_ + char_size * 45, top_margin_ + line_height_ * i, char_size * 5, line_height_, Qt::AlignLeft|Qt::AlignVCenter, char_buffer);
 
       // Margin
-      painter.fillRect(0, top_margin_ + line_height_ * i, margin_size_, line_height_, margin_color_);
+      painter.fillRect(0, top_margin_ + line_height_ * i, margin_size_, line_height_, settings_->GetColor(SettingsValues::MARGIN_COLOR));
 
       // Display flag ?
       if (flag_handler_->IsFlagged(line_address))
@@ -306,7 +286,7 @@ void DisassemblyWidget::paintEvent(QPaintEvent* /* event */)
       // Current selected line
       if (current_line_selected_ == i)
       {
-         painter.fillRect(margin_size_, top_margin_ + line_height_ * i, width - margin_size_, line_height_, QBrush(sel_color_));
+         painter.fillRect(margin_size_, top_margin_ + line_height_ * i, width - margin_size_, line_height_, QBrush(settings_->GetColor(SettingsValues::SELECTION_COLOR)));
       }
 
       line_address_.push_back(line_address);

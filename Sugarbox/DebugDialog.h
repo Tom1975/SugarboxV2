@@ -32,8 +32,6 @@ public:
 
     virtual void SetAddress(unsigned int addr);
     virtual bool event(QEvent *event);
-    void Break();
-
 
     bool eventFilter(QObject* watched, QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
@@ -42,7 +40,8 @@ public:
       void on_set_top_address_clicked();
       void on_dasm_address_returnPressed();
       void on_dbg_pause_clicked();
-      void on_dbg_step__clicked();
+      void on_dbg_step_in_clicked();
+      void on_dbg_step_clicked();
       void on_dbg_run_clicked();
       void DasmShowContextMenu(const QPoint &pos);
       void StackToDasm();
@@ -102,4 +101,6 @@ private:
 
    std::vector< IRegisterView* > register_list_;
 
+   // automatic shortcuts
+   std::map<unsigned int, std::function<void()> > shortcuts_;
 };

@@ -77,3 +77,7 @@ Action Settings::GetAction(unsigned int  id)
 {
    return action_list_[id];
 }
+unsigned int Settings::GetActionShortcut(unsigned int id)
+{
+   return ((action_list_[id].shortcut_) | (action_list_[id].modifiers_));
+}

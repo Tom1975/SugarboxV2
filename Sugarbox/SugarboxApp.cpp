@@ -137,15 +137,22 @@ void SugarboxApp::InitSettings()
    settings_.AddColor(SettingsValues::MNEMONIC_COLOR,Qt::darkBlue);
    settings_.AddColor(SettingsValues::ARGUMENT_COLOR,Qt::darkMagenta);
    settings_.AddColor(SettingsValues::BYTE_COLOR,Qt::darkGray);
-   settings_.AddColor(SettingsValues::CHAR_SOLOR,Qt::gray);
+   settings_.AddColor(SettingsValues::CHAR_COLOR,Qt::gray);
    settings_.AddColor(SettingsValues::SELECTION_COLOR, QColor(128, 128, 255, 128));
 
    //
+   settings_.AddAction(SettingsValues::DBG_RUN_ACTION, { "DBG_RUN", Qt::Key_F5 });
+   settings_.AddAction(SettingsValues::DBG_BREAK_ACTION, { "DBG_BREAK", Qt::Key_F5 });
+   settings_.AddAction(SettingsValues::DBG_STEP_ACTION, { "DBG_STEP", Qt::Key_F10 });
+   settings_.AddAction(SettingsValues::DBG_STEPIN_ACTION, { "DBG_STEP_IN", Qt::Key_F11 });
+   settings_.AddAction(SettingsValues::DBG_STEPOUT_ACTION, { "DBG_STEP_OUT", Qt::Key_F11, Qt::ShiftModifier });
+   
    settings_.AddAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION, { "TGL_BKP", Qt::Key_F9 });
    settings_.AddAction(SettingsValues::DBG_TOGGLE_FLAG_ACTION, { "TGL_FLAG", Qt::Key_F2 });
    
    // Load saved settings
-   // 
+   // todo
+
 
    debug_.SetSettings(&settings_);
 }

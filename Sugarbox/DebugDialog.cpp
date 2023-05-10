@@ -25,14 +25,14 @@ std::string& DebugDialog::RegisterView<T>::GetLabel()
 template<>
 std::string& DebugDialog::RegisterView<unsigned short>::GetValue()
 {
-   std::snprintf(&value_[0], value_.size(), "%4.4X", register_);
+   std::snprintf(&value_[0], value_.size()+1, "%4.4X", *register_);
    return value_;
 }
 
 template<>
 std::string& DebugDialog::RegisterView<Z80::Register>::GetValue()
 {
-   std::snprintf(&value_[0], value_.size(), "%4.4X", register_->w);
+   std::snprintf(&value_[0], value_.size() + 1, "%4.4X", register_->w);
    return value_;
 }
 
@@ -93,6 +93,18 @@ void DebugDialog::itemDoubleClicked(QListWidgetItem* item)
 
 void DebugDialog::keyPressEvent(QKeyEvent* event)
 {
+   unsigned int k = ((event->key()) | event->modifiers());
+
+   auto it = shortcuts_.find(k);
+   if (it != shortcuts_.end())
+   {
+      it->second();
+      repaint();
+   }
+   else
+   {
+      event->ignore();
+   }
 }
 
 bool DebugDialog::eventFilter(QObject* watched, QEvent* event)
@@ -149,26 +161,35 @@ void DebugDialog::SetSettings(Settings* settings)
 {
    settings_ = settings;
    ui->listWidget->SetSettings(settings);
+
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_BREAK_ACTION)] = [this]() { emu_handler_->Break(); };
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_RUN_ACTION)] = [this]() { emu_handler_->Run(); };
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_STEP_ACTION)] = [this]() {emu_handler_->Step(); };
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_STEPIN_ACTION)] = [this]() {};
+   shortcuts_[settings_->GetActionShortcut(SettingsValues::DBG_STEPOUT_ACTION)] = [this]() {};
 }
 
-void DebugDialog::Break()
-{
-   // wait for the emulator to be in a stable state
-
-}
 void DebugDialog::on_dasm_address_returnPressed()
 {
    on_set_top_address_clicked();
 }
 
-void DebugDialog::on_dbg_step__clicked()
+void DebugDialog::on_dbg_step_clicked()
 {
    emu_handler_->Step();
+   UpdateDebug();
+}
+
+void DebugDialog::on_dbg_step_in_clicked()
+{
+   emu_handler_->Step();
+   UpdateDebug();
 }
 
 void DebugDialog::on_dbg_run_clicked()
 {
    emu_handler_->Run();
+   UpdateDebug();
 }
 
 void DebugDialog::on_set_top_address_clicked()
@@ -196,6 +217,7 @@ void DebugDialog::on_set_top_address_clicked()
 void DebugDialog::on_dbg_pause_clicked()
 {
    emu_handler_->Break();
+   UpdateDebug();
 }
 
 void DebugDialog::Update()
@@ -244,8 +266,6 @@ void DebugDialog::AddBreakpoint()
 
 void DebugDialog::UpdateDebug()
 {
-   unsigned int offset, offset_old;
-
    // Update parent window
    this->parentWidget()->repaint();
 

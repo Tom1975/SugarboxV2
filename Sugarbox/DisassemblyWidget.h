@@ -68,16 +68,6 @@ private:
    QPixmap flag_pixmap_;
    QPixmap pc_pixmap_;
 
-   // Display Settings
-   QColor back_color_;
-   QColor margin_color_;
-   QColor address_color_;
-   QColor mnemonic_color_;
-   QColor arg_color_;
-   QColor byte_color_;
-   QColor char_color_;
-   QColor sel_color_;
-
    // automatic shortcuts
-   std::map<Qt::Key, std::function<void()> > shortcuts_;
+   std::map<unsigned int, std::function<void()> > shortcuts_;
 };
