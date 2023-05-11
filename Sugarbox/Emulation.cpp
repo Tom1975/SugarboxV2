@@ -128,6 +128,7 @@ void Emulation::EmulationLoop()
             // - Step : Execute one command (Step in)
             emulator_engine_->RunDebugMode(1);
             debug_action_ = DBG_BREAK;
+            // Notify anyone interrested that the code is stopped
             break;
          case DBG_RUN:
             // - run until next breakpoint
@@ -645,6 +646,15 @@ void Emulation::RemoveNotifier(IBeakpointNotifier* notifier)
    notifier_list_.remove(notifier);
 }
 
+void Emulation::AddNotifierDbg(IDebugerStopped* notifier)
+{
+   notifier_dbg_list_.push_back(notifier);
+}
+
+void Emulation::RemoveNotifierDbg(IDebugerStopped* notifier)
+{
+   notifier_dbg_list_.remove(notifier);
+}
 
 void Emulation::Step()
 {

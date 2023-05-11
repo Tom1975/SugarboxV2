@@ -25,6 +25,12 @@ public:
    virtual void BreakpointEncountered(IBreakpointItem*) = 0;
 };
 
+class IDebugerStopped
+{
+public:
+   virtual void NotifyStop() = 0;
+};
+
 class Emulation  : public IDirectories, IFdcNotify
 {
 public :
@@ -108,6 +114,10 @@ public :
    void AddNotifier(IBeakpointNotifier*);
    void RemoveNotifier(IBeakpointNotifier*);
    std::list< IBeakpointNotifier*> notifier_list_;
+
+   void AddNotifierDbg(IDebugerStopped*);
+   void RemoveNotifierDbg(IDebugerStopped* notifier);
+   std::list< IDebugerStopped*> notifier_dbg_list_;
 
    void Step();
    void Run( int nb_opcodes = 0);

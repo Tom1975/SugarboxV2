@@ -15,6 +15,8 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
 {
    emulation_ = new Emulation(this);
 
+   emulation_->AddNotifierDbg(this);
+
    connect(&display_, &CDisplay::FrameIsReady, &display_, &CDisplay::Display);
 
    setWindowTitle(tr("SugarboxV2"));
@@ -884,4 +886,10 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
    // Set the keyboiard focus to display again (not combo)
    display_.setFocus();
 
+}
+
+void SugarboxApp::NotifyStop()
+{
+   // call update for debugger
+   debug_.Update();
 }

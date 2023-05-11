@@ -30,7 +30,7 @@ namespace Ui {
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped
 {
    Q_OBJECT
 
@@ -49,6 +49,8 @@ public:
 
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
+
+   virtual void NotifyStop();
 
    virtual bool PlusEnabled();
    virtual bool FdcPresent();
