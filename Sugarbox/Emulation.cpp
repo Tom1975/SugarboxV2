@@ -127,8 +127,13 @@ void Emulation::EmulationLoop()
          case DBG_STEP:
             // - Step : Execute one command (Step in)
             emulator_engine_->RunDebugMode(1);
+
             debug_action_ = DBG_BREAK;
             // Notify anyone interrested that the code is stopped
+            for (auto& it : notifier_dbg_list_)
+            {
+               it->NotifyStop();
+            }
             break;
          case DBG_RUN:
             // - run until next breakpoint
@@ -140,12 +145,19 @@ void Emulation::EmulationLoop()
                IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
                if (bp !=nullptr)
                {
-                  for (auto &it : notifier_list_)
+                  for (const auto &it : notifier_list_)
                   {
                      // Send : Number of opcodes
 
                      it->BreakpointEncountered(bp);
                   }
+               }
+            }
+            if (debug_action_ == DBG_BREAK)
+            {
+               for (const auto& it2 : notifier_dbg_list_)
+               {
+                  it2->NotifyStop();
                }
             }
             break;
@@ -160,6 +172,10 @@ void Emulation::EmulationLoop()
             {
                // Send : Number of opcodes 
                it->NotifyBreak(0);
+            }
+            for (const auto& it2 : notifier_dbg_list_)
+            {
+               it2->NotifyStop();
             }
             break;
             

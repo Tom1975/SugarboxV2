@@ -281,7 +281,7 @@ void DebugDialog::UpdateDebug()
 
    // set top address at the upper tier of the screen
    ui->listWidget->ForceTopAddress(z80->GetPC());
-   ui->stackWidget->ForceTopAddress(z80->GetPC() - 8);   
+   ui->stackWidget->ForceTopAddress(z80->sp_ - 8);   
 }
 
 // Update the disassembly windows : From offset, until the number of lines are completed
