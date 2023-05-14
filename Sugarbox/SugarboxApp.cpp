@@ -11,13 +11,13 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this), status_speed_("0", this)
 {
    emulation_ = new Emulation(this);
 
    emulation_->AddNotifierDbg(this);
 
-   connect(&display_, &CDisplay::FrameIsReady, &display_, &CDisplay::Display);
+   connect(&display_, &CDisplay::FrameIsReady, this, &SugarboxApp::Display);
 
    setWindowTitle(tr("SugarboxV2"));
 
@@ -26,11 +26,13 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
 
    setAcceptDrops(true);
    //setAutoFillBackground(true);
-   menuBar()->setFocusPolicy(Qt::ClickFocus);
+   menuBar()->setFocusPolicy(Qt::ClickFocus); 
    setCentralWidget(&display_);
    clear();
 
-   // Create debug window
+   // Create status widget
+   status_speed_.setFrameStyle(QFrame::Panel | QFrame::Sunken);
+   statusBar()->addPermanentWidget(&status_speed_);
 }
 
 SugarboxApp::~SugarboxApp()
@@ -59,6 +61,11 @@ void SugarboxApp::CreateStatusBar()
    
 }
 
+void SugarboxApp::Display()
+{
+   DrawStatusBar();
+   display_.update();
+}
 
 void SugarboxApp::createMenus ()
 {
@@ -338,7 +345,7 @@ void SugarboxApp::DrawStatusBar()
    {
       // Update
 
-      std::snprintf(str_speed_, sizeof(str_speed_), "%i %%%%", emulation_->GetSpeed());
+      std::snprintf(str_speed_, sizeof(str_speed_), "%i %%", emulation_->GetSpeed());
       counter_ = 0;
       statusBar()->showMessage(tr(str_speed_), 2000);
    }

@@ -102,6 +102,7 @@ public slots:
    void clear();
    void UpdateMenu();
    virtual void ChangeSettings(MachineSettings*);
+   void Display();
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
@@ -200,5 +201,8 @@ protected:
 
    // Settings
    Settings settings_;
+
+   // Status bar
+   QLabel status_speed_;
 };
 
