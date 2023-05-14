@@ -442,7 +442,6 @@ void SugarboxApp::ConfigurationSettings()
 void SugarboxApp::OpenDebugger()
 {
    // Open debugger windows
-   debug_.Update();
    debug_.show();
 }
 

@@ -118,6 +118,7 @@ void Emulation::EmulationLoop()
       }
       else 
       {
+         auto old_action = debug_action_;
          // Debug mode : what can be done : 
          switch (debug_action_)
          {
@@ -127,13 +128,8 @@ void Emulation::EmulationLoop()
          case DBG_STEP:
             // - Step : Execute one command (Step in)
             emulator_engine_->RunDebugMode(1);
-
+            emulator_engine_->SetRun(false);
             debug_action_ = DBG_BREAK;
-            // Notify anyone interrested that the code is stopped
-            for (auto& it : notifier_dbg_list_)
-            {
-               it->NotifyStop();
-            }
             break;
          case DBG_RUN:
             // - run until next breakpoint
@@ -153,13 +149,6 @@ void Emulation::EmulationLoop()
                   }
                }
             }
-            if (debug_action_ == DBG_BREAK)
-            {
-               for (const auto& it2 : notifier_dbg_list_)
-               {
-                  it2->NotifyStop();
-               }
-            }
             break;
 
          case DBG_RUN_FIXED_OP:
@@ -173,16 +162,22 @@ void Emulation::EmulationLoop()
                // Send : Number of opcodes 
                it->NotifyBreak(0);
             }
-            for (const auto& it2 : notifier_dbg_list_)
-            {
-               it2->NotifyStop();
-            }
             break;
             
          case DBG_BREAK:
             // - break : Stop emulation until next command
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             break;
+         }
+
+         if (old_action != debug_action_)
+         {
+            // Notify anyone interrested that the code is stopped
+            for (auto& it : notifier_dbg_list_)
+            {
+               it->NotifyStop();
+            }
+
          }
       }
 

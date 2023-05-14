@@ -181,19 +181,16 @@ void DebugDialog::on_dasm_address_returnPressed()
 void DebugDialog::on_dbg_step_clicked()
 {
    emu_handler_->Step();
-   UpdateDebug();
 }
 
 void DebugDialog::on_dbg_step_in_clicked()
 {
    emu_handler_->Step();
-   UpdateDebug();
 }
 
 void DebugDialog::on_dbg_run_clicked()
 {
    emu_handler_->Run();
-   UpdateDebug();
 }
 
 void DebugDialog::on_set_top_address_clicked()
@@ -221,7 +218,6 @@ void DebugDialog::on_set_top_address_clicked()
 void DebugDialog::on_dbg_pause_clicked()
 {
    emu_handler_->Break();
-   UpdateDebug();
 }
 
 void DebugDialog::Update()
@@ -268,6 +264,12 @@ void DebugDialog::AddBreakpoint()
    UpdateDebug();
 }
 
+void DebugDialog::showEvent(QShowEvent* event) 
+{
+   QWidget::showEvent(event);
+   UpdateDebug();
+}
+
 void DebugDialog::UpdateDebug()
 {
    // Update parent window
@@ -284,7 +286,7 @@ void DebugDialog::UpdateDebug()
    }
 
    // set top address at the upper tier of the screen
-   ui->listWidget->ForceTopAddress(z80->GetPC());
+   ui->listWidget->ForceTopAddress(z80->pc_);
    ui->stackWidget->ForceTopAddress(z80->sp_ - 8);
 
    // set status

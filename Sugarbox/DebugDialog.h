@@ -36,6 +36,7 @@ public:
 
     bool eventFilter(QObject* watched, QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
    public slots:
       void on_set_top_address_clicked();
