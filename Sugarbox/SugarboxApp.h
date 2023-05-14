@@ -14,20 +14,23 @@
 #include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
+#include "DebugDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
 #include "SettingsList.h"
+#include "Settings.h"
 #include "DlgSettings.h"
 #include "SoundControl.h"
 #include "DebugSocket.h"
+#include "FlagHandler.h"
 
 namespace Ui {
    class SugarboxApp;
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped
 {
    Q_OBJECT
 
@@ -46,6 +49,8 @@ public:
 
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
+
+   virtual void NotifyStop();
 
    virtual bool PlusEnabled();
    virtual bool FdcPresent();
@@ -71,6 +76,7 @@ public:
    virtual void ToggleAutoload();
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
+   virtual void OpenDebugger();
 
    // INotifier 
    virtual void DiskLoaded();
@@ -103,6 +109,8 @@ signals:
    void SettingsChanged();
 
 protected:
+
+   void InitSettings();
 
    // Drag'n'drop
    void dragEnterEvent(QDragEnterEvent *event) override;
@@ -184,5 +192,13 @@ protected:
 
    // Debugger
    DebugSocket* debugger_link_;
+
+   DebugDialog debug_;
+
+   // Flag handler
+   FlagHandler flag_handler_;
+
+   // Settings
+   Settings settings_;
 };
 

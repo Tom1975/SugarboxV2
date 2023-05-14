@@ -15,6 +15,7 @@ public:
    virtual ~ConfigurationManager();
 
    virtual void OpenFile(const char* config_file);
+   virtual void OpenNewFile(const char* config_file);
    virtual void CloseFile();
 
    virtual void SetConfiguration(const char* section, const char* key, const char* value, const char* file);

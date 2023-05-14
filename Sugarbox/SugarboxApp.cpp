@@ -1,6 +1,8 @@
 #include "SugarboxApp.h"
 #include "ui_SugarboxApp.h"
 
+#include "SettingsValues.h"
+
 #include <filesystem>
 #include <QMouseEvent>
 
@@ -9,9 +11,11 @@
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this)
 {
    emulation_ = new Emulation(this);
+
+   emulation_->AddNotifierDbg(this);
 
    connect(&display_, &CDisplay::FrameIsReady, &display_, &CDisplay::Display);
 
@@ -26,8 +30,7 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    setCentralWidget(&display_);
    clear();
 
-   debugger_link_ = new DebugSocket(this, emulation_);
-   debugger_link_->StartServer();
+   // Create debug window
 }
 
 SugarboxApp::~SugarboxApp()
@@ -127,6 +130,35 @@ void SugarboxApp::InitMenu()
    connect(this, SIGNAL(MenuChanged()), this, SLOT(UpdateMenu()));
 }
 
+void SugarboxApp::InitSettings()
+{
+   // Init standard settings.
+   settings_.AddColor(SettingsValues::BACK_COLOR, Qt::white);
+   settings_.AddColor(SettingsValues::MARGIN_COLOR, QColor(220, 220, 220));
+   settings_.AddColor(SettingsValues::ADDRESS_COLOR,Qt::blue);
+   settings_.AddColor(SettingsValues::MNEMONIC_COLOR,Qt::darkBlue);
+   settings_.AddColor(SettingsValues::ARGUMENT_COLOR,Qt::darkMagenta);
+   settings_.AddColor(SettingsValues::BYTE_COLOR,Qt::darkGray);
+   settings_.AddColor(SettingsValues::CHAR_COLOR,Qt::gray);
+   settings_.AddColor(SettingsValues::SELECTION_COLOR, QColor(128, 128, 255, 128));
+
+   //
+   settings_.AddAction(SettingsValues::DBG_RUN_ACTION, { "DBG_RUN", Qt::Key_F5 });
+   settings_.AddAction(SettingsValues::DBG_BREAK_ACTION, { "DBG_BREAK", Qt::Key_F5 });
+   settings_.AddAction(SettingsValues::DBG_STEP_ACTION, { "DBG_STEP", Qt::Key_F10 });
+   settings_.AddAction(SettingsValues::DBG_STEPIN_ACTION, { "DBG_STEP_IN", Qt::Key_F11 });
+   settings_.AddAction(SettingsValues::DBG_STEPOUT_ACTION, { "DBG_STEP_OUT", Qt::Key_F11, Qt::ShiftModifier });
+   
+   settings_.AddAction(SettingsValues::DBG_TOGGLE_BREAKPOINT_ACTION, { "TGL_BKP", Qt::Key_F9 });
+   settings_.AddAction(SettingsValues::DBG_TOGGLE_FLAG_ACTION, { "TGL_FLAG", Qt::Key_F2 });
+   
+   // Load saved settings
+   // todo
+
+
+   debug_.SetSettings(&settings_);
+}
+
 int SugarboxApp::RunApp()
 {
    std::filesystem::path current_path_exe = std::filesystem::current_path();
@@ -140,6 +172,15 @@ int SugarboxApp::RunApp()
 
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
+   debug_.SetEmulator(emulation_, &language_);
+   debug_.SetFlagHandler(&flag_handler_);
+
+   // Settings
+   InitSettings();
+
+   debugger_link_ = new DebugSocket(this, emulation_);
+   debugger_link_->StartServer();
+
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
 
@@ -395,6 +436,13 @@ void SugarboxApp::SetSpeed(int speedlimit)
 
 void SugarboxApp::ConfigurationSettings()
 {
+}
+
+
+void SugarboxApp::OpenDebugger()
+{
+   // Open debugger windows
+   debug_.show();
 }
 
 void SugarboxApp::InitFileDialogs()
@@ -654,6 +702,8 @@ void SugarboxApp::InitAllActions()
 
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&SugarboxApp::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
 
+   AddAction(IFunctionInterface::FN_DEBUG_DEBUGGER, std::bind(&SugarboxApp::OpenDebugger, this), "L_DEBUG_OPEN_DBG");
+
    AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&SugarboxApp::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&SugarboxApp::Eject, this, 0), "L_FN_DISK_1_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_FLIP, std::bind(&EmulatorEngine::FlipDisk, emulation_->GetEngine(), 0), "L_FN_DISK_1_FLIP", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
@@ -836,4 +886,10 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
    // Set the keyboiard focus to display again (not combo)
    display_.setFocus();
 
+}
+
+void SugarboxApp::NotifyStop()
+{
+   // call update for debugger
+   debug_.Update();
 }

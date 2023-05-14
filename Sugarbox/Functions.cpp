@@ -3,7 +3,7 @@
 #include <QString>
 
 Function::Function(MultiLanguage* multilanguage, std::string id_label, std::vector<Function*> submenu_list, std::function<bool()> available) :
-   node_(true), multilanguage_(multilanguage), id_label_(id_label), submenu_list_(submenu_list), available_(available), action_(nullptr)
+   action_(nullptr), node_(true), submenu_list_(submenu_list), id_label_(id_label), available_(available), multilanguage_(multilanguage)
 {
 
 }
@@ -82,7 +82,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    function_list_.clear();
 
    IFunctionInterface::FunctionType func_type;
-   IFunctionInterface::Action* action = function_handler_->GetFirstAction(func_type);
+   const IFunctionInterface::Action* action = function_handler_->GetFirstAction(func_type);
    while (action != nullptr)
    {
       function_list_.insert(std::pair<IFunctionInterface::FunctionType, Function>(func_type, Function(action->action, multilanguage_, action->label_id)));
@@ -117,12 +117,17 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                            }, []() { return true; })
                            }, []() { return true; }));
 
-   
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
                            {
                            &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)
                            }, []() { return true; }
                            ));
+
+   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Debug",
+      {
+      &function_list_.at(IFunctionInterface::FN_DEBUG_DEBUGGER)
+      }, []() { return true; }
+   ));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Disk",
       {
