@@ -12,6 +12,7 @@
 #include "FlagHandler.h"
 #include "SettingsValues.h"
 #include "Settings.h"
+#include "MultiLanguage.h"
 
 namespace Ui {
 class DebugDialog;
@@ -26,7 +27,7 @@ public:
     ~DebugDialog();
 
     // Init dialog
-    void SetEmulator(Emulation* emu_handler);
+    void SetEmulator(Emulation* emu_handler, MultiLanguage* language);
     void SetFlagHandler(FlagHandler* flag_handler);
     void SetSettings(Settings* settings);
 
@@ -66,6 +67,7 @@ private:
    Emulation* emu_handler_;
    FlagHandler* flag_handler_;
    Settings* settings_;
+   MultiLanguage* language_;
 
    ///////////////////////////////
    // Register data

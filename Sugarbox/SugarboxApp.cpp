@@ -172,7 +172,7 @@ int SugarboxApp::RunApp()
 
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
-   debug_.SetEmulator(emulation_);
+   debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
 
    // Settings
@@ -442,6 +442,7 @@ void SugarboxApp::ConfigurationSettings()
 void SugarboxApp::OpenDebugger()
 {
    // Open debugger windows
+   debug_.Update();
    debug_.show();
 }
 

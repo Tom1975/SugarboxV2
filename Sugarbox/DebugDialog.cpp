@@ -9,7 +9,8 @@
 #include <QDebug>
 #include <QMouseEvent>
 
-#include <format>
+//#include <format>
+
 template<typename T>
 DebugDialog::RegisterView<T>::RegisterView(std::string label, T* reg) : label_(label), register_(reg), value_("----")
 {
@@ -61,7 +62,8 @@ std::string& DebugDialog::FlagView::GetValue()
 
 DebugDialog::DebugDialog(QWidget *parent) :
    QDialog(parent),
-   ui(new Ui::DebugDialog)
+   ui(new Ui::DebugDialog),
+   language_(nullptr)
 {
    ui->setupUi(this);
    ui->listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -112,8 +114,9 @@ bool DebugDialog::eventFilter(QObject* watched, QEvent* event)
    return QDialog::eventFilter(watched, event);
 }
 
-void DebugDialog::SetEmulator(Emulation* emu_handler)
+void DebugDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
 {
+   language_ = language;
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
    ui->listWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
@@ -148,7 +151,8 @@ void DebugDialog::SetEmulator(Emulation* emu_handler)
       ui->registers_list_->setItem(i, 0, new QTableWidgetItem(register_list_[i]->GetLabel().c_str()));
       ui->registers_list_->setItem(i, 1, new QTableWidgetItem(register_list_[i]->GetValue().c_str()));
    }
-   ui->registers_list_->setHorizontalHeaderLabels({"Register", "Value"});
+   ui->registers_list_->setHorizontalHeaderLabels({ language_->GetString("L_DEBUG_REGISTER"), language_->GetString("L_DEBUG_VALUE")});
+   ui->run_status->setText(emu_handler_->IsRunning() ? language_ ->GetString("L_DEBUG_RUNNING") : language_->GetString("L_DEBUG_BREAK"));
 }
 
 void DebugDialog::SetFlagHandler(FlagHandler* flag_handler)
@@ -281,7 +285,12 @@ void DebugDialog::UpdateDebug()
 
    // set top address at the upper tier of the screen
    ui->listWidget->ForceTopAddress(z80->GetPC());
-   ui->stackWidget->ForceTopAddress(z80->sp_ - 8);   
+   ui->stackWidget->ForceTopAddress(z80->sp_ - 8);
+
+   // set status
+   ui->run_status->setText(emu_handler_->IsRunning() ? language_->GetString("L_DEBUG_RUNNING") : language_->GetString("L_DEBUG_BREAK"));
+   
+
 }
 
 // Update the disassembly windows : From offset, until the number of lines are completed

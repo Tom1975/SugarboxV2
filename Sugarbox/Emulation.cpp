@@ -679,6 +679,11 @@ void Emulation::Step()
    debug_action_ = DBG_STEP;
 }
 
+bool Emulation::IsRunning()
+{
+   return emulator_engine_->IsRunning();
+}
+
 void Emulation::Run(int nb_opcodes )   
 {
    emulator_engine_->SetRun(true);

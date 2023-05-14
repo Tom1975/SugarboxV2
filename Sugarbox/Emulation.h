@@ -119,6 +119,7 @@ public :
    void RemoveNotifierDbg(IDebugerStopped* notifier);
    std::list< IDebugerStopped*> notifier_dbg_list_;
 
+   bool IsRunning();
    void Step();
    void Run( int nb_opcodes = 0);
    void Break();
