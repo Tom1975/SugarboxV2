@@ -72,6 +72,13 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="3">
+            <widget class="QLabel" name="run_status">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -190,17 +197,17 @@
   <customwidget>
    <class>DisassemblyWidget</class>
    <extends>QWidget</extends>
-   <header>disassemblywidget.h</header>
+   <header>DisassemblyWidget.h</header>
   </customwidget>
   <customwidget>
    <class>MemoryViewWidget</class>
    <extends>QWidget</extends>
-   <header>memoryviewwidget.h</header>
+   <header>MemoryViewWidget.h</header>
   </customwidget>
   <customwidget>
    <class>StackViewWidget</class>
    <extends>QWidget</extends>
-   <header>stackviewwidget.h</header>
+   <header>StackViewWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
