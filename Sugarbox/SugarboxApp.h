@@ -24,13 +24,14 @@
 #include "SoundControl.h"
 #include "DebugSocket.h"
 #include "FlagHandler.h"
+#include "TapeWidget.h"
 
 namespace Ui {
    class SugarboxApp;
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped, public ITapeInsertionCallback
 {
    Q_OBJECT
 
@@ -121,6 +122,7 @@ protected:
 
    // Menu init
    void InitMenu();
+   void InitStatusBar();
    void InitFileDialogs();
 
    // Display gui
@@ -177,7 +179,7 @@ protected:
    ALSoundMixer sound_mixer_;
 
    // counters
-   char str_speed_[16];
+   unsigned int old_speed_;
    int counter_;
 
    // Functions
@@ -203,6 +205,9 @@ protected:
    Settings settings_;
 
    // Status bar
+   QWidget status_widget_;
+   QGridLayout * status_layout_;
    QLabel status_speed_;
+   TapeWidget status_tape_;
 };
 

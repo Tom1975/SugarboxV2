@@ -9,9 +9,10 @@
 /////////////////////////////////////
 // SugarbonApp
 
-SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), counter_(0), str_speed_("0%"), 
+SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
-dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this), status_speed_("0", this)
+dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this),
+status_widget_(this), status_layout_(nullptr), status_speed_("0", this), status_tape_(this)
 {
    emulation_ = new Emulation(this);
 
@@ -30,9 +31,6 @@ dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_)
    setCentralWidget(&display_);
    clear();
 
-   // Create status widget
-   status_speed_.setFrameStyle(QFrame::Panel | QFrame::Sunken);
-   statusBar()->addPermanentWidget(&status_speed_);
 }
 
 SugarboxApp::~SugarboxApp()
@@ -122,6 +120,34 @@ const char* SugarboxApp::GetNextSoundName()
    return nullptr;
 }
 
+void SugarboxApp::InitStatusBar()
+{
+   status_layout_ = new QGridLayout(&status_widget_);
+
+   // Speed
+   status_speed_.setFrameStyle(QFrame::Panel | QFrame::Sunken);
+   QPalette sample_palette;
+   sample_palette.setColor(QPalette::Window, Qt::white);
+   sample_palette.setColor(QPalette::WindowText, Qt::black);
+
+   status_speed_.setAutoFillBackground(true);
+   status_speed_.setPalette(sample_palette);
+
+   // Tape control
+
+   // Disk Control
+   
+   // Sound
+
+
+   status_layout_->addWidget(&status_speed_, 0, 0, 1, 1, Qt::AlignVCenter | Qt::AlignLeft);
+   status_layout_->addWidget(&status_tape_, 0, 1, 1, 1, Qt::AlignVCenter | Qt::AlignRight);
+
+
+   statusBar()->addWidget(&status_widget_, 1);
+}
+
+
 void SugarboxApp::InitMenu()
 {
    InitAllActions();
@@ -182,6 +208,8 @@ int SugarboxApp::RunApp()
    debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
 
+   status_tape_.SetEmulation(emulation_);
+
    // Settings
    InitSettings();
 
@@ -195,6 +223,8 @@ int SugarboxApp::RunApp()
    current_path_exe /= "CONF";
    dlg_settings_.Refresh(current_path_exe.string().c_str());
 
+   // Create status widget :
+   InitStatusBar();
    InitMenu();
    createMenus();
    CreateActions();
@@ -343,11 +373,17 @@ void SugarboxApp::DrawStatusBar()
 
    if (counter_ == 50 /*|| m_pMachine->GetMonitor()->m_bSpeed*/)
    {
-      // Update
-
-      std::snprintf(str_speed_, sizeof(str_speed_), "%i %%", emulation_->GetSpeed());
       counter_ = 0;
-      statusBar()->showMessage(tr(str_speed_), 2000);
+
+      // Update
+      const unsigned int speed = emulation_->GetSpeed();
+      if (old_speed_ != speed)
+      {
+         char str_speed[16];
+         std::snprintf(str_speed, sizeof(str_speed), "%i %%", speed);
+         status_speed_.setText(str_speed);
+         old_speed_ = speed;
+      }
    }
    sound_control_.DrawSoundVolume();
 }
@@ -890,7 +926,7 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
 {
    settings->Load();
    emulation_->ChangeConfig(settings);
-   // Set the keyboiard focus to display again (not combo)
+   // Set the keyboard focus to display again (not combo)
    display_.setFocus();
 
 }

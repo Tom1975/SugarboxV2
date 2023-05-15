@@ -4,5 +4,12 @@
         <file>Resources/bp.png</file>
         <file>Resources/Flag.png</file>
         <file>Resources/PC.png</file>
+        <file>Resources/png11.png</file>
+        <file>Resources/png8.png</file>
+        <file>Resources/png9.png</file>
+        <file>Resources/png10.png</file>
+        <file>Resources/png12.png</file>
+        <file>Resources/png13.png</file>
+        <file>Resources/png7.png</file>
     </qresource>
 </RCC>
