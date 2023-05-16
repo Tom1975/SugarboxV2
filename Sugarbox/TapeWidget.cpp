@@ -17,13 +17,16 @@ TapeWidget::TapeWidget(ITapeInsertionCallback* callback, QWidget* parent) :
    
 {
    status_layout_ = new QGridLayout(this);
-   status_layout_->addWidget(&record_, 0, 1);
-   status_layout_->addWidget(&play_, 0, 2);
-   status_layout_->addWidget(&rewind_, 0, 3);
-   status_layout_->addWidget(&fast_forward_, 0, 4);
-   status_layout_->addWidget(&stop_, 0, 5);
-   status_layout_->addWidget(&pause_, 0, 6);
-   status_layout_->addWidget(&insert_, 0, 7);
+   status_layout_->setSpacing(0);
+   status_layout_->setVerticalSpacing(0);
+   status_layout_->setHorizontalSpacing(0);
+   status_layout_->addWidget(&record_, 0, 1, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&play_, 0, 2, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&rewind_, 0, 3, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&fast_forward_, 0, 4, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&stop_, 0, 5, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&pause_, 0, 6, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->addWidget(&insert_, 0, 7, Qt::AlignRight | Qt::AlignTop);
 
 }
 
@@ -43,7 +46,9 @@ void TapeWidget::SetEmulation(Emulation* emulation)
 
 QSize	TapeWidget::sizeHint() const
 {
-   return status_layout_->sizeHint();
+   QSize s = status_layout_->sizeHint();
+   s.setHeight ( 24 );
+   return s;
 }
 
 

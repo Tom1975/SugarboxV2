@@ -122,7 +122,7 @@ const char* SugarboxApp::GetNextSoundName()
 
 void SugarboxApp::InitStatusBar()
 {
-   status_layout_ = new QGridLayout(&status_widget_);
+   status_layout_ = new QBoxLayout(QBoxLayout::LeftToRight , &status_widget_);
 
    // Speed
    status_speed_.setFrameStyle(QFrame::Panel | QFrame::Sunken);
@@ -140,11 +140,12 @@ void SugarboxApp::InitStatusBar()
    // Sound
 
 
-   status_layout_->addWidget(&status_speed_, 0, 0, 1, 1, Qt::AlignVCenter | Qt::AlignLeft);
-   status_layout_->addWidget(&status_tape_, 0, 1, 1, 1, Qt::AlignVCenter | Qt::AlignRight);
+   status_layout_->addWidget(&status_speed_, 0, Qt::AlignLeft|Qt::AlignTop);
+   status_layout_->addWidget(&status_tape_, 0, Qt::AlignRight|Qt::AlignTop);
 
 
-   statusBar()->addWidget(&status_widget_, 1);
+   statusBar()->addPermanentWidget(&status_widget_, 0);
+   statusBar()->setContentsMargins(0, 0, 0, 0);
 }
 
 
