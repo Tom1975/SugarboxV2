@@ -12,7 +12,7 @@
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_, this), sound_control_(&sound_mixer_, &language_), debugger_link_(nullptr), debug_(this),
-status_widget_(this), status_layout_(nullptr), status_speed_("0", this), status_tape_(this)
+status_speed_("0", this), status_tape_(this)
 {
    emulation_ = new Emulation(this);
 
@@ -122,30 +122,25 @@ const char* SugarboxApp::GetNextSoundName()
 
 void SugarboxApp::InitStatusBar()
 {
-   status_layout_ = new QBoxLayout(QBoxLayout::LeftToRight , &status_widget_);
-
-   // Speed
+   // Speed label
    status_speed_.setFrameStyle(QFrame::Panel | QFrame::Sunken);
    QPalette sample_palette;
    sample_palette.setColor(QPalette::Window, Qt::white);
    sample_palette.setColor(QPalette::WindowText, Qt::black);
-
    status_speed_.setAutoFillBackground(true);
    status_speed_.setPalette(sample_palette);
 
-   // Tape control
-
    // Disk Control
+
    
    // Sound
 
 
-   status_layout_->addWidget(&status_speed_, 0, Qt::AlignLeft|Qt::AlignTop);
-   status_layout_->addWidget(&status_tape_, 0, Qt::AlignRight|Qt::AlignTop);
 
 
-   statusBar()->addPermanentWidget(&status_widget_, 0);
    statusBar()->setContentsMargins(0, 0, 0, 0);
+   statusBar()->addWidget(&status_speed_, 0);
+   statusBar()->addPermanentWidget(&status_tape_, 0);
 }
 
 

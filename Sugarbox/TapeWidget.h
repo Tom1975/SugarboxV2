@@ -1,10 +1,12 @@
 #pragma once
 
 #include <QGridLayout>
-#include <QPushButton>
+#include <qtoolbutton.h>
 #include <QWidget>
+#include <QtWidgets/QLabel>
 
 #include "Emulation.h"
+#include "TapeCounterWidget.h"
 
 class ITapeInsertionCallback
 {
@@ -33,13 +35,15 @@ private:
    Emulation* emulation_;
 
    // Tape buttons
-   QGridLayout *status_layout_;
+   QHBoxLayout*status_layout_;
    QIcon stop_icon_;
-   QPushButton record_;
-   QPushButton play_;
-   QPushButton rewind_;
-   QPushButton fast_forward_;
-   QPushButton stop_;
-   QPushButton pause_;
-   QPushButton insert_;
+
+   TapeCounterWidget tape_counter_;
+   QToolButton record_;
+   QToolButton play_;
+   QToolButton rewind_;
+   QToolButton fast_forward_;
+   QToolButton stop_;
+   QToolButton pause_;
+   QToolButton insert_;
 };

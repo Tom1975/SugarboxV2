@@ -205,8 +205,6 @@ protected:
    Settings settings_;
 
    // Status bar
-   QWidget status_widget_;
-   QBoxLayout* status_layout_;
    QLabel status_speed_;
    TapeWidget status_tape_;
 };

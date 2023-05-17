@@ -7,48 +7,62 @@ TapeWidget::TapeWidget(ITapeInsertionCallback* callback, QWidget* parent) :
    QWidget(parent),
    callback_(callback),
    emulation_(nullptr),
-   record_(QIcon(":/Resources/png7.png"), "", this),
-   play_(QIcon(":/Resources/png8.png"), "", this),
-   rewind_(QIcon(":/Resources/png9.png"), "", this),
-   fast_forward_(QIcon(":/Resources/png10.png"), "", this),
-   stop_(QIcon(":/Resources/png11.png"), "", this),
-   pause_(QIcon(":/Resources/png12.png"), "", this),
-   insert_(QIcon(":/Resources/png13.png"), "", this)
+   record_( this),
+   play_(this),
+   rewind_(this),
+   fast_forward_(this),
+   stop_(this),
+   pause_(this),
+   insert_(this)
    
 {
-   status_layout_ = new QGridLayout(this);
+
+   record_.setIcon(QIcon(":/Resources/png7.png"));
+   play_.setIcon(QIcon(":/Resources/png8.png"));
+   rewind_.setIcon(QIcon(":/Resources/png9.png"));
+   fast_forward_.setIcon(QIcon(":/Resources/png10.png"));
+   stop_.setIcon(QIcon(":/Resources/png11.png"));
+   pause_.setIcon(QIcon(":/Resources/png12.png"));
+   insert_.setIcon(QIcon(":/Resources/png13.png"));
+
+   status_layout_ = new QHBoxLayout(this);
    status_layout_->setSpacing(0);
-   status_layout_->setVerticalSpacing(0);
-   status_layout_->setHorizontalSpacing(0);
-   status_layout_->addWidget(&record_, 0, 1, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&play_, 0, 2, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&rewind_, 0, 3, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&fast_forward_, 0, 4, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&stop_, 0, 5, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&pause_, 0, 6, Qt::AlignRight | Qt::AlignTop);
-   status_layout_->addWidget(&insert_, 0, 7, Qt::AlignRight | Qt::AlignTop);
+   status_layout_->setContentsMargins(0, 0, 0, 0);
+
+   // Add tape counter
+   status_layout_->addWidget(&tape_counter_);
+   // Add tape buttons
+   status_layout_->addWidget(&record_);
+   status_layout_->addWidget(&play_);
+   status_layout_->addWidget(&rewind_);
+   status_layout_->addWidget(&fast_forward_);
+   status_layout_->addWidget(&stop_);
+   status_layout_->addWidget(&pause_);
+   status_layout_->addWidget(&insert_);
+   
+
 
 }
 
 void TapeWidget::SetEmulation(Emulation* emulation)
 {
    emulation_ = emulation;
-   connect(&record_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapeRecord(); });
-   connect(&play_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapePlay(); });
-   connect(&rewind_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapeRewind(); });
-   connect(&fast_forward_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapeFastForward(); });
-   connect(&stop_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapeStop(); });
-   connect(&pause_, &QPushButton::released, this, [=]() {if (emulation_) emulation_->TapePause(); });
-   connect(&insert_, &QPushButton::released, this, [=]() {callback_->TapeInsert(); });
+   tape_counter_.SetTape(emulation->GetEngine()->GetTape());
+
+   connect(&record_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapeRecord(); });
+   connect(&play_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapePlay(); });
+   connect(&rewind_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapeRewind(); });
+   connect(&fast_forward_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapeFastForward(); });
+   connect(&stop_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapeStop(); });
+   connect(&pause_, &QToolButton::released, this, [=]() {if (emulation_) emulation_->TapePause(); });
+   connect(&insert_, &QToolButton::released, this, [=]() {callback_->TapeInsert(); });
 
 
 }
 
 QSize	TapeWidget::sizeHint() const
 {
-   QSize s = status_layout_->sizeHint();
-   s.setHeight ( 24 );
-   return s;
+   return QWidget::sizeHint();
 }
 
 
