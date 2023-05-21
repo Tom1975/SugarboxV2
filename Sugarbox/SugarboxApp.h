@@ -21,10 +21,10 @@
 #include "SettingsList.h"
 #include "Settings.h"
 #include "DlgSettings.h"
-#include "SoundControl.h"
 #include "DebugSocket.h"
 #include "FlagHandler.h"
 #include "TapeWidget.h"
+#include "SoundWidget.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -189,7 +189,6 @@ protected:
    // Opened / close windows
    DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
-   SoundControl sound_control_;
 
    ConfigurationManager key_mgr, key_mgr_out;
 
@@ -207,5 +206,6 @@ protected:
    // Status bar
    QLabel status_speed_;
    TapeWidget status_tape_;
+   SoundWidget status_sound_;
 };
 

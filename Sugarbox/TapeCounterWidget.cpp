@@ -52,7 +52,13 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
    // Open a menu, with the part of the tape selection
    if (tape_)
    {
+      // Add last eject position
+      int last_pos = tape_->GetLastEjectPosition();
 
-       
+
+      for (int i = 0; i < tape_->GetNbBlocks(); i++)
+      {
+         
+      }
    }
 }

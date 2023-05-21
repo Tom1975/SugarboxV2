@@ -11,5 +11,9 @@
         <file>Resources/png12.png</file>
         <file>Resources/png13.png</file>
         <file>Resources/png7.png</file>
+        <file>Resources/Media-Controls-High-volume-icon.png</file>
+        <file>Resources/Media-Controls-Mute-icon.png</file>
+        <file>Resources/Record-Pressed-icon.png</file>
+        <file>Resources/Record-off-256.png</file>
     </qresource>
 </RCC>
