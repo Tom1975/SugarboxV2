@@ -24,6 +24,7 @@
 #include "DebugSocket.h"
 #include "FlagHandler.h"
 #include "TapeWidget.h"
+#include "DiskWidget.h"
 #include "SoundWidget.h"
 
 namespace Ui {
@@ -206,6 +207,8 @@ protected:
    // Status bar
    QLabel status_speed_;
    TapeWidget status_tape_;
+   DiskWidget status_disk_a_;
+   DiskWidget status_disk_b_;
    SoundWidget status_sound_;
 };
 
