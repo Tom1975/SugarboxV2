@@ -15,5 +15,8 @@
         <file>Resources/Media-Controls-Mute-icon.png</file>
         <file>Resources/Record-Pressed-icon.png</file>
         <file>Resources/Record-off-256.png</file>
+        <file>Resources/LoadDisk.bmp</file>
+        <file>Resources/protec_off.png</file>
+        <file>Resources/protec_on.png</file>
     </qresource>
 </RCC>

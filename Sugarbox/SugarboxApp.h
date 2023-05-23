@@ -207,8 +207,7 @@ protected:
    // Status bar
    QLabel status_speed_;
    TapeWidget status_tape_;
-   DiskWidget status_disk_a_;
-   DiskWidget status_disk_b_;
+   DiskWidget status_disk_;
    SoundWidget status_sound_;
 };
 

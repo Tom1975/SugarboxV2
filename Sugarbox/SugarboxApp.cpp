@@ -12,7 +12,7 @@
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_, this), status_sound_(&sound_mixer_, &language_, this), debugger_link_(nullptr), debug_(this),
-status_speed_("0", this), status_tape_(this), status_disk_a_(this), status_disk_b_(this)
+status_speed_("0", this), status_tape_(this), status_disk_(this)
 {
    emulation_ = new Emulation(this);
 
@@ -130,18 +130,9 @@ void SugarboxApp::InitStatusBar()
    status_speed_.setAutoFillBackground(true);
    status_speed_.setPalette(sample_palette);
 
-   // Disk Control
-
-   
-   // Sound
-
-
-
-
    statusBar()->setContentsMargins(0, 0, 0, 0);
    statusBar()->addWidget(&status_speed_, 0);
-   statusBar()->addPermanentWidget(&status_disk_a_, 0);
-   statusBar()->addPermanentWidget(&status_disk_b_, 0);
+   statusBar()->addPermanentWidget(&status_disk_, 0);
    statusBar()->addPermanentWidget(&status_tape_, 0);
    statusBar()->addPermanentWidget(&status_sound_, 0);
    
@@ -209,8 +200,7 @@ int SugarboxApp::RunApp()
    debug_.SetFlagHandler(&flag_handler_);
 
    status_tape_.SetEmulation(emulation_);
-   status_disk_a_.SetEmulation(emulation_);
-   status_disk_b_.SetEmulation(emulation_);
+   status_disk_.SetEmulation(emulation_);
    
    status_sound_.SetEmulation(emulation_);
 

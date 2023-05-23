@@ -26,7 +26,9 @@ private slots:
 
 private:
    Emulation* emulation_;
-
-   // Tape buttons
    QHBoxLayout*status_layout_;
+   QToolButton disk_a_;
+   QToolButton disk_b_;
+   QToolButton disk_a_protection_;
+   QToolButton disk_b_protection_;
 };
