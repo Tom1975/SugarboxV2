@@ -6,17 +6,15 @@
 DiskWidget::DiskWidget(QWidget* parent) :
    QWidget(parent),
    emulation_(nullptr),
-   disk_a_(this),
-   disk_b_(this),
    disk_a_protection_(this),
-   disk_b_protection_(this)
+   disk_b_protection_(this),
+   disk_a_display_(0, this),
+   disk_b_display_(1, this)
 {
    QIcon protected_icon;
    protected_icon.addPixmap(QPixmap(":/Resources/protec_off.png"), QIcon::Normal);
    protected_icon.addPixmap(QPixmap(":/Resources/protec_on.png"), QIcon::Normal);
 
-   disk_a_.setIcon(QIcon(":/Resources/LoadDisk.bmp"));
-   disk_b_.setIcon(QIcon(":/Resources/LoadDisk.bmp"));
    disk_a_protection_.setIcon(protected_icon);
    disk_a_protection_.setCheckable(true);
    disk_b_protection_.setIcon(protected_icon);
@@ -25,20 +23,31 @@ DiskWidget::DiskWidget(QWidget* parent) :
    status_layout_ = new QHBoxLayout(this);
    status_layout_->setSpacing(0);
    status_layout_->setContentsMargins(0, 0, 0, 0);
-   status_layout_->addWidget(&disk_a_);
+
    status_layout_->addWidget(&disk_a_protection_);
-   status_layout_->addWidget(&disk_b_);
+   status_layout_->addWidget(&disk_a_display_);
    status_layout_->addWidget(&disk_b_protection_);
-
-
+   status_layout_->addWidget(&disk_b_display_);
 }
 
-void DiskWidget::SetEmulation(Emulation* emulation)
+void DiskWidget::SetEmulation(Emulation* emulation, Settings* settings)
 {
    emulation_ = emulation;
 
    connect(&disk_a_protection_, &QToolButton::released, this, [=]() {if (emulation_) { emulation_->GetEngine()->GetFDC()->SetWriteProtection(!emulation_->GetEngine()->GetFDC()->IsDiskWriteProtected(0), 0); }});
    connect(&disk_b_protection_, &QToolButton::released, this, [=]() {if (emulation_) { emulation_->GetEngine()->GetFDC()->SetWriteProtection(!emulation_->GetEngine()->GetFDC()->IsDiskWriteProtected(1), 1); }});
+
+   disk_a_display_.SetEmulation(emulation_, settings);
+   disk_b_display_.SetEmulation(emulation_, settings);
+
+   Update();
+}
+
+void DiskWidget::Update()
+{
+   // Set status of protection button
+   // Set tooltip with disk name
+
 }
 
 QSize	DiskWidget::sizeHint() const

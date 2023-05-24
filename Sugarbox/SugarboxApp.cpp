@@ -166,6 +166,15 @@ void SugarboxApp::InitSettings()
    settings_.AddColor(SettingsValues::CHAR_COLOR,Qt::gray);
    settings_.AddColor(SettingsValues::SELECTION_COLOR, QColor(128, 128, 255, 128));
 
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NODISK_1, QColor(0x80, 0x80, 0x80, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NODISK_2, QColor(0x60, 0x60, 0x60, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_1, QColor(0x60, 0, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_2, QColor(0x10, 0, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_READ_1, QColor(0, 0xff, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_READ_2, QColor(0, 0x90, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_1, QColor(0xff, 0, 0, 0xff));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_2, QColor(0x90, 0, 0, 0xff));
+
    //
    settings_.AddAction(SettingsValues::DBG_RUN_ACTION, { "DBG_RUN", Qt::Key_F5 });
    settings_.AddAction(SettingsValues::DBG_BREAK_ACTION, { "DBG_BREAK", Qt::Key_F5 });
@@ -185,6 +194,9 @@ void SugarboxApp::InitSettings()
 
 int SugarboxApp::RunApp()
 {
+   // Settings
+   InitSettings();
+
    std::filesystem::path current_path_exe = std::filesystem::current_path();
 
    // Create the main window
@@ -200,12 +212,9 @@ int SugarboxApp::RunApp()
    debug_.SetFlagHandler(&flag_handler_);
 
    status_tape_.SetEmulation(emulation_);
-   status_disk_.SetEmulation(emulation_);
+   status_disk_.SetEmulation(emulation_, &settings_);
    
    status_sound_.SetEmulation(emulation_);
-
-   // Settings
-   InitSettings();
 
    debugger_link_ = new DebugSocket(this, emulation_);
    debugger_link_->StartServer();

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <QGridLayout>
+#include <QHBoxLayout>
 #include <qtoolbutton.h>
 #include <QWidget>
-#include <QtWidgets/QLabel>
 
 #include "Emulation.h"
-
+#include "DiskDisplay.h"
 
 class DiskWidget : public QWidget
 {
@@ -15,7 +14,9 @@ class DiskWidget : public QWidget
 public:
    explicit DiskWidget(QWidget* parent = nullptr);
 
-   void SetEmulation(Emulation*);
+   void SetEmulation(Emulation*, Settings* settings);
+   void Update();
+
    QSize	sizeHint() const override;
 
 protected:
@@ -27,8 +28,8 @@ private slots:
 private:
    Emulation* emulation_;
    QHBoxLayout*status_layout_;
-   QToolButton disk_a_;
-   QToolButton disk_b_;
    QToolButton disk_a_protection_;
    QToolButton disk_b_protection_;
+   DiskDisplay disk_a_display_;
+   DiskDisplay disk_b_display_;
 };
