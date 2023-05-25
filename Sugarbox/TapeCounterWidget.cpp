@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QResizeEvent>
 
+#include "TapeWidget.h"
+
 TapeCounterWidget::TapeCounterWidget(QWidget* parent) :
    QWidget(parent),
    tape_(nullptr),
@@ -26,15 +28,24 @@ QSize	TapeCounterWidget::sizeHint() const
    return size_;
 }
 
-void TapeCounterWidget::paintEvent(QPaintEvent* event)
+void TapeCounterWidget::Update()
 {
    if (tape_)
    {
       int sec = tape_->GetCounter();
       int max = tape_->LengthOfTape();
-      sprintf_s(&counter_text_[0], counter_text_.size()+1, ("%2.2i:%2.2i/%2.2i:%2.2i"), (sec) / 60, sec % 60, max / 60, max % 60);
+      if ( sec_ != sec || max_ != max)
+      {
+         sec_ = sec;
+         max_ = max;
+         sprintf_s(&counter_text_[0], counter_text_.size() + 1, ("%2.2i:%2.2i/%2.2i:%2.2i"), (sec) / 60, sec % 60, max / 60, max % 60);
+         repaint();
+      }
    }
+}
 
+void TapeCounterWidget::paintEvent(QPaintEvent* event)
+{
    QPainter painter(this);
 
    painter.setPen(Qt::black);

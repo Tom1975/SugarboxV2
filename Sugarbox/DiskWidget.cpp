@@ -13,7 +13,7 @@ DiskWidget::DiskWidget(QWidget* parent) :
 {
    QIcon protected_icon;
    protected_icon.addPixmap(QPixmap(":/Resources/protec_off.png"), QIcon::Normal);
-   protected_icon.addPixmap(QPixmap(":/Resources/protec_on.png"), QIcon::Normal);
+   protected_icon.addPixmap(QPixmap(":/Resources/protec_on.png"), QIcon::Selected);
 
    disk_a_protection_.setIcon(protected_icon);
    disk_a_protection_.setCheckable(true);
@@ -45,8 +45,14 @@ void DiskWidget::SetEmulation(Emulation* emulation, Settings* settings)
 
 void DiskWidget::Update()
 {
+   disk_a_display_.Update();
+   disk_b_display_.Update();
+
    // Set status of protection button
+
+
    // Set tooltip with disk name
+
 
 }
 

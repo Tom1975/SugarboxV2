@@ -73,7 +73,7 @@ void DiskDisplay::Update()
       if (current_sector_ != current_sector)
       {
          current_sector_ = current_sector;
-         sector_ = QString("%1").arg(current_sector_, 2, 10, QChar('0'));
+         sector_ = QString("%1").arg(current_sector_, 2, 16, QChar('0'));
       }
 
       // Set tooltip with disk name
@@ -114,6 +114,7 @@ void DiskDisplay::resizeEvent(QResizeEvent* e)
    path1_.lineTo(18, e->size().height() - 2);
    path1_.lineTo(18, 14);
    path1_.lineTo(1, 14);
+   path1_.lineTo(1, e->size().height() - 2);
 
    QWidget::resizeEvent(e);
 }

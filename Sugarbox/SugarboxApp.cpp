@@ -112,7 +112,7 @@ const char* SugarboxApp::GetSoundName(ISound*)
 
 const char* SugarboxApp::GetFirstSoundName()
 {
-   return "OpenAL-Soft sound mixer";
+   return "OpenAL-Soft sound mixer";   
 }
 
 const char* SugarboxApp::GetNextSoundName()
@@ -168,8 +168,8 @@ void SugarboxApp::InitSettings()
 
    settings_.AddColor(SettingsValues::DRIVE_STATUS_NODISK_1, QColor(0x80, 0x80, 0x80, 0xFF));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_NODISK_2, QColor(0x60, 0x60, 0x60, 0xFF));
-   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_1, QColor(0x60, 0, 0, 0xFF));
-   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_2, QColor(0x10, 0, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_1, QColor(0x90, 0, 0, 0xFF));
+   settings_.AddColor(SettingsValues::DRIVE_STATUS_NO_ACTIVITY_2, QColor(0x40, 0, 0, 0xFF));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_READ_1, QColor(0, 0xff, 0, 0xFF));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_READ_2, QColor(0, 0x90, 0, 0xFF));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_1, QColor(0xff, 0, 0, 0xff));
@@ -388,6 +388,8 @@ void SugarboxApp::DrawStatusBar()
          old_speed_ = speed;
       }
    }
+   status_disk_.Update();
+   status_tape_.Update();
 }
 
 void SugarboxApp::SizeChanged(int width, int height)

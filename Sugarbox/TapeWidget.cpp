@@ -39,9 +39,11 @@ TapeWidget::TapeWidget(ITapeInsertionCallback* callback, QWidget* parent) :
    status_layout_->addWidget(&stop_);
    status_layout_->addWidget(&pause_);
    status_layout_->addWidget(&insert_);
-   
+}
 
-
+void TapeWidget::Update()
+{
+   tape_counter_.Update();
 }
 
 void TapeWidget::SetEmulation(Emulation* emulation)

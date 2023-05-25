@@ -14,6 +14,7 @@ class TapeCounterWidget : public QWidget
 public:
    explicit TapeCounterWidget(QWidget* parent = nullptr);
    void SetTape(CTape* tape);
+   void Update();
 
    QSize	sizeHint() const override;
 
@@ -28,6 +29,8 @@ private slots:
 private:
    CTape* tape_;
    std::string counter_text_;
+   int sec_;
+   int max_;
 
    QSize size_;
 };

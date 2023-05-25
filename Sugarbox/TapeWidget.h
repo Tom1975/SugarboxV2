@@ -20,6 +20,7 @@ class TapeWidget : public QWidget
 
 public:
    explicit TapeWidget(ITapeInsertionCallback* callback, QWidget* parent = nullptr);
+   void Update();
 
    void SetEmulation(Emulation*);
    QSize	sizeHint() const override;
