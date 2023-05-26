@@ -38,7 +38,7 @@ void TapeCounterWidget::Update()
       {
          sec_ = sec;
          max_ = max;
-         sprintf_s(&counter_text_[0], counter_text_.size() + 1, ("%2.2i:%2.2i/%2.2i:%2.2i"), (sec) / 60, sec % 60, max / 60, max % 60);
+         sprintf(&counter_text_[0], ("%2.2i:%2.2i/%2.2i:%2.2i"), (sec) / 60, sec % 60, max / 60, max % 60);
          repaint();
       }
    }
