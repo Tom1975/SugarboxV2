@@ -3,6 +3,7 @@
 #include <QGridLayout>
 #include <qtoolbutton.h>
 #include <QWidget>
+#include <QPainterPath>
 #include <QtWidgets/QLabel>
 
 #include "Emulation.h"
