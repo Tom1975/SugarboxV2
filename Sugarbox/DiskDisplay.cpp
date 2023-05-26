@@ -1,6 +1,5 @@
 #include "DiskDisplay.h"
 
-#include <QPainter>
 #include <QResizeEvent>
 
 #include "DiskWidget.h"

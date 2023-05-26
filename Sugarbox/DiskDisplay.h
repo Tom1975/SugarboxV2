@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QWidget>
+#include <QPainterPath>
+#include <QPainter>
 
 #include "Emulation.h"
 #include "Settings.h"
