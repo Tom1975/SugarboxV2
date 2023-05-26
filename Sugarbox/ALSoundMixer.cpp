@@ -11,7 +11,10 @@ ALSoundMixer::ALSoundMixer():sample_rate_(0),
    last_used_buffer_(nullptr), 
    device_(nullptr), 
    context_(nullptr),
-   format_(AL_FORMAT_STEREO16)
+   format_(AL_FORMAT_STEREO16),
+   emulation_(nullptr),
+   mute_(false),
+volume_(1.0)
 {
    device_ = alcOpenDevice(NULL);
    if (device_) 
@@ -45,6 +48,11 @@ ALSoundMixer::~ALSoundMixer()
       delete []wav_buffers_list_[i].data_ ;
    }
 
+}
+
+void ALSoundMixer::SetEmulation(EmulatorEngine* emulation)
+{
+   emulation_ = emulation;
 }
 
 ///////////////////////////////////////////////////
@@ -214,16 +222,34 @@ bool ALSoundMixer::LoadConfiguration(const char* config_name, const char* ini_fi
 
 void ALSoundMixer::Mute(bool bMute)
 {
-
+   if (!bMute )
+   {
+      if (mute_)
+      {
+         mute_ = false;
+         SetVolume(volume_);
+      }
+   }
+   else
+   {
+      if ( !mute_)
+      {
+         mute_ = true;
+         volume_ = GetVolume();
+         SetVolume(0.0);
+      }
+   }
 }
 
 bool ALSoundMixer::IsMuted()
 {
-   return false;
+   return mute_;
 }
 
 void ALSoundMixer::SetVolume(float vol)
 {
+   if (vol > 0)
+      mute_ = false;
    alSourcef(source_, AL_GAIN, (ALfloat)vol);
 }
 
@@ -236,12 +262,33 @@ float ALSoundMixer::GetVolume()
 
 void ALSoundMixer::Record(bool bOn)
 {
-
+   if (emulation_)
+   {
+      if (emulation_->IsRecording())
+      {
+         //
+         if ( !bOn)
+         {
+            emulation_->EndRecord();
+         }
+      }
+      else
+      {
+         //
+         if (bOn)
+         {
+            emulation_->BeginRecord();
+         }
+         
+      }
+   }
 }
 
 bool ALSoundMixer::IsRecordOn()
 {
-   return false;
+   if (emulation_)
+      return (emulation_->IsRecording());
+   else return false;
 }
 
 

@@ -85,7 +85,7 @@ file(GLOB SRCS
 file(GLOB RES
    ${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*
 )
-            
+          
 set (HEADERS 
    ${HEADERS}
 )
@@ -95,6 +95,7 @@ set (SRCS
 
 set ( UIS
  SugarboxApp.ui
+ DebugDialog.ui
 )
 
 

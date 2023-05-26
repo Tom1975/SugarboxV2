@@ -9,6 +9,7 @@
 #include "ISound.h"
 #include "Inotify.h"
 #include "ALSoundMixer.h"
+#include "IUpdate.h"
 #include "Z80Desassember.h"
 
 class INotifier
@@ -22,6 +23,12 @@ class IBeakpointNotifier
 public:
    virtual void NotifyBreak(unsigned int nb_opcodes) = 0;
    virtual void BreakpointEncountered(IBreakpointItem*) = 0;
+};
+
+class IDebugerStopped
+{
+public:
+   virtual void NotifyStop() = 0;
 };
 
 class Emulation  : public IDirectories, IFdcNotify
@@ -40,6 +47,10 @@ public :
    } TapeFormat;
 
    virtual void ChangeConfig(MachineSettings* settings);
+   virtual void AddUpdateListener(IUpdate* listener);
+
+   // 
+   Z80Desassember* GetDisassembler(){ return disassembler_; };
 
    // IFdcNotify
    virtual void ItemLoaded(const char* disk_path, int load_ok, int drive_number);
@@ -104,6 +115,11 @@ public :
    void RemoveNotifier(IBeakpointNotifier*);
    std::list< IBeakpointNotifier*> notifier_list_;
 
+   void AddNotifierDbg(IDebugerStopped*);
+   void RemoveNotifierDbg(IDebugerStopped* notifier);
+   std::list< IDebugerStopped*> notifier_dbg_list_;
+
+   bool IsRunning();
    void Step();
    void Run( int nb_opcodes = 0);
    void Break();
@@ -135,6 +151,9 @@ public :
    
 
 protected:
+   // Listener list
+   std::vector< IUpdate*> listeners_;
+
    INotifier* notifier_;
 
    Motherboard* motherboard_;

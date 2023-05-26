@@ -14,20 +14,25 @@
 #include "Machine.h"
 #include "Motherboard.h"
 #include "Snapshot.h"
+#include "DebugDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
 #include "SettingsList.h"
+#include "Settings.h"
 #include "DlgSettings.h"
-#include "SoundControl.h"
 #include "DebugSocket.h"
+#include "FlagHandler.h"
+#include "TapeWidget.h"
+#include "DiskWidget.h"
+#include "SoundWidget.h"
 
 namespace Ui {
    class SugarboxApp;
 }
 
 
-class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange
+class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped, public ITapeInsertionCallback
 {
    Q_OBJECT
 
@@ -46,6 +51,8 @@ public:
 
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
+
+   virtual void NotifyStop();
 
    virtual bool PlusEnabled();
    virtual bool FdcPresent();
@@ -71,6 +78,7 @@ public:
    virtual void ToggleAutoload();
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
+   virtual void OpenDebugger();
 
    // INotifier 
    virtual void DiskLoaded();
@@ -96,6 +104,7 @@ public slots:
    void clear();
    void UpdateMenu();
    virtual void ChangeSettings(MachineSettings*);
+   void Display();
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
@@ -103,6 +112,8 @@ signals:
    void SettingsChanged();
 
 protected:
+
+   void InitSettings();
 
    // Drag'n'drop
    void dragEnterEvent(QDragEnterEvent *event) override;
@@ -112,6 +123,7 @@ protected:
 
    // Menu init
    void InitMenu();
+   void InitStatusBar();
    void InitFileDialogs();
 
    // Display gui
@@ -168,7 +180,7 @@ protected:
    ALSoundMixer sound_mixer_;
 
    // counters
-   char str_speed_[16];
+   unsigned int old_speed_;
    int counter_;
 
    // Functions
@@ -178,11 +190,24 @@ protected:
    // Opened / close windows
    DiskBuilder disk_builder_;
    DlgSettings dlg_settings_;
-   SoundControl sound_control_;
 
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
    DebugSocket* debugger_link_;
+
+   DebugDialog debug_;
+
+   // Flag handler
+   FlagHandler flag_handler_;
+
+   // Settings
+   Settings settings_;
+
+   // Status bar
+   QLabel status_speed_;
+   TapeWidget status_tape_;
+   DiskWidget status_disk_;
+   SoundWidget status_sound_;
 };
 

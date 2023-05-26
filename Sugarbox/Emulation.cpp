@@ -118,6 +118,7 @@ void Emulation::EmulationLoop()
       }
       else 
       {
+         auto old_action = debug_action_;
          // Debug mode : what can be done : 
          switch (debug_action_)
          {
@@ -127,6 +128,7 @@ void Emulation::EmulationLoop()
          case DBG_STEP:
             // - Step : Execute one command (Step in)
             emulator_engine_->RunDebugMode(1);
+            emulator_engine_->SetRun(false);
             debug_action_ = DBG_BREAK;
             break;
          case DBG_RUN:
@@ -139,7 +141,7 @@ void Emulation::EmulationLoop()
                IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
                if (bp !=nullptr)
                {
-                  for (auto &it : notifier_list_)
+                  for (const auto &it : notifier_list_)
                   {
                      // Send : Number of opcodes
 
@@ -166,6 +168,16 @@ void Emulation::EmulationLoop()
             // - break : Stop emulation until next command
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             break;
+         }
+
+         if (old_action != debug_action_)
+         {
+            // Notify anyone interrested that the code is stopped
+            for (auto& it : notifier_dbg_list_)
+            {
+               it->NotifyStop();
+            }
+
          }
       }
 
@@ -481,6 +493,9 @@ void Emulation::Break()
 {
    debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
+
+   // wait for break to occur
+
 }
 
 std::vector<std::string> Emulation::GetZ80Registers()
@@ -642,12 +657,26 @@ void Emulation::RemoveNotifier(IBeakpointNotifier* notifier)
    notifier_list_.remove(notifier);
 }
 
+void Emulation::AddNotifierDbg(IDebugerStopped* notifier)
+{
+   notifier_dbg_list_.push_back(notifier);
+}
+
+void Emulation::RemoveNotifierDbg(IDebugerStopped* notifier)
+{
+   notifier_dbg_list_.remove(notifier);
+}
 
 void Emulation::Step()
 {
    emulator_engine_->SetStepIn(true);
    emulator_engine_->SetRun(true);
    debug_action_ = DBG_STEP;
+}
+
+bool Emulation::IsRunning()
+{
+   return emulator_engine_->IsRunning();
 }
 
 void Emulation::Run(int nb_opcodes )   
@@ -665,3 +694,7 @@ void Emulation::Run(int nb_opcodes )
    }
 }
 
+void Emulation::AddUpdateListener(IUpdate* listener)
+{
+   listeners_.push_back(listener);
+}
