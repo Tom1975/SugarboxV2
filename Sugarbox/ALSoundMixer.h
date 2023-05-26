@@ -3,6 +3,8 @@
 #include "ISound.h"
 #include <vector>
 #include <map>
+
+#include "Machine.h"
 #include "AL/alc.h"
 #include "AL/al.h"
 
@@ -20,6 +22,8 @@ class ALSoundMixer : public ISound, public ISoundNotification
 public:
    ALSoundMixer();
    virtual ~ALSoundMixer();
+
+   void SetEmulation(EmulatorEngine* emulation);
 
    // Interface ISoundNotification
    virtual void Mute(bool bMute);
@@ -92,5 +96,10 @@ protected:
    ALuint         buffers_[NB_BUFFERS_];
    ALuint         source_;
    ALenum         format_;
+
+   EmulatorEngine* emulation_;
+   // Sound volume
+   bool mute_;
+   float volume_;
 };
 

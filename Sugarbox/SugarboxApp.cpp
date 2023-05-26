@@ -29,6 +29,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
    //setAutoFillBackground(true);
    menuBar()->setFocusPolicy(Qt::ClickFocus); 
    setCentralWidget(&display_);
+
    clear();
 
 }
@@ -208,11 +209,16 @@ int SugarboxApp::RunApp()
 
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
+
+   InitMenu();
+
+   sound_mixer_.SetEmulation(emulation_->GetEngine());
+
    debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
 
    status_tape_.SetEmulation(emulation_);
-   status_disk_.SetEmulation(emulation_, &settings_);
+   status_disk_.SetEmulation(emulation_, &settings_, functions_list_.GetMenu(4)->GetMenu(0));
    
    status_sound_.SetEmulation(emulation_);
 
@@ -228,7 +234,6 @@ int SugarboxApp::RunApp()
 
    // Create status widget :
    InitStatusBar();
-   InitMenu();
    createMenus();
    CreateActions();
    CreateStatusBar();

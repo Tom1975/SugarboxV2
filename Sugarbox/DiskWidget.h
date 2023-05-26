@@ -6,6 +6,7 @@
 
 #include "Emulation.h"
 #include "DiskDisplay.h"
+#include "Functions.h"
 
 class DiskWidget : public QWidget
 {
@@ -14,7 +15,7 @@ class DiskWidget : public QWidget
 public:
    explicit DiskWidget(QWidget* parent = nullptr);
 
-   void SetEmulation(Emulation*, Settings* settings);
+   void SetEmulation(Emulation*, Settings* settings, Function* menu);
    void Update();
 
    QSize	sizeHint() const override;
@@ -22,6 +23,9 @@ public:
 protected:
    void paintEvent(QPaintEvent* event) override;
    void resizeEvent(QResizeEvent* e) override;
+   void mousePressEvent(QMouseEvent* event) override;
+
+   void CreateSubMenu(QMenu* menu, Function* function, bool toplevel = false);
 
 private slots:
 
@@ -32,4 +36,9 @@ private:
    QToolButton disk_b_protection_;
    DiskDisplay disk_a_display_;
    DiskDisplay disk_b_display_;
+
+   QIcon protected_icon_off_;
+   QIcon protected_icon_on_;
+
+   Function* menu_;
 };
