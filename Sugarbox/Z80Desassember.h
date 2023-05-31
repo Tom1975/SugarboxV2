@@ -47,7 +47,7 @@ public:
       std::string Disassembly;
    };
 
-   Opcode FillStructOpcode(unsigned char Size, char* Disassembly)
+   Opcode FillStructOpcode(unsigned char Size, const char* Disassembly)
    {
       Opcode op;
       op.Size = Size;
