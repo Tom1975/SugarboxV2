@@ -33,6 +33,7 @@ jobs:
         target: 'desktop'
         arch: win64_msvc2019_64
         install-deps: 'true'
+        modules: qtwebsockets 
         
     - name: Install udev
       run: ${{ matrix.other_installer }}

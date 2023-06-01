@@ -26,6 +26,7 @@ jobs:
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.*'
+        modules: qtwebsockets 
         target: 'desktop'
         arch: ${{ matrix.qt_version }}
         install-deps: 'true'
