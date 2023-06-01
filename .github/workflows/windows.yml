@@ -29,10 +29,11 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '5.14.2'
+        version: '6.5.*'
         target: 'desktop'
-        arch: win32_msvc2017
+        arch: win64_msvc2019_64
         install-deps: 'true'
+        modules: qtwebsockets 
         
     - name: Install udev
       run: ${{ matrix.other_installer }}
@@ -43,7 +44,7 @@ jobs:
     - name: Configure CMake
       run: |
         echo 'Version : '  ${{ inputs.version }}
-        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -AWin32 -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
       # Build your program with the given configuration
@@ -61,7 +62,7 @@ jobs:
     - name: Archive zip
       uses: actions/upload-artifact@v3
       with:
-          name: SugarboxV2Win32
+          name: SugarboxV2
           path: ${{github.workspace}}\build\*.7z
           
           

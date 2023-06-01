@@ -63,6 +63,8 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
    // Open a menu, with the part of the tape selection
    if (tape_)
    {
+      // Create editable combobox
+
       // Add last eject position
       int last_pos = tape_->GetLastEjectPosition();
 
@@ -71,5 +73,7 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
       {
          
       }
+
+
    }
 }
