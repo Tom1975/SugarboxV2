@@ -26,8 +26,8 @@ jobs:
     - name: Prepare Environement
       run: |
         sudo apt-get update
-        sudo apt install qtbase5-dev --fix-missing
-        sudo apt-get install libqt5websockets5-dev --fix-missing
+        sudo apt install qt6-base-dev --fix-missing
+        sudo apt-get install libqt6websockets6-dev --fix-missing
         sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev --fix-missing
         sudo apt-get install libxinerama-dev libxcursor-dev --fix-missing
         sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev --fix-missing
