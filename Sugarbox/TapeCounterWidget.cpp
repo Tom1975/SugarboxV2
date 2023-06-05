@@ -183,7 +183,7 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
    if (tape_)
    {
       // Create editable combobox
-      
+      cb_.clear();
       cb_.move(x(), y());
       cb_.resize(width(), height());
 
