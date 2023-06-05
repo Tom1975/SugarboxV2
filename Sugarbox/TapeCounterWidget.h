@@ -26,6 +26,8 @@ protected:
    void mousePressEvent(QMouseEvent* event) override;
 
    void EndCounterEdit();
+   void CancelCounterEdit();
+   void SelectionChanged();
 
 private slots:
 
@@ -37,4 +39,6 @@ private:
 
    QSize size_;
    QComboBox cb_;
+
+   std::vector<unsigned int> value_indexed_;
 };

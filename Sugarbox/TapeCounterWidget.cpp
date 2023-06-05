@@ -1,8 +1,10 @@
 #include "TapeCounterWidget.h"
 
+#include <QLineEdit>
 #include <QPainter>
 #include <QResizeEvent>
 
+#include "SugarboxApp.h"
 #include "TapeWidget.h"
 
 
@@ -36,8 +38,6 @@ public:
      
       return QValidator::Invalid;
    }
-
-
 };
 
 TapeCounterWidget::TapeCounterWidget(QWidget* parent) :
@@ -49,13 +49,16 @@ TapeCounterWidget::TapeCounterWidget(QWidget* parent) :
    counter_text_.reserve(12);
    // check size value
    const QFontMetrics fm(property("font").value<QFont>());
-   size_.setWidth(fm.horizontalAdvance(counter_text_.c_str()));
+   size_.setWidth(fm.horizontalAdvance(counter_text_.c_str()) + 16);
    size_.setHeight(fm.lineSpacing());
 
    cb_.setEditable(true);
    cb_.installEventFilter(this);
    cb_.setValidator(new QDateValidator());
    cb_.hide();
+
+   connect(&cb_, &QComboBox::currentIndexChanged, this, [=]() {SelectionChanged();});
+
 }
 
 void TapeCounterWidget::SetTape(CTape* tape)
@@ -86,12 +89,29 @@ void TapeCounterWidget::Update()
 
 bool TapeCounterWidget::eventFilter(QObject* object, QEvent* event)
 {
-   if (event->type() == QEvent::FocusOut)
+   if (event->type() == QEvent::FocusOut && object == &cb_)
    {
-      if (object == &cb_ )
+      QWidget* FocusWidget = qApp->focusWidget();
+      if ( (!FocusWidget) || (!FocusWidget->parentWidget()) || FocusWidget->parentWidget()->parentWidget() != &cb_)
       {
          // close edit
          EndCounterEdit();
+      }
+   }
+   else if (event->type() == QEvent::KeyPress)
+   {
+      if ((QComboBox*)object == &cb_)
+      {
+         if (((QKeyEvent*)event)->key() == Qt::Key_Escape)
+         {
+            CancelCounterEdit();
+            return true;
+         }
+         else if (((QKeyEvent*)event)->key() == Qt::Key_Return || ((QKeyEvent*)event)->key() == Qt::Key_Enter)
+         {
+            EndCounterEdit();
+            return true;
+         }
       }
    }
    return false;
@@ -129,13 +149,32 @@ int TextToPos(const char* pBuffer)
    return 0;
 }
 
+void TapeCounterWidget::SelectionChanged()
+{
+   if (tape_)
+   {
+      tape_->SetTapePosition(value_indexed_[cb_.currentIndex()]);
+   }
+   Update();
+}
+
+void TapeCounterWidget::CancelCounterEdit()
+{
+   cb_.hide();
+   Update();
+}
+
 void TapeCounterWidget::EndCounterEdit()
 {
    // Get cb value, and convert it
-   const auto ba = cb_.itemData(cb_.currentIndex()).toString().toLocal8Bit(); // here you create a bytearray
-   int val = TextToPos(ba.constData());
+   QString str = cb_.currentText();
+   auto byte_array = str.toLocal8Bit(); // here you create a bytearray
+   const char* ptr = byte_array.constData();
+   const int val = TextToPos(ptr);
 
+   tape_->SetTapePosition(val);
    cb_.hide();
+   Update();
 }
 
 void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
@@ -154,6 +193,8 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
 
       std::string buffer;
       buffer.resize(16);
+
+      value_indexed_.resize(tape_->GetNbBlocks());
       for (int i = 0; i < tape_->GetNbBlocks(); i++)
       {
          const char* txt = tape_->GetTextBlock(i);
@@ -165,8 +206,14 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
          {
             buffer = txt;
          }
+         value_indexed_[i] = tape_->GetBlockPosition(i);
          cb_.addItem(buffer.c_str());
       }
+      // current text : current index
+      const unsigned int counter = tape_->GetCounter();
+      char buf[16];
+      sprintf(buf, ("%2.2i:%2.2i"), (counter) / 60, counter % 60);
+      cb_.setCurrentText(counter_text_.c_str());
 
       cb_.show();
       cb_.setFocus();
