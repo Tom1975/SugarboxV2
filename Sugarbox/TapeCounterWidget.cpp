@@ -57,7 +57,7 @@ TapeCounterWidget::TapeCounterWidget(QWidget* parent) :
    cb_.setValidator(new QDateValidator());
    cb_.hide();
 
-   connect(&cb_, &QComboBox::currentIndexChanged, this, [=]() {SelectionChanged();});
+   connect(&cb_, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {if (cb_.isHidden()==false)SelectionChanged(index);});
 
 }
 
@@ -82,6 +82,7 @@ void TapeCounterWidget::Update()
          sec_ = sec;
          max_ = max;
          sprintf(&counter_text_[0], ("%2.2i:%2.2i/%2.2i:%2.2i"), (sec) / 60, sec % 60, max / 60, max % 60);
+         cb_.setCurrentText(counter_text_.c_str());
          repaint();
       }
    }
@@ -149,13 +150,18 @@ int TextToPos(const char* pBuffer)
    return 0;
 }
 
-void TapeCounterWidget::SelectionChanged()
+void TapeCounterWidget::SelectionChanged(int index)
 {
    if (tape_)
    {
-      tape_->SetTapePosition(value_indexed_[cb_.currentIndex()]);
+      if (index != -1)
+      {
+         // new selection
+         tape_->SetTapePosition(value_indexed_[index]);
+         cb_.hide();
+         Update();
+      }
    }
-   Update();
 }
 
 void TapeCounterWidget::CancelCounterEdit()
@@ -167,14 +173,17 @@ void TapeCounterWidget::CancelCounterEdit()
 void TapeCounterWidget::EndCounterEdit()
 {
    // Get cb value, and convert it
-   QString str = cb_.currentText();
-   auto byte_array = str.toLocal8Bit(); // here you create a bytearray
-   const char* ptr = byte_array.constData();
-   const int val = TextToPos(ptr);
+   if (! cb_.isHidden())
+   {
+      QString str = cb_.currentText();
+      auto byte_array = str.toLocal8Bit(); // here you create a bytearray
+      const char* ptr = byte_array.constData();
+      const int val = TextToPos(ptr);
 
-   tape_->SetTapePosition(val);
-   cb_.hide();
-   Update();
+      tape_->SetTapePosition(val);
+      cb_.hide();
+      Update();
+   }
 }
 
 void TapeCounterWidget::mousePressEvent(QMouseEvent* event)

@@ -27,7 +27,7 @@ protected:
 
    void EndCounterEdit();
    void CancelCounterEdit();
-   void SelectionChanged();
+   void SelectionChanged(int index);
 
 private slots:
 
