@@ -49,7 +49,7 @@ TapeCounterWidget::TapeCounterWidget(QWidget* parent) :
    counter_text_.reserve(12);
    // check size value
    const QFontMetrics fm(property("font").value<QFont>());
-   size_.setWidth(fm.horizontalAdvance(counter_text_.c_str()) + 16);
+   size_.setWidth(fm.horizontalAdvance(counter_text_.c_str()) + 32);
    size_.setHeight(fm.lineSpacing());
 
    cb_.setEditable(true);
@@ -204,6 +204,10 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
       buffer.resize(16);
 
       value_indexed_.resize(tape_->GetNbBlocks());
+
+      const QFontMetrics fm(property("font").value<QFont>());
+      int max_size = 0;
+
       for (int i = 0; i < tape_->GetNbBlocks(); i++)
       {
          const char* txt = tape_->GetTextBlock(i);
@@ -217,13 +221,20 @@ void TapeCounterWidget::mousePressEvent(QMouseEvent* event)
          }
          value_indexed_[i] = tape_->GetBlockPosition(i);
          cb_.addItem(buffer.c_str());
+         int new_size = fm.horizontalAdvance(buffer.c_str());
+         if (new_size > max_size)
+            max_size = new_size;
       }
+
+      auto view = cb_.view();
+      view->setFixedWidth(max_size +16);
+
+
       // current text : current index
       const unsigned int counter = tape_->GetCounter();
       char buf[16];
       sprintf(buf, ("%2.2i:%2.2i"), (counter) / 60, counter % 60);
       cb_.setCurrentText(counter_text_.c_str());
-
       cb_.show();
       cb_.setFocus();
 
