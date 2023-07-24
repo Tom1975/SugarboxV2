@@ -95,6 +95,8 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    sound_mixer_->AddWav(SND_MOTOR_ON, drive_mo_wav, sizeof(seek_short_wav));
 
    disassembler_ = new Z80Desassember(emulator_engine_);
+
+   // Default: Enable SSM;
 }
 
 void Emulation::Stop()

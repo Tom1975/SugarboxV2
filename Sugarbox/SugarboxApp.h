@@ -209,5 +209,15 @@ protected:
    TapeWidget status_tape_;
    DiskWidget status_disk_;
    SoundWidget status_sound_;
+
+   // SSM
+   void EnableSSM();
+   void DisableSSM();
+   void CustomFunction(unsigned int i);
+   bool ssm_first_;
+   unsigned short ssm_last_address_;
+   unsigned char ll_;
+
+
 };
 

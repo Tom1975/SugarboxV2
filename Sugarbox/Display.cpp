@@ -2,6 +2,8 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QMouseEvent>
+#include <QImageWriter>
+#include <QPainter>
 
 #include "Display.h"
 
@@ -179,6 +181,28 @@ void CDisplay::HSync ()
 
 void CDisplay::StartSync()
 {
+
+}
+
+void CDisplay::Screenshot(const char* scr_path)
+{
+   // Take a screenshot : Last displayed
+
+   QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, QImage::Format_ARGB32);
+   QImage scr(DISP_WINDOW_X, DISP_WINDOW_Y, QImage::Format_ARGB32);
+
+   QPainter p;
+   for (int line = ORIGIN_Y; line < DISP_WINDOW_Y/2; line++)
+   {
+      p.begin(&scr);
+      p.drawImage(QRectF(0, line*2, DISP_WINDOW_X, 2),
+         img, QRectF(ORIGIN_X, line, DISP_WINDOW_X, 1),
+         Qt::AutoColor);
+      p.end();
+   }
+
+   scr.save(scr_path);
+
 
 }
 

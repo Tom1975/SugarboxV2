@@ -209,7 +209,7 @@ int SugarboxApp::RunApp()
 
    display_.Init();
    emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
-
+   EnableSSM();
    InitMenu();
 
    sound_mixer_.SetEmulation(emulation_->GetEngine());
@@ -944,4 +944,62 @@ void SugarboxApp::NotifyStop()
 {
    // call update for debugger
    debug_.Update();
+}
+
+
+void SugarboxApp::CustomFunction(unsigned int i)
+{
+   unsigned short current_addr = emulation_->GetEngine()->GetProc()->pc_;
+
+   if (current_addr == ssm_last_address_ + 2 && !ssm_first_)
+   {
+      // Create screenshot from current frame, name is generated from opcode
+      std::string crtc = std::to_string(emulation_->GetEngine()->GetCRTC()->type_crtc_);
+      std::string hh = std::to_string(i);
+      std::string ll = std::to_string(ll_);
+      std::string filename = "SUGARBOX_" + crtc + "_" + hh + ll + ".jpg";
+
+      display_.Screenshot(filename.c_str());
+      ssm_first_ = true;
+
+   }
+   else
+   {
+      // First opcode
+      ll_ = i;
+      ssm_last_address_ = current_addr;
+      ssm_first_ = false;
+   }
+
+}
+
+void SugarboxApp::EnableSSM()
+{
+   ssm_last_address_ = 0xFFFF;
+   ssm_first_ = true;
+   for (unsigned char i = 0; i < 0xFF; i++)
+   {
+      if ( (i <= 0x3F )
+         || (i >= 0x80 && i <= 0x9F)
+         || (i >= 0xA4 && i <= 0xA7)
+         || (i >= 0xAC && i <= 0xAF)
+         || (i >= 0xB4 && i <= 0xB7)
+         || (i >= 0xBC && i <= 0xBF)
+         || (i >= 0xC0 && i <= 0xEC)
+         || (i >= 0xEF && i <= 0xFD)
+         )
+      {
+         emulation_->GetEngine()->GetProc()->SetCustomOpcode<Z80::ED>(i, [=](unsigned int opcode) {CustomFunction(opcode); });
+      }
+   }
+
+}
+
+void SugarboxApp::DisableSSM()
+{
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::None>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::ED>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::CB>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::DD>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::FD>();
 }
