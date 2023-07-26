@@ -12,6 +12,8 @@
 #include "IUpdate.h"
 #include "Z80Desassember.h"
 
+#include "SCLPlayer.h"
+
 class INotifier
 {
 public:
@@ -109,6 +111,7 @@ public :
       DBG_RUN_FIXED_OP,
       DBG_STEP,
       DBG_BREAK,
+      DBG_SCRIPT
    }debug_action_;
 
    void AddNotifier(IBeakpointNotifier*);
@@ -148,7 +151,8 @@ public :
    {
       return &config_manager_;
    }
-   
+
+   void AddScript(std::filesystem::path& path);
 
 protected:
    // Listener list
@@ -183,4 +187,10 @@ protected:
    bool command_waiting_;
    std::mutex command_mutex_;
    std::string current_path_;
+
+   // Script
+   void ExecuteNextScript();
+
+   SCLPlayer script_player_;
+
 };

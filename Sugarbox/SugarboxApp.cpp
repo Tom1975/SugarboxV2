@@ -856,7 +856,20 @@ void SugarboxApp::dropEvent(QDropEvent *event)
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)
-         continue;
+      {
+         // CSL ?
+         std::filesystem::path url_path = path;
+         if (url_path.extension() == ".csl"
+            || url_path.extension() == ".Csl"
+            || url_path.extension() == ".CSL")
+         {
+            // Ok : Load as CSL 
+            emulation_->AddScript(url_path);
+            return;
+         }
+
+      }
+         
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
       list_of_types.push_back(MediaManager::MEDIA_DISK);

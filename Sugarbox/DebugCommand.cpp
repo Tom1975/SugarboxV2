@@ -1,5 +1,6 @@
 
 #include "DebugCommand.h"
+#include "Emulation.h"
 
 // Cross compilation : use stricmp / strcasecmp depending on windows / linux
 #ifndef _WIN32

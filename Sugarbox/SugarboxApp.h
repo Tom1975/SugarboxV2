@@ -25,6 +25,7 @@
 #include "FlagHandler.h"
 #include "TapeWidget.h"
 #include "DiskWidget.h"
+#include "SCLPlayer.h"
 #include "SoundWidget.h"
 
 namespace Ui {
@@ -194,6 +195,8 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
+   SCLPlayer scl_player_;
+
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;

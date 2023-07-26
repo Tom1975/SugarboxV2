@@ -170,6 +170,12 @@ void Emulation::EmulationLoop()
             // - break : Stop emulation until next command
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             break;
+
+         case DBG_SCRIPT:
+            // Script running
+            ExecuteNextScript();
+            debug_action_ = DBG_BREAK;
+            break;
          }
 
          if (old_action != debug_action_)
@@ -179,7 +185,12 @@ void Emulation::EmulationLoop()
             {
                it->NotifyStop();
             }
+         }
 
+         // Script to be run ?
+         if (script_player_.WaitingScript() )
+         {
+            debug_action_ = DBG_SCRIPT;
          }
       }
 
@@ -195,6 +206,12 @@ void Emulation::EmulationLoop()
    }
    emulator_engine_->Stop();
    emulation_stopped_ = true;
+}
+
+void Emulation::ExecuteNextScript ()
+{
+   // Is there any script left ?
+   script_player_.ExecuteNext();
 }
 
 void Emulation::Pause()
@@ -690,7 +707,7 @@ void Emulation::Run(int nb_opcodes )
    }
    else
    {
-      debug_action_ = DBG_RUN_FIXED_OP;
+      debug_action_ = DBG_RUN_FIXED_OP;   
       nb_opcode_to_run_ = nb_opcodes;
 
    }
@@ -699,4 +716,10 @@ void Emulation::Run(int nb_opcodes )
 void Emulation::AddUpdateListener(IUpdate* listener)
 {
    listeners_.push_back(listener);
+}
+
+void Emulation::AddScript(std::filesystem::path& path)
+{
+   // todo
+   
 }

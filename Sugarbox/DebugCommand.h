@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "Emulation.h"
+
+class Emulation;
 
 ////////////////////////////////////////////////////////
 // Command Interface
