@@ -720,6 +720,6 @@ void Emulation::AddUpdateListener(IUpdate* listener)
 
 void Emulation::AddScript(std::filesystem::path& path)
 {
-   // todo
+   script_player_.LoadScript(path);
    
 }

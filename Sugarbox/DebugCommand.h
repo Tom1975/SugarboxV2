@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,25 @@ public:
 protected:
    ICommandResponse* callback_;
    Emulation* emulation_;
+};
+
+class RemoteCommandFactory
+{
+public:
+   static void InitFactory(ICommandResponse* callback, Emulation* emulation);
+
+   static IRemoteCommand* GetCommand(std::string& command_name);
+
+protected:
+   static void AddCommand(IRemoteCommand* action, std::initializer_list<std::string >commands);
+
+   static Emulation* emulation_;
+   static ICommandResponse* callback_;
+   static std::map<std::string, IRemoteCommand* > function_map_;
+   static std::map<std::string, IRemoteCommand* > alternate_command_;
+   static std::map<IRemoteCommand*, std::vector<std::string>> command_list_;
+
+
 };
 
 ////////////////////////////////////////////////////////
@@ -197,3 +217,14 @@ public:
    virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled"; }
 }; 
+
+
+////////////////////////////////////////////////////////
+///  CSL Commands
+///
+class CommandCslVersion : public IRemoteCommand
+{
+public:
+   virtual bool Execute(std::vector<std::string>&);
+   virtual std::string Help() { return "csl_version <version>. Indicates the version of the CSL format to the emulator"; }
+};

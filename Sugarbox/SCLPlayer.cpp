@@ -1,21 +1,56 @@
+#include <fstream>
+
 #include "SCLPlayer.h"
+
+template <typename Out> void split(const std::string& s, char delim, Out result);
 
 SCLPlayer::SCLPlayer()
 {
+   // Init commands
+
 }
 
 SCLPlayer::~SCLPlayer()
 {
 }
 
-void SCLPlayer::AddScript(std::filesystem::path script_path)
+
+void SCLPlayer::LoadScript(std::filesystem::path& script_path)
 {
-   
+   std::ifstream f(script_path);
+   std::string line = "";
+
+   while (std::getline(f, line))
+   {
+      // Handle line
+      std::string::size_type begin = line.find_first_not_of(" \f\t\v");
+
+      // Skip blank lines
+      if (begin == std::string::npos) continue;
+      // Skip commentary
+      std::string::size_type end = line.find_first_of(";");
+      if ( end != std::string::npos)
+         line = line.substr(begin, end);
+
+      if (line.size() == 0) continue;
+
+      // Get command
+      std::vector<std::string> command_parameters;
+      split(line, ' ', std::back_inserter(command_parameters));
+
+      // Look for command
+      IRemoteCommand* command = RemoteCommandFactory::GetCommand(command_parameters[0]);
+      if (command != nullptr)
+      {
+         script_.push(Script(command, command_parameters));
+      }
+
+   }
 }
 
 void SCLPlayer::AddCommand(const char* command)
 {
-   
+
 }
 
 bool SCLPlayer::WaitingScript()
@@ -33,3 +68,4 @@ void SCLPlayer::ExecuteNext()
       script_.pop();
    }
 }
+

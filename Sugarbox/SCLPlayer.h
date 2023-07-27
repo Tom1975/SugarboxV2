@@ -10,12 +10,14 @@ public:
    SCLPlayer();
    virtual ~SCLPlayer();
 
-   void AddScript(std::filesystem::path script_path);
+   void LoadScript(std::filesystem::path& path);
+
    void AddCommand(const char* command);
 
    bool WaitingScript();
    void ExecuteNext();
 
 protected:
+
    std::queue <Script> script_;
 };

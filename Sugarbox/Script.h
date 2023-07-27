@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "DebugCommand.h"
 
 class IRemoteCommand;
@@ -9,8 +11,6 @@ class Script
 public:
    Script(IRemoteCommand* command, std::vector<std::string> parameter );
    virtual ~Script();
-
-   void LoadScript(std::filesystem::path& path);
 
    virtual void Execute();
 

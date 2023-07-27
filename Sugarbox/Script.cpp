@@ -1,4 +1,6 @@
+
 #include "Script.h"
+
 
 Script::Script(IRemoteCommand* command, std::vector<std::string> parameter) : command_(command), parameter_(parameter)
 {
@@ -12,11 +14,4 @@ void Script::Execute()
 {
    // Set the version of the script
    command_->Execute(parameter_);
-}
-
-void Script::LoadScript(std::filesystem::path& path)
-{
-   // open file
-   // Read each line
-   // Handle line
 }
