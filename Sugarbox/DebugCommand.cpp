@@ -19,81 +19,6 @@
 
 
 ////////////////////////////////////////////////////////
-/// Factory
-///
-Emulation* RemoteCommandFactory::emulation_ = nullptr;
-ICommandResponse* RemoteCommandFactory::callback_ = nullptr;
-
-std::map<std::string, IRemoteCommand* > RemoteCommandFactory::function_map_ = {};
-std::map<std::string, IRemoteCommand* > RemoteCommandFactory::alternate_command_ = {};
-std::map<IRemoteCommand*, std::vector<std::string>> RemoteCommandFactory::command_list_ = {};
-
-void RemoteCommandFactory::InitFactory(ICommandResponse* callback, Emulation* emulation)
-{
-   callback_ = callback;
-   emulation_ = emulation;
-
-   AddCommand(new CommandCslVersion(), { "csl_version" });
-   /*AddCommand(new RemoteCommandSetBreakpoint(), { "reset" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "crtc_select" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "disk_insert" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "disk_dir" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "tape_insert" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "tape_dir" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "tape_play" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "tape_stop" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "tape_rewind" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "snapshot_load" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "snapshot_dir" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "key_delay" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "key_output" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "key_from_file" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "wait" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "wait_driveonoff" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "wait_vsyncoffon" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "screenshot_name" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "screenshot_dir" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "screenshot" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "snapshot_name" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "snapshot" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "csl_load" });*/
-
-}
-
-IRemoteCommand* RemoteCommandFactory::GetCommand(std::string& command_name)
-{
-   IRemoteCommand* current_command = nullptr;
-   if (function_map_.find(command_name) != function_map_.end())
-   {
-      current_command = function_map_[command_name];
-   }
-   else if (alternate_command_.find(command_name) != alternate_command_.end())
-   {
-      current_command = alternate_command_[command_name];
-   }
-   return current_command;
-}
-
-void RemoteCommandFactory::AddCommand(IRemoteCommand* action, std::initializer_list<std::string >commands)
-{
-   action->InitCommand(callback_, emulation_);
-
-   auto it = commands.begin();
-   if (it == commands.end())
-      return;
-
-   std::vector<std::string> command_list;
-   function_map_[*it] = action;
-   command_list.push_back(*it);
-   while (++it != commands.end())
-   {
-      alternate_command_[*it] = action;
-      command_list.push_back(*it);
-   }
-   command_list_[action] = command_list;
-}
-
-////////////////////////////////////////////////////////
 /// About
 ///
 bool RemoteCommandAbout::Execute(std::vector<std::string>&)
@@ -395,15 +320,4 @@ bool RemoteCommandSetBreakpoint::Execute(std::vector<std::string>& param)
    emulation_->CreateBreakpoint(indice, sub_param);
 
    return true;
-}
-
-bool CommandCslVersion::Execute(std::vector<std::string>& param)
-{
-   if (param.size() < 3)
-   {
-      callback_->SendResponse("Error : version is mandatory");
-      return true;
-   }
-
-
 }

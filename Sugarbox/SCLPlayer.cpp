@@ -18,7 +18,7 @@ SCLPlayer::~SCLPlayer()
 void SCLPlayer::LoadScript(std::filesystem::path& script_path)
 {
    std::ifstream f(script_path);
-   std::string line = "";
+   std::string line;
 
    while (std::getline(f, line))
    {
@@ -32,14 +32,14 @@ void SCLPlayer::LoadScript(std::filesystem::path& script_path)
       if ( end != std::string::npos)
          line = line.substr(begin, end);
 
-      if (line.size() == 0) continue;
+      if (line.empty()) continue;
 
       // Get command
       std::vector<std::string> command_parameters;
       split(line, ' ', std::back_inserter(command_parameters));
 
       // Look for command
-      IRemoteCommand* command = RemoteCommandFactory::GetCommand(command_parameters[0]);
+      IScriptCommand* command = ScriptCommandFactory::GetCommand(command_parameters[0]);
       if (command != nullptr)
       {
          script_.push(Script(command, command_parameters));

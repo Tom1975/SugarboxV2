@@ -26,6 +26,7 @@
 #include "TapeWidget.h"
 #include "DiskWidget.h"
 #include "SCLPlayer.h"
+#include "Script.h"
 #include "SoundWidget.h"
 
 namespace Ui {
@@ -221,6 +222,7 @@ protected:
    unsigned short ssm_last_address_;
    unsigned char ll_;
 
+   ScriptContext script_context_;
 
 };
 
