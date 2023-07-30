@@ -4,7 +4,7 @@
 #include "Emulation.h"
 
 
-ScriptContext::ScriptContext() : emulation_(nullptr)
+ScriptContext::ScriptContext() : emulation_(nullptr), delay_(0), delay_cr_(0)
 {
    
 }
@@ -59,6 +59,16 @@ std::filesystem::path ScriptContext::GetSnapshotDir()
    return snapshot_dir_;
 }
 
+void ScriptContext::SetSnapshotName(std::string path)
+{
+   snapshot_name_ = path;
+}
+
+std::filesystem::path ScriptContext::GetSnapshotName()
+{
+   return snapshot_dir_;
+}
+
 void ScriptContext::SetScreenshotDir(std::filesystem::path path)
 {
    screenshot_dir_ = path;
@@ -69,7 +79,24 @@ std::filesystem::path ScriptContext::GetScreenshotDir()
    return screenshot_dir_;
 }
 
+void ScriptContext::SetScreenshotName(std::string path)
+{
+   screenshot_name_ = path;
+}
 
+std::filesystem::path ScriptContext::GetScreenshotName()
+{
+   return screenshot_name_;
+}
+
+void ScriptContext::SetKeyDelay(unsigned int delay, unsigned int delay_cr)
+{
+   delay_ = delay;
+   delay_cr_ = delay_cr_;
+}
+
+////////////////////////////////////////////////////////
+/// Script
 Script::Script(IScriptCommand* command, std::vector<std::string> parameter) : command_(command), parameter_(parameter)
 {
 }
@@ -107,6 +134,7 @@ void ScriptCommandFactory::InitFactory(ScriptContext* context)
    AddCommand(new CommandTapeRewind(), { "tape_rewind" });
    AddCommand(new CommandSnapshotLoad(), { "snapshot_load" });
    AddCommand(new CommandSnapshotDir(), { "snapshot_dir" });
+   AddCommand(new CommandSnapshotName(), { "snapshot_name" });
    AddCommand(new CommandKeyDelay(), { "key_delay" });
    AddCommand(new CommandKeyOutput(), { "key_output" });
    AddCommand(new CommandKeyFromFile(), { "key_from_file" });
@@ -116,7 +144,6 @@ void ScriptCommandFactory::InitFactory(ScriptContext* context)
    AddCommand(new CommandScreenshotName(), { "screenshot_name" });
    AddCommand(new CommandScreenshotDir(), { "screenshot_dir" });
    AddCommand(new CommandScreenshot(), { "screenshot" });
-   AddCommand(new CommandSnapshotName(), { "snapshot_name" });
    AddCommand(new CommandSnapshot(), { "snapshot" });
    AddCommand(new CommandCslLoad(), { "csl_load" });
 
@@ -341,6 +368,189 @@ bool CommandSnapshotDir::Execute(std::vector<std::string>& param)
    }
 
    context_->SetSnapshotDir(param[1]);
+
+   return true;
+}
+
+
+////////////////////////////////////////////////////////
+/// snapshot_name
+///
+bool CommandSnapshotName::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   context_->SetSnapshotName(param[1]);
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// key_delay 
+///
+bool CommandKeyDelay::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   unsigned int delay1, delay2;
+   char* end;
+   delay1 = strtol(param[1].c_str(), &end, 10);
+   if (param.size() == 3)
+   {
+      delay2 = strtol(param[2].c_str(), &end, 10);
+   }
+   else
+   {
+      delay2 = delay1;
+   }
+
+   context_->SetKeyDelay(delay1, delay2);
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// key_output
+///
+bool CommandKeyOutput::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// key_from_file
+///
+bool CommandKeyFromFile::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// wait
+///
+bool CommandWait::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// wait_driveonoff
+///
+bool CommandWaitDriveOnOff::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// wait_vsyncoffon
+///
+bool CommandWaitVSyncOffOn::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// screenshot_name
+///
+bool CommandScreenshotName::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   context_->SetScreenshotName(param[1]);
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// screenshot_dir
+///
+bool CommandScreenshotDir::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   context_->SetScreenshotDir(param[1]);
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// screenshot
+///
+bool CommandScreenshot::Execute(std::vector<std::string>& param)
+{
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// snapshot
+///
+bool CommandSnapshot::Execute(std::vector<std::string>& param)
+{
+   // todo
+
+   return true;
+}
+
+////////////////////////////////////////////////////////
+/// csl_load
+///
+bool CommandCslLoad::Execute(std::vector<std::string>& param)
+{
+   if (param.size() < 2)
+   {
+      return true;
+   }
+
+   // todo
 
    return true;
 }
