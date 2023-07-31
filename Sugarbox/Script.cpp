@@ -366,7 +366,10 @@ bool CommandWait::Execute(std::vector<std::string>& param)
       return true;
    }
 
-   // todo
+   // convert to number of us
+
+   unsigned int nb_us = strtol(param[1].c_str(), NULL, 10);
+   context_->GetEmulation()->GetEngine()->GetMotherboard()->DebugNew(nb_us * 4);
 
    return true;
 }
