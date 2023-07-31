@@ -132,7 +132,7 @@ bool CommandReset::Execute(std::vector<std::string>& param)
 bool CommandCrtcSelect::Execute(std::vector<std::string>& param)
 {
    
-   if (param.size() > 2)
+   if (param.size() >= 2)
    {
       CRTC::TypeCRTC type_crtc = CRTC::HD6845S;
 
