@@ -241,8 +241,6 @@ int SugarboxApp::RunApp()
    CreateActions();
    CreateStatusBar();
 
-
-
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
    // Set a map to convert scancode to key
@@ -575,6 +573,16 @@ void SugarboxApp::Eject(int drive)
    }
 }
 
+void SugarboxApp::LoadCsl()
+{
+   QString str = QFileDialog::getOpenFileName(this, tr(language_.GetString("L_FILEDIALOG_INSERT_DISK")), "", load_disk_extension_);
+   if (str.size() > 0)
+   {
+      std::filesystem::path csl_file(str.toUtf8().data());
+      emulation_->AddScript(csl_file);
+   }
+}
+
 void SugarboxApp::Insert(int drive)
 {
    if (AskForSaving(drive))
@@ -743,6 +751,8 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_EXIT, std::bind(&SugarboxApp::close, this), "L_FILE_EXIT");
    AddAction(IFunctionInterface::FN_AUTOLOAD, std::bind(&SugarboxApp::ToggleAutoload, this), "L_FN_AUTOLOAD", nullptr, std::bind(&Emulation::IsAutoloadEnabled, emulation_));
    AddAction(IFunctionInterface::FN_AUTOTYPE, std::bind(&SugarboxApp::AutoType, this), "L_FN_AUTOTYPE", std::bind(&SugarboxApp::IsSomethingInClipboard, this));
+   AddAction(IFunctionInterface::FN_CSL_LOAD, std::bind(&SugarboxApp::LoadCsl, this), "L_FN_LOADCSL", nullptr);
+   
    AddAction(IFunctionInterface::FN_CTRL_ONOFF, std::bind(&Emulation::HardReset, emulation_), "L_CONTROL_ONOFF");
    AddAction(IFunctionInterface::FN_CTRL_PAUSE, std::bind(&SugarboxApp::Pause, this), "L_CONTROL_PAUSE", nullptr, std::bind(&SugarboxApp::PauseEnabled, this));
 

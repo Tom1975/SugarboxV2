@@ -208,6 +208,17 @@ void Emulation::EmulationLoop()
    emulation_stopped_ = true;
 }
 
+void Emulation::Lock()
+{
+   command_mutex_.lock();
+}
+
+void Emulation::Unlock()
+{
+   command_mutex_.unlock();
+}
+
+
 void Emulation::ExecuteNextScript ()
 {
    // Is there any script left ?

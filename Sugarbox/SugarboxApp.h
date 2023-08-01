@@ -60,6 +60,8 @@ public:
    virtual bool FdcPresent();
    virtual bool TapePresent();
 
+   Emulation* GetEmulation() { return emulation_; }
+
    // Actions
    virtual void Pause();
    virtual bool PauseEnabled();
@@ -70,6 +72,7 @@ public:
    virtual void Eject(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
+   virtual void LoadCsl();
    virtual void TapeInsert();
    virtual void TapeSaveAs();
    virtual void SnaLoad();
@@ -196,7 +199,6 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
-   SCLPlayer scl_player_;
 
    DebugSocket* debugger_link_;
 
@@ -222,7 +224,9 @@ protected:
    unsigned short ssm_last_address_;
    unsigned char ll_;
 
+   // Script player
    ScriptContext script_context_;
+   SCLPlayer scl_player_;
 
 };
 

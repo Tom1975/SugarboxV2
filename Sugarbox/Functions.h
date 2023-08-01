@@ -27,6 +27,7 @@ public:
    {
       // File
       FN_EXIT,
+      FN_CSL_LOAD,
       FN_SNA_LOAD,
       FN_SNA_QUICK_LOAD,
       FN_SNA_SAVE,

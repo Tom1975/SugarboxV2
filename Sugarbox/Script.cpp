@@ -335,6 +335,7 @@ bool CommandKeyOutput::Execute(std::vector<std::string>& param)
    }
 
    // Paste text.
+   // todo : do it properly!
 
    context_->GetEmulation()->GetEngine()->Paste("");
 
@@ -368,8 +369,26 @@ bool CommandWait::Execute(std::vector<std::string>& param)
 
    // convert to number of us
 
-   unsigned int nb_us = strtol(param[1].c_str(), NULL, 10);
-   context_->GetEmulation()->GetEngine()->GetMotherboard()->DebugNew(nb_us * 4);
+   unsigned int nb_us = strtol(param[1].c_str(), NULL, 10) * 4;
+
+   while (nb_us > 0)
+   {
+      unsigned long tick_to_run;
+      if (nb_us > 4000*10) // 10ms
+      {
+         tick_to_run = nb_us;
+      }
+      else
+      {
+         tick_to_run = 4000 * 10;
+      }
+      context_->GetEmulation()->GetEngine()->GetMotherboard()->DebugNew(tick_to_run);
+      context_->GetEmulation()->Unlock();
+
+      nb_us -= tick_to_run;
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      context_->GetEmulation()->Lock();
+   }
 
    return true;
 }

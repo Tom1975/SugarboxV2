@@ -28,20 +28,35 @@ int main(int argc, char *argv[])
    QApplication app(argc, argv);
 
    app.setStyle(new MenuStyle());
-   QCoreApplication::setOrganizationName("Amiga");
-   QCoreApplication::setApplicationName("Amiga");
-   QCoreApplication::setApplicationVersion(QT_VERSION_STR);
+   QCoreApplication::setOrganizationName("Sugarbox");
+   QCoreApplication::setApplicationName("Sugarbox");
+   QCoreApplication::setApplicationVersion("2.0.1");
    QCommandLineParser parser;
    parser.setApplicationDescription(QCoreApplication::applicationName());
    parser.addHelpOption();
    parser.addVersionOption();
-   parser.addPositionalArgument("file", "The file to open.");
+
+   QCommandLineOption cslFileOption(QStringList() << "s" << "csl",
+      QCoreApplication::translate("main", "Launch emulation and run <csl> script"),
+      QCoreApplication::translate("main", "csl"));
+
+   parser.addOption(cslFileOption);
+
    parser.process(app);
+   qDebug() << parser.values(cslFileOption);
 
    SugarboxApp mainWin;
 
    mainWin.show();
    mainWin.RunApp();
-   
+
+   // Handle options
+   if (parser.isSet(cslFileOption))
+   {
+      std::filesystem::path csl_path(parser.values(cslFileOption)[0].toUtf8().data());
+      mainWin.GetEmulation()->AddScript(csl_path);
+
+   }
+
    return app.exec();
 }

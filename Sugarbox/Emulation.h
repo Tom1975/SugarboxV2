@@ -154,6 +154,9 @@ public :
 
    void AddScript(std::filesystem::path& path);
 
+   void Lock();
+   void Unlock();
+
 protected:
    // Listener list
    std::vector< IUpdate*> listeners_;
