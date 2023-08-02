@@ -165,6 +165,8 @@ bool CommandDiskInsert::Execute(std::vector<std::string>& param)
    }
 
    std::filesystem::path p = context_->GetDriveDir();
+   // remove quotes
+   param[param_name].erase(std::remove(param[param_name].begin(), param[param_name].end(), '"'), param[param_name].end());
    p += param[param_name];
    context_->GetEmulation()->GetEngine()->LoadDisk(p.string().c_str(), drive);
    

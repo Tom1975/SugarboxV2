@@ -60,7 +60,7 @@ bool SCLPlayer::WaitingScript()
 
 void SCLPlayer::ExecuteNext()
 {
-   while (!script_.empty())
+   if(!script_.empty())
    {
       auto script = script_.front();
 
