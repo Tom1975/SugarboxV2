@@ -49,148 +49,157 @@ protected:
 };
 
 
+class CommandGenericType : public IScriptCommand
+{
+public:
+   virtual int GetNextKey(std::string& line, int index, std::vector<char>& next);
+   virtual void TypeLineOfText(std::string& line);
+   virtual void Wait(unsigned int nb_us);
+
+};
+
 ////////////////////////////////////////////////////////
 ///  CSL Commands
 ///
-class CommandCslVersion : public IScriptCommand
+class CommandCslVersion : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandReset : public IScriptCommand
+class CommandReset : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandCrtcSelect : public IScriptCommand
+class CommandCrtcSelect : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandDiskInsert : public IScriptCommand
+class CommandDiskInsert : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandDiskDir : public IScriptCommand
+class CommandDiskDir : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandTapeInsert : public IScriptCommand
+class CommandTapeInsert : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandTapeDir : public IScriptCommand
+class CommandTapeDir : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandTapePlay : public IScriptCommand
+class CommandTapePlay : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandTapeStop : public IScriptCommand
+class CommandTapeStop : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandTapeRewind : public IScriptCommand
+class CommandTapeRewind : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandSnapshotLoad : public IScriptCommand
+class CommandSnapshotLoad : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandSnapshotDir : public IScriptCommand
+class CommandSnapshotDir : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandKeyDelay: public IScriptCommand
+class CommandKeyDelay: public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandKeyOutput : public IScriptCommand
+class CommandKeyOutput : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandKeyFromFile : public IScriptCommand
+class CommandKeyFromFile : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandWait : public IScriptCommand
+class CommandWait : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandWaitDriveOnOff : public IScriptCommand
+class CommandWaitDriveOnOff : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandWaitVSyncOffOn: public IScriptCommand
+class CommandWaitVSyncOffOn: public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandScreenshotName : public IScriptCommand
+class CommandScreenshotName : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandScreenshotDir : public IScriptCommand
+class CommandScreenshotDir : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandScreenshot : public IScriptCommand
+class CommandScreenshot : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandSnapshotName : public IScriptCommand
+class CommandSnapshotName : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandSnapshot : public IScriptCommand
+class CommandSnapshot : public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);
 };
 
-class CommandCslLoad: public IScriptCommand
+class CommandCslLoad: public CommandGenericType
 {
 public:
    virtual bool Execute(std::vector<std::string>&);

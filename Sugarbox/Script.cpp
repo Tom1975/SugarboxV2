@@ -304,28 +304,122 @@ bool CommandSnapshotName::Execute(std::vector<std::string>& param)
 ///
 bool CommandKeyDelay::Execute(std::vector<std::string>& param)
 {
-   if (param.size() < 2)
+   if (param.size() < 3)
    {
       return true;
    }
 
-   unsigned int delay1, delay2;
+   unsigned int delay1, delay2, delay3;
    char* end;
    delay1 = strtol(param[1].c_str(), &end, 10);
-   if (param.size() == 3)
+   delay2 = strtol(param[2].c_str(), &end, 10);
+   if (param.size() == 4)
    {
-      delay2 = strtol(param[2].c_str(), &end, 10);
+      delay3 = strtol(param[3].c_str(), &end, 10);
    }
    else
    {
-      delay2 = delay1;
+      delay3 = delay2;
    }
 
-   context_->SetKeyDelay(delay1, delay2);
+   context_->SetKeyDelay(delay1, delay2, delay3);
 
    return true;
 }
 
+////////////////////////////////////////////////////////
+/// Generic text output
+int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<char>& next)
+{
+   int return_index = -1;
+   if ( index < line.size())
+   {
+      if (strcmp( &line[index],"\\(") == 0)
+      {
+         auto endseq = std::find(line.begin()+index, line.end(), ')' );
+         std::string spec = line.substr(index, endseq - line.begin() + index);
+         // todo
+         switch (spec)
+         {
+         case "\(ESC)":
+            
+            break;
+         default:
+            return return_index;
+            break;
+         }
+         return_index = index + spec.size();
+      }
+      else if (line[index] == '\{')
+      {
+         auto endseq = std::find(line.begin() + index, line.end(), '}');
+         std::string spec = line.substr(index, endseq - line.begin() + index);
+         if (spec.size()>0)
+         {
+            //todo
+         }
+      }
+      else
+      {
+         next.push_back(line[index++]);
+      }
+   }
+
+   return return_index;
+}
+
+void CommandGenericType::TypeLineOfText(std::string& line)
+{
+   // For each character :
+   int index = 0;
+   std::vector<char> next_char;
+   index = GetNextKey(line, index, next_char);
+   while (index != -1)
+   {
+      
+      // Press the key
+      for (auto& it : next_char)
+      {
+         context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharPressed(it);
+      }
+      
+      // wait
+      Wait(context_->GetKeyPressDelay());
+
+      // unpress the key
+      for (auto& it : next_char)
+      {
+         context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharReleased(it);
+      }
+      
+      // wait again
+      // wait
+      Wait(context_->GetKeyDelay());
+
+   }
+}
+
+void CommandGenericType::Wait(unsigned int nb_us)
+{
+   while (nb_us > 0)
+   {
+      unsigned long tick_to_run;
+      if (nb_us > 4000 * 10) // 10ms
+      {
+         tick_to_run = nb_us;
+      }
+      else
+      {
+         tick_to_run = 4000 * 10;
+      }
+      context_->GetEmulation()->GetEngine()->GetMotherboard()->DebugNew(tick_to_run);
+      context_->GetEmulation()->Unlock();
+
+      nb_us -= tick_to_run;
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      context_->GetEmulation()->Lock();
+   }
+}
 ////////////////////////////////////////////////////////
 /// key_output
 ///
@@ -336,10 +430,11 @@ bool CommandKeyOutput::Execute(std::vector<std::string>& param)
       return true;
    }
 
-   // Paste text.
-   // todo : do it properly!
+   // Paste text : Extract what's within quotes
+   std::string line = param[1];
+   line.erase(std::remove(line.begin(), line.end(), '\''), line.end());
 
-   context_->GetEmulation()->GetEngine()->Paste("");
+   TypeLineOfText(line);
 
    return true;
 }
@@ -373,24 +468,7 @@ bool CommandWait::Execute(std::vector<std::string>& param)
 
    unsigned int nb_us = strtol(param[1].c_str(), NULL, 10) * 4;
 
-   while (nb_us > 0)
-   {
-      unsigned long tick_to_run;
-      if (nb_us > 4000*10) // 10ms
-      {
-         tick_to_run = nb_us;
-      }
-      else
-      {
-         tick_to_run = 4000 * 10;
-      }
-      context_->GetEmulation()->GetEngine()->GetMotherboard()->DebugNew(tick_to_run);
-      context_->GetEmulation()->Unlock();
-
-      nb_us -= tick_to_run;
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      context_->GetEmulation()->Lock();
-   }
+   Wait(nb_us);
 
    return true;
 }

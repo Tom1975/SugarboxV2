@@ -20,7 +20,7 @@ public:
    void SetScreenshotDir(std::filesystem::path path);
    void SetScreenshotName(std::string path);
 
-   void SetKeyDelay(unsigned int delay, unsigned int delay_cr);
+   void SetKeyDelay(unsigned int delay_press, unsigned int delay, unsigned int delay_cr);
 
    Emulation* GetEmulation();
    std::filesystem::path GetDriveDir();
@@ -29,6 +29,11 @@ public:
    std::filesystem::path GetSnapshotName();
    std::filesystem::path GetScreenshotDir();
    std::filesystem::path GetScreenshotName();
+
+   unsigned int GetKeyPressDelay() { return delay_press_; }
+   unsigned int GetKeyDelay() { return delay_; }
+   unsigned int GetKeyDelayCR() { return delay_cr_; }
+
 
    
 
@@ -42,6 +47,7 @@ protected:
    std::filesystem::path screenshot_dir_;
    std::string screenshot_name_;
 
+   unsigned int delay_press_;
    unsigned int delay_;
    unsigned int delay_cr_;
 };

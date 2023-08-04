@@ -87,8 +87,9 @@ std::filesystem::path ScriptContext::GetScreenshotName()
    return screenshot_name_;
 }
 
-void ScriptContext::SetKeyDelay(unsigned int delay, unsigned int delay_cr)
+void ScriptContext::SetKeyDelay(unsigned int delay_press, unsigned int delay, unsigned int delay_cr)
 {
    delay_ = delay;
+   delay_press_ = delay_press;
    delay_cr_ = delay_cr_;
 }
