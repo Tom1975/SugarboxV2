@@ -1,4 +1,3 @@
-
 #include "Script.h"
 
 #include "Emulation.h"
@@ -26,10 +25,47 @@ void Script::Execute()
 ScriptContext* ScriptCommandFactory::context_= nullptr;
 
 std::map<std::string, IScriptCommand* > ScriptCommandFactory::function_map_ = {};
+std::map<std::string, Qt::Key> ScriptCommandFactory::Escape_map_ = {};
+
+
+void ScriptCommandFactory::AddScanCode(std::string key, ScriptContext* context, unsigned int line, unsigned int column)
+{
+   Escape_map_[key] = static_cast<Qt::Key>(context->GetEmulation()->GetKeyboardHandler()->GetScanCode(line, column));
+}
 
 void ScriptCommandFactory::InitFactory(ScriptContext* context)
 {
    context_ = context;
+
+   AddScanCode("\\(ESC)", context, 8, 2);
+   AddScanCode("\\(TAB)", context, 8, 4);
+   AddScanCode("\\(CAP)", context, 8, 6);
+   AddScanCode("\\(SHI)", context, 2, 5);
+   AddScanCode("\\(CTR)", context, 2, 7);
+   AddScanCode("\\(COP)", context, 2, 1);
+   AddScanCode("\\(CLR)", context, 2, 0);
+   AddScanCode("\\(DEL)", context, 9, 7);
+   AddScanCode("\\(RET)", context, 2, 2);
+   AddScanCode("\\(ENT)", context, 0, 6);
+   AddScanCode("\\(ARL)", context, 1, 0);
+   AddScanCode("\\(ARR)", context, 0, 1);
+   AddScanCode("\\(ARU)", context, 0, 0);
+   AddScanCode("\\(ARD)", context, 0, 2);
+   AddScanCode("\\(F0)", context, 1, 7);
+   AddScanCode("\\(F1)", context, 1, 5);
+   AddScanCode("\\(F2)", context, 1, 6);
+   AddScanCode("\\(F3)", context, 0, 5);
+   AddScanCode("\\(F4)", context, 2, 4);
+   AddScanCode("\\(F5)", context, 1, 4);
+   AddScanCode("\\(F6)", context, 0, 4);
+   AddScanCode("\\(F7)", context, 1, 2);
+   AddScanCode("\\(F8)", context, 1, 3);
+   AddScanCode("\\(F9)", context, 0, 3);
+   AddScanCode("\\({)", context, 2, 1);
+   AddScanCode("\\(})", context, 2, 3);
+   AddScanCode("\\(\\)", context, 2, 6);
+   AddScanCode("\\(')", context, 5, 1);
+
 
    AddCommand(new CommandCslVersion(), { "csl_version" });
    AddCommand(new CommandReset(), { "reset" });
@@ -152,7 +188,7 @@ bool CommandCrtcSelect::Execute(std::vector<std::string>& param)
 }
 
 ////////////////////////////////////////////////////////
-/// disk_insert <drive> <’file with extension’ >
+/// disk_insert <drive> <'file with extension'>
 ///
 bool CommandDiskInsert::Execute(std::vector<std::string>& param)
 {
@@ -175,7 +211,7 @@ bool CommandDiskInsert::Execute(std::vector<std::string>& param)
 }
 
 ////////////////////////////////////////////////////////
-/// disk_dir <’disk directory’> 
+/// disk_dir <'disk directory'> 
 ///
 bool CommandDiskDir::Execute(std::vector<std::string>& param)
 {
@@ -192,7 +228,7 @@ bool CommandDiskDir::Execute(std::vector<std::string>& param)
 }
 
 ////////////////////////////////////////////////////////
-/// tape_insert <’file with extension’>
+/// tape_insert <'file with extension'>
 ///
 bool CommandTapeInsert::Execute(std::vector<std::string>& param)
 {
@@ -211,7 +247,7 @@ bool CommandTapeInsert::Execute(std::vector<std::string>& param)
 
 
 ////////////////////////////////////////////////////////
-/// tape_dir <’tape directory’> 
+/// tape_dir <'tape directory'> 
 ///
 bool CommandTapeDir::Execute(std::vector<std::string>& param)
 {
@@ -329,39 +365,40 @@ bool CommandKeyDelay::Execute(std::vector<std::string>& param)
 
 ////////////////////////////////////////////////////////
 /// Generic text output
-int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<char>& next)
+int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<unsigned int>& next)
 {
    int return_index = -1;
    if ( index < line.size())
    {
-      if (strcmp( &line[index],"\\(") == 0)
+      if (strncmp( &line[index],"\\(", 2) == 0)
       {
          auto endseq = std::find(line.begin()+index, line.end(), ')' );
          std::string spec = line.substr(index, endseq - line.begin() + index);
-         // todo
-         switch (spec)
+
+         if (ScriptCommandFactory::Escape_map_.find(spec) != ScriptCommandFactory::Escape_map_.end())
          {
-         case "\(ESC)":
-            
-            break;
-         default:
+            next.push_back(ScriptCommandFactory::Escape_map_[spec]);
+         }
+         else
+         {
             return return_index;
-            break;
          }
          return_index = index + spec.size();
       }
-      else if (line[index] == '\{')
+      else if (strncmp( &line[index], "\\{", 2) == 0)
       {
          auto endseq = std::find(line.begin() + index, line.end(), '}');
          std::string spec = line.substr(index, endseq - line.begin() + index);
          if (spec.size()>0)
          {
             //todo
+            return_index = index + spec.size();
          }
       }
       else
       {
          next.push_back(line[index++]);
+         return_index = index;
       }
    }
 
@@ -372,15 +409,22 @@ void CommandGenericType::TypeLineOfText(std::string& line)
 {
    // For each character :
    int index = 0;
-   std::vector<char> next_char;
+   std::vector<unsigned int> next_char;
    index = GetNextKey(line, index, next_char);
    while (index != -1)
    {
-      
       // Press the key
       for (auto& it : next_char)
       {
-         context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharPressed(it);
+         if ( (it & 0xFFFFFF00) == 0)
+         {
+            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharPressed(it);
+         }
+         else
+         {
+            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->SendScanCode(it&0xFFFF, true);
+         }
+         
       }
       
       // wait
@@ -396,6 +440,8 @@ void CommandGenericType::TypeLineOfText(std::string& line)
       // wait
       Wait(context_->GetKeyDelay());
 
+      next_char.clear();
+      index = GetNextKey(line, index, next_char);
    }
 }
 

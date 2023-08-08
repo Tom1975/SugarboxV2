@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtWidgets>
 #include <filesystem>
 
 #include "DebugCommand.h"
@@ -40,8 +41,10 @@ public:
    static void InitFactory(ScriptContext* context);
 
    static IScriptCommand* GetCommand(std::string& command_name);
+   static std::map<std::string, Qt::Key> Escape_map_;
 
 protected:
+   static void AddScanCode(std::string key, ScriptContext* context, unsigned int line, unsigned int column);
    static void AddCommand(IScriptCommand* action, std::initializer_list<std::string >commands);
 
    static ScriptContext* context_;
@@ -52,7 +55,7 @@ protected:
 class CommandGenericType : public IScriptCommand
 {
 public:
-   virtual int GetNextKey(std::string& line, int index, std::vector<char>& next);
+   virtual int GetNextKey(std::string& line, int index, std::vector<unsigned int>& next);
    virtual void TypeLineOfText(std::string& line);
    virtual void Wait(unsigned int nb_us);
 

@@ -18,9 +18,6 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
 
    emulation_->AddNotifierDbg(this);
 
-   script_context_.Init(emulation_);
-   ScriptCommandFactory::InitFactory(&script_context_);
-
    connect(&display_, &CDisplay::FrameIsReady, this, &SugarboxApp::Display);
 
    setWindowTitle(tr("SugarboxV2"));
@@ -230,6 +227,9 @@ int SugarboxApp::RunApp()
 
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
+
+   script_context_.Init(emulation_);
+   ScriptCommandFactory::InitFactory(&script_context_);
 
    // Get current directory, and add the CONF to it
    current_path_exe /= "CONF";
