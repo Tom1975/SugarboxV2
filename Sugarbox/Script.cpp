@@ -422,7 +422,7 @@ void CommandGenericType::TypeLineOfText(std::string& line)
          }
          else
          {
-            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->SendScanCode(it&0xFFFF, true);
+            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->SendScanCode(it, true);
          }
          
       }
@@ -433,7 +433,14 @@ void CommandGenericType::TypeLineOfText(std::string& line)
       // unpress the key
       for (auto& it : next_char)
       {
-         context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharReleased(it);
+         if ((it & 0xFFFFFF00) == 0)
+         {
+            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->CharReleased(it);
+         }
+         else
+         {
+            context_->GetEmulation()->GetEngine()->GetKeyboardHandler()->SendScanCode(it, false);
+         }
       }
       
       // wait again
