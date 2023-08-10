@@ -42,6 +42,7 @@ public :
    virtual int* GetVideoBuffer (int y) ;
    virtual void Reset () ;
    virtual void Screenshot (const char* scr_path);
+   virtual void Screenshot();
    virtual void ScreenshotEveryFrame(int bSetOn) {};
    virtual bool IsEveryFrameScreened() {
       return false;
