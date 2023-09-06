@@ -457,7 +457,7 @@ void CommandGenericType::Wait(unsigned int nb_us)
    while (nb_us > 0)
    {
       unsigned long tick_to_run;
-      if (nb_us > 4000 * 10) // 10ms
+      if (nb_us < 4000 * 10) // 10ms
       {
          tick_to_run = nb_us;
       }
