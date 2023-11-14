@@ -7,12 +7,27 @@
 #include "Snapshot.h"
 #include "ConfigurationManager.h"
 #include "ISound.h"
-#include "Inotify.h"
+#include "Inotify.h" 
 #include "ALSoundMixer.h"
 #include "IUpdate.h"
 #include "Z80Desassember.h"
 
 #include "SCLPlayer.h"
+
+
+class Sugarboxinitialisation
+{
+public:
+   Sugarboxinitialisation();
+   virtual ~Sugarboxinitialisation();
+
+   // Element of configuration
+   bool _debug_start;
+   std::string _hardware_configuration;
+   std::filesystem::path _script_to_run;
+   std::filesystem::path _cart_inserted;
+
+};
 
 class INotifier
 {
@@ -60,7 +75,7 @@ public :
    virtual void DiskRunning(bool on);
    virtual void TrackChanged(int nb_tracks);
 
-   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path);
+   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, Sugarboxinitialisation& init);
    virtual void Stop();
    virtual void HardReset();
    virtual void Pause();
@@ -151,6 +166,9 @@ public :
    {
       return &config_manager_;
    }
+   
+   void ChangeConfiguration(const char* config_name);
+
 
    void AddScript(std::filesystem::path& path);
 

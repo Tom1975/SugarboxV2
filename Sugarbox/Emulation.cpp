@@ -64,7 +64,7 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeed();
 }
 
-void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path)
+void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, Sugarboxinitialisation& init)
 {
    sound_mixer_ = sound_mixer;
    current_path_ = current_path;
@@ -733,4 +733,12 @@ void Emulation::AddScript(std::filesystem::path& path)
 {
    script_player_.LoadScript(path);
    
+}
+
+void Emulation::ChangeConfiguration (const char* config_name)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->LoadConfiguration(config_name);
+   emulator_engine_->UpdateFromSettings();
 }

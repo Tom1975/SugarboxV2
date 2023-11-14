@@ -7,6 +7,20 @@
 #include <QMouseEvent>
 
 /////////////////////////////////////
+// Sugarboxinitialisation
+
+Sugarboxinitialisation::Sugarboxinitialisation():
+   _debug_start(false)
+{
+
+}
+
+Sugarboxinitialisation::~Sugarboxinitialisation()
+{
+
+}
+
+/////////////////////////////////////
 // SugarbonApp
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
@@ -193,7 +207,7 @@ void SugarboxApp::InitSettings()
    debug_.SetSettings(&settings_);
 }
 
-int SugarboxApp::RunApp()
+int SugarboxApp::RunApp(Sugarboxinitialisation& init)
 {
    // Settings
    InitSettings();
@@ -208,7 +222,7 @@ int SugarboxApp::RunApp()
    SizeChanged(window_width_, window_height_);
 
    display_.Init();
-   emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
+   emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str(), init);
    EnableSSM();
    InitMenu();
 

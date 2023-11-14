@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <map>
+#include <filesystem>
 
 #include <QMainWindow>
 #include <QtWidgets>
@@ -33,7 +34,6 @@ namespace Ui {
    class SugarboxApp;
 }
 
-
 class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped, public ITapeInsertionCallback
 {
    Q_OBJECT
@@ -42,7 +42,7 @@ public:
    explicit SugarboxApp(QWidget *parent = 0);
    virtual ~SugarboxApp();
 
-   int RunApp();
+   int RunApp(Sugarboxinitialisation& init);
 
    // Actions initialization
    void InitAllActions();

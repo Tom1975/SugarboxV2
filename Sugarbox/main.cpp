@@ -36,26 +36,71 @@ int main(int argc, char *argv[])
    parser.addHelpOption();
    parser.addVersionOption();
 
+
+   // Configuration
+   QCommandLineOption configTypeOption(QStringList() << "cfg" << "config",
+      QCoreApplication::translate("main", "Select <configuration> to load"),
+      QCoreApplication::translate("main", "configuration name"));
+   parser.addOption(configTypeOption);
+
+    
+   // CSL file
    QCommandLineOption cslFileOption(QStringList() << "s" << "csl",
       QCoreApplication::translate("main", "Launch emulation and run <csl> script"),
       QCoreApplication::translate("main", "csl"));
-
    parser.addOption(cslFileOption);
+
+   // Cartridge 
+   QCommandLineOption cartOption(QStringList() << "cart" << "cartridge",
+      QCoreApplication::translate("main", "<path> of the cartridge to insert"),
+      QCoreApplication::translate("main", "path"));
+   parser.addOption(cartOption);
+
+   // Start with debugger on
+   QCommandLineOption debugOnStart(QStringList() << "d" << "debug",
+      QCoreApplication::translate("main", "Start with debugger on and break."));
+   parser.addOption(debugOnStart);
 
    parser.process(app);
    qDebug() << parser.values(cslFileOption);
 
+   Sugarboxinitialisation init;
+
    SugarboxApp mainWin;
 
    mainWin.show();
-   mainWin.RunApp();
 
+   init._debug_start = parser.isSet(debugOnStart);
+   init._hardware_configuration = parser.isSet(configTypeOption) ? parser.values(configTypeOption)[0].toUtf8().data() : "";
+   init._script_to_run = parser.isSet(cslFileOption) ? parser.values(cslFileOption)[0].toUtf8().data() : "";
+   init._cart_inserted = parser.isSet(cartOption) ? parser.values(cartOption)[0].toUtf8().data() : "";
+
+   mainWin.RunApp(init);
+
+   /////////////////////////////////
    // Handle options
+   /////////////////////////////////
+
+   /////////////////////////////////
+   // CSL file
    if (parser.isSet(cslFileOption))
    {
       std::filesystem::path csl_path(parser.values(cslFileOption)[0].toUtf8().data());
       mainWin.GetEmulation()->AddScript(csl_path);
+   }
 
+   /////////////////////////////////
+   // Hardware configuration
+   if (parser.isSet(configTypeOption))
+   {
+      mainWin.GetEmulation()->ChangeConfiguration(parser.values(configTypeOption)[0].toUtf8());
+   }
+
+   /////////////////////////////////
+   // Cartridge
+   if (parser.isSet(cartOption))
+   {
+      mainWin.GetEmulation()->LoadCpr(parser.values(cartOption)[0].toUtf8());
    }
 
    return app.exec();
