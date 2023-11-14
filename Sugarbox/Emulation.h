@@ -15,11 +15,11 @@
 #include "SCLPlayer.h"
 
 
-class Sugarboxinitialisation
+class SugarboxInitialisation
 {
 public:
-   Sugarboxinitialisation();
-   virtual ~Sugarboxinitialisation();
+   SugarboxInitialisation();
+   virtual ~SugarboxInitialisation();
 
    // Element of configuration
    bool _debug_start;
@@ -75,7 +75,7 @@ public :
    virtual void DiskRunning(bool on);
    virtual void TrackChanged(int nb_tracks);
 
-   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, Sugarboxinitialisation& init);
+   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init);
    virtual void Stop();
    virtual void HardReset();
    virtual void Pause();

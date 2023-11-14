@@ -9,13 +9,13 @@
 /////////////////////////////////////
 // Sugarboxinitialisation
 
-Sugarboxinitialisation::Sugarboxinitialisation():
+SugarboxInitialisation::SugarboxInitialisation():
    _debug_start(false)
 {
 
 }
 
-Sugarboxinitialisation::~Sugarboxinitialisation()
+SugarboxInitialisation::~SugarboxInitialisation()
 {
 
 }
@@ -207,7 +207,7 @@ void SugarboxApp::InitSettings()
    debug_.SetSettings(&settings_);
 }
 
-int SugarboxApp::RunApp(Sugarboxinitialisation& init)
+int SugarboxApp::RunApp(SugarboxInitialisation& init)
 {
    // Settings
    InitSettings();

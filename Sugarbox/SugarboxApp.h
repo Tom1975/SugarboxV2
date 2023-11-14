@@ -42,7 +42,7 @@ public:
    explicit SugarboxApp(QWidget *parent = 0);
    virtual ~SugarboxApp();
 
-   int RunApp(Sugarboxinitialisation& init);
+   int RunApp(SugarboxInitialisation& init);
 
    // Actions initialization
    void InitAllActions();

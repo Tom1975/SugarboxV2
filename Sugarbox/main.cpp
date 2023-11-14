@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
    parser.process(app);
    qDebug() << parser.values(cslFileOption);
 
-   Sugarboxinitialisation init;
+   SugarboxInitialisation init;
 
    SugarboxApp mainWin;
 
