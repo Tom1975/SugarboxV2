@@ -80,13 +80,10 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    emulator_engine_->SetSettings(emulator_settings_);
    emulator_engine_->SetNotifier(this);
 
-   emulator_engine_->LoadConfiguration("Current", "Sugarbox.ini");
+   emulator_engine_->LoadConfiguration("Current", "Sugarbox.ini", &init);
    emulator_engine_->GetMem()->Initialisation();
    // Update computer
    emulator_engine_->Reinit();
-
-   running_thread_ = true;
-   worker_thread_ = new std::thread(RunLoop, this);
 
    sound_mixer_->AddWav(SND_SEEK_SHORT, seek_short_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_SEEK_LONG, seek_long_wav, sizeof(seek_short_wav));
@@ -97,6 +94,12 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    disassembler_ = new Z80Desassember(emulator_engine_);
 
    // Default: Enable SSM;
+   // 
+   // 
+   // Start thread
+   running_thread_ = true;
+   worker_thread_ = new std::thread(RunLoop, this);
+
 }
 
 void Emulation::Stop()

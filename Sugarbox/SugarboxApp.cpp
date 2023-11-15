@@ -7,20 +7,6 @@
 #include <QMouseEvent>
 
 /////////////////////////////////////
-// Sugarboxinitialisation
-
-SugarboxInitialisation::SugarboxInitialisation():
-   _debug_start(false)
-{
-
-}
-
-SugarboxInitialisation::~SugarboxInitialisation()
-{
-
-}
-
-/////////////////////////////////////
 // SugarbonApp
 
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),

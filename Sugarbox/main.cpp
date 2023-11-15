@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
       QCoreApplication::translate("main", "path"));
    parser.addOption(cartOption);
 
-   // Start with debugger on
+   // Debugger ON
    QCommandLineOption debugOnStart(QStringList() << "d" << "debug",
       QCoreApplication::translate("main", "Start with debugger on and break."));
    parser.addOption(debugOnStart);
@@ -76,32 +76,6 @@ int main(int argc, char *argv[])
    init._cart_inserted = parser.isSet(cartOption) ? parser.values(cartOption)[0].toUtf8().data() : "";
 
    mainWin.RunApp(init);
-
-   /////////////////////////////////
-   // Handle options
-   /////////////////////////////////
-
-   /////////////////////////////////
-   // CSL file
-   if (parser.isSet(cslFileOption))
-   {
-      std::filesystem::path csl_path(parser.values(cslFileOption)[0].toUtf8().data());
-      mainWin.GetEmulation()->AddScript(csl_path);
-   }
-
-   /////////////////////////////////
-   // Hardware configuration
-   if (parser.isSet(configTypeOption))
-   {
-      mainWin.GetEmulation()->ChangeConfiguration(parser.values(configTypeOption)[0].toUtf8());
-   }
-
-   /////////////////////////////////
-   // Cartridge
-   if (parser.isSet(cartOption))
-   {
-      mainWin.GetEmulation()->LoadCpr(parser.values(cartOption)[0].toUtf8());
-   }
 
    return app.exec();
 }
