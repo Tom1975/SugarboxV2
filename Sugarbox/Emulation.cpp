@@ -93,12 +93,6 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
 
    disassembler_ = new Z80Desassember(emulator_engine_);
 
-   // Default: Enable SSM;
-   if (!init._script_to_run.empty())
-   {
-      AddScript(init._script_to_run);
-   }
-    
    // Start thread
    running_thread_ = true;
    worker_thread_ = new std::thread(RunLoop, this);

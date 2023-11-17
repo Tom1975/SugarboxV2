@@ -241,6 +241,13 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    CreateActions();
    CreateStatusBar();
 
+   // Default: Enable SSM;
+   if (!init._script_to_run.empty())
+   {
+      emulation_->AddScript(init._script_to_run);
+   }
+
+
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
    // Set a map to convert scancode to key
