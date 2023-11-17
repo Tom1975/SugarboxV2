@@ -399,7 +399,7 @@ int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<uns
       }
       else
       {
-         next.push_back(line[index++]);
+         next.push_back((int)line[index++]&0xFF);
          return_index = index;
       }
    }

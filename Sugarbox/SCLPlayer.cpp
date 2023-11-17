@@ -36,7 +36,39 @@ void SCLPlayer::LoadScript(std::filesystem::path& script_path)
 
       // Get command
       std::vector<std::string> command_parameters;
-      split(line, ' ', std::back_inserter(command_parameters));
+
+      std::string current_parameter;
+      char current_delim = ' ';
+      for (auto& c : line)
+      {
+         if (c == ';')
+         {
+            break;
+         }
+         if (c == current_delim)
+         {
+            // New 
+            if (current_parameter.size() > 0)
+               command_parameters.push_back(current_parameter);
+            current_parameter.clear();
+            current_delim = ' ';
+         }
+         else if (c == '\'' && current_parameter.size() == 0)
+         {
+            current_delim = '\'';
+         }
+         else if (c == '\"' && current_parameter.size() == 0)
+         {
+            current_delim = '\"';
+         }
+         else
+         {
+            current_parameter += c;
+         }
+      }
+      // Comment : no more parameter to handle
+      if (current_parameter.size() > 0)
+         command_parameters.push_back(current_parameter);
 
       // Look for command
       IScriptCommand* command = ScriptCommandFactory::GetCommand(command_parameters[0]);
