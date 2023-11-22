@@ -1,8 +1,9 @@
 
 #include "ScriptContext.h"
 #include "Emulation.h"
+#include "Screen.h"
 
-ScriptContext::ScriptContext() : emulation_(nullptr), delay_(0), delay_cr_(0)
+ScriptContext::ScriptContext() : emulation_(nullptr), display_(nullptr), delay_(0), delay_cr_(0)
 {
    
 }
@@ -12,9 +13,10 @@ ScriptContext::~ScriptContext()
    
 }
 
-void ScriptContext::Init(Emulation* emulation)
+void ScriptContext::Init(Emulation* emulation, IDisplay* display)
 {
    emulation_ = emulation;
+   display_ = display;
 }
 
 void ScriptContext::SetVersion(const std::string& version)
@@ -25,6 +27,11 @@ void ScriptContext::SetVersion(const std::string& version)
 Emulation* ScriptContext::GetEmulation()
 {
    return emulation_;
+}
+
+IDisplay* ScriptContext::GetDisplay()
+{
+   return display_;
 }
 
 void ScriptContext::SetDriveDir(std::filesystem::path path)

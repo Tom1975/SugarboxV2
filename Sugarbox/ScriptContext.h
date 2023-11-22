@@ -3,6 +3,7 @@
 #include <filesystem>
 
 class Emulation;
+class IDisplay;
 
 class ScriptContext
 {
@@ -10,7 +11,7 @@ public:
    ScriptContext();
    virtual ~ScriptContext();
 
-   void Init(Emulation* emulation);
+   void Init(Emulation* emulation, IDisplay* display);
 
    void SetVersion(const std::string& version);
    void SetDriveDir(std::filesystem::path path);
@@ -23,6 +24,7 @@ public:
    void SetKeyDelay(unsigned int delay_press, unsigned int delay, unsigned int delay_cr);
 
    Emulation* GetEmulation();
+   IDisplay* GetDisplay();
    std::filesystem::path GetDriveDir();
    std::filesystem::path GetTapeDir();
    std::filesystem::path GetSnapshotDir();
@@ -39,6 +41,8 @@ public:
 
 protected:
    Emulation* emulation_;
+   IDisplay* display_;
+
    std::string version_;
    std::filesystem::path drive_dir_;
    std::filesystem::path tape_dir_;

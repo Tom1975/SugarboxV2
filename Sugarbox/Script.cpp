@@ -597,8 +597,8 @@ bool CommandScreenshotDir::Execute(std::vector<std::string>& param)
 ///
 bool CommandScreenshot::Execute(std::vector<std::string>& param)
 {
-   // todo
-
+   std::filesystem::path scr_path = context_->GetScreenshotDir() / context_->GetScreenshotName();
+   context_->GetDisplay()->Screenshot(scr_path.string().c_str());
    return true;
 }
 
@@ -607,8 +607,8 @@ bool CommandScreenshot::Execute(std::vector<std::string>& param)
 ///
 bool CommandSnapshot::Execute(std::vector<std::string>& param)
 {
-   // todo
-
+   std::filesystem::path sn_path = context_->GetSnapshotDir() / context_->GetSnapshotName();
+   context_->GetEmulation()->SaveSnapshot(sn_path.string().c_str());
    return true;
 }
 
@@ -621,8 +621,9 @@ bool CommandCslLoad::Execute(std::vector<std::string>& param)
    {
       return true;
    }
-
-   // todo
+   
+   std::filesystem::path csl_file(param[1]);
+   context_->GetEmulation()->AddScript(csl_file);  
 
    return true;
 }
