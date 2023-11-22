@@ -393,8 +393,12 @@ int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<uns
          std::string spec = line.substr(index, endseq - line.begin() + index);
          if (spec.size()>0)
          {
-            //todo
             return_index = index + spec.size();
+            for (auto& c : spec)
+            {
+               next.push_back((int)c&0xFF);
+            }
+            
          }
       }
       else
