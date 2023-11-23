@@ -228,7 +228,7 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
 
-   script_context_.Init(emulation_);
+   script_context_.Init(emulation_, &display_);
    ScriptCommandFactory::InitFactory(&script_context_);
 
    // Get current directory, and add the CONF to it
