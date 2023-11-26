@@ -95,6 +95,7 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
 
    // Start thread
    running_thread_ = true;
+   debug_action_ = init._debug_start ? DBG_BREAK : DBG_NONE;
    worker_thread_ = new std::thread(RunLoop, this);
 
 }

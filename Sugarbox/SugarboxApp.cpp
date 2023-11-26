@@ -247,6 +247,8 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
       emulation_->AddScript(init._script_to_run);
    }
 
+   if (init._debug_start)
+      OpenDebugger();
 
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
