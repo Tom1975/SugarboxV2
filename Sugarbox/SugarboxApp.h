@@ -104,6 +104,7 @@ public:
    
    // Display
    void FullScreenToggle();
+   void closeEvent(QCloseEvent* event);
 
 public slots:
    void clear();

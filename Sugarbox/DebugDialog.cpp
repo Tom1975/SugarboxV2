@@ -61,10 +61,11 @@ std::string& DebugDialog::FlagView::GetValue()
 
 
 DebugDialog::DebugDialog(QWidget *parent) :
-   QDialog(parent),
+   QDialog(nullptr),
    ui(new Ui::DebugDialog),
    language_(nullptr)
 {
+   parent_ = parent;
    ui->setupUi(this);
    ui->listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -273,7 +274,7 @@ void DebugDialog::showEvent(QShowEvent* event)
 void DebugDialog::UpdateDebug()
 {
    // Update parent window
-   this->parentWidget()->repaint();
+   parent_->repaint();
 
    // Get CPU
    Z80* z80 = emu_handler_->GetEngine()->GetProc();

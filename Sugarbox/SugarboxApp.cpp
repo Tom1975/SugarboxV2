@@ -1038,3 +1038,11 @@ void SugarboxApp::DisableSSM()
    emulation_->GetEngine()->GetProc()->ClearCustom<Z80::DD>();
    emulation_->GetEngine()->GetProc()->ClearCustom<Z80::FD>();
 }
+
+void SugarboxApp::closeEvent(QCloseEvent* event)
+{
+   // do what you need here
+   // then call parent's procedure
+   debug_.close();
+   QWidget::closeEvent(event);
+}
