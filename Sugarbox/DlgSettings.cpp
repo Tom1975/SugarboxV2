@@ -45,7 +45,8 @@ void DlgSettings::DisplayMenu()
 void DlgSettings::UpdateCombo(QComboBox *config_box)
 {
    config_box->clear();
-   for (unsigned int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
+   int index_sel = 0;
+   for (int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
    {
       MachineSettings* settings = settings_list_.GetConfiguration(i);
       if (settings != nullptr)
@@ -53,8 +54,15 @@ void DlgSettings::UpdateCombo(QComboBox *config_box)
          const char* shortname = settings->GetShortDescription();
 
          config_box->addItem( shortname, i );
+
+         if (*engine_->GetSettings() == *settings)
+         {
+            index_sel = i;
+         }
       }
    }
+   config_box->setCurrentIndex(index_sel);
+
    //connect(config_box, QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) { parent_->ChangeSettings(settings_list_.GetConfiguration(index)); });
    QObject::connect(config_box, SIGNAL(currentIndexChanged(int)), SLOT(ChangeSettings(int)));
 }

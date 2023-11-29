@@ -1,7 +1,9 @@
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
-#include "Emulation.h"
+
+class Emulation;
 
 ////////////////////////////////////////////////////////
 // Command Interface
@@ -196,3 +198,5 @@ public:
    virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help() { return "Sets a breakpoint at desired index entry with condition. If no condition set, breakpoint will be handled as disabled"; }
 }; 
+
+

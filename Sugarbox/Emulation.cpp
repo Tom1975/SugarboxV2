@@ -64,7 +64,7 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeed();
 }
 
-void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path)
+void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init)
 {
    sound_mixer_ = sound_mixer;
    current_path_ = current_path;
@@ -80,13 +80,10 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    emulator_engine_->SetSettings(emulator_settings_);
    emulator_engine_->SetNotifier(this);
 
-   emulator_engine_->LoadConfiguration("Current", "Sugarbox.ini");
+   emulator_engine_->LoadConfiguration("Current", "Sugarbox.ini", &init);
    emulator_engine_->GetMem()->Initialisation();
    // Update computer
    emulator_engine_->Reinit();
-
-   running_thread_ = true;
-   worker_thread_ = new std::thread(RunLoop, this);
 
    sound_mixer_->AddWav(SND_SEEK_SHORT, seek_short_wav, sizeof(seek_short_wav));
    sound_mixer_->AddWav(SND_SEEK_LONG, seek_long_wav, sizeof(seek_short_wav));
@@ -95,6 +92,12 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    sound_mixer_->AddWav(SND_MOTOR_ON, drive_mo_wav, sizeof(seek_short_wav));
 
    disassembler_ = new Z80Desassember(emulator_engine_);
+
+   // Start thread
+   running_thread_ = true;
+   debug_action_ = init._debug_start ? DBG_BREAK : DBG_NONE;
+   worker_thread_ = new std::thread(RunLoop, this);
+
 }
 
 void Emulation::Stop()
@@ -168,6 +171,12 @@ void Emulation::EmulationLoop()
             // - break : Stop emulation until next command
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             break;
+
+         case DBG_SCRIPT:
+            // Script running
+            ExecuteNextScript();
+            debug_action_ = DBG_BREAK;
+            break;
          }
 
          if (old_action != debug_action_)
@@ -177,7 +186,12 @@ void Emulation::EmulationLoop()
             {
                it->NotifyStop();
             }
+         }
 
+         // Script to be run ?
+         if (script_player_.WaitingScript() )
+         {
+            debug_action_ = DBG_SCRIPT;
          }
       }
 
@@ -193,6 +207,23 @@ void Emulation::EmulationLoop()
    }
    emulator_engine_->Stop();
    emulation_stopped_ = true;
+}
+
+void Emulation::Lock()
+{
+   command_mutex_.lock();
+}
+
+void Emulation::Unlock()
+{
+   command_mutex_.unlock();
+}
+
+
+void Emulation::ExecuteNextScript ()
+{
+   // Is there any script left ?
+   script_player_.ExecuteNext();
 }
 
 void Emulation::Pause()
@@ -688,7 +719,7 @@ void Emulation::Run(int nb_opcodes )
    }
    else
    {
-      debug_action_ = DBG_RUN_FIXED_OP;
+      debug_action_ = DBG_RUN_FIXED_OP;   
       nb_opcode_to_run_ = nb_opcodes;
 
    }
@@ -697,4 +728,18 @@ void Emulation::Run(int nb_opcodes )
 void Emulation::AddUpdateListener(IUpdate* listener)
 {
    listeners_.push_back(listener);
+}
+
+void Emulation::AddScript(std::filesystem::path& path)
+{
+   script_player_.LoadScript(path);
+   
+}
+
+void Emulation::ChangeConfiguration (const char* config_name)
+{
+   command_waiting_ = true;
+   const std::lock_guard<std::mutex> lock(command_mutex_);
+   emulator_engine_->LoadConfiguration(config_name);
+   emulator_engine_->UpdateFromSettings();
 }

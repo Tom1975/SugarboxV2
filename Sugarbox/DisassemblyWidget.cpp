@@ -121,10 +121,10 @@ void DisassemblyWidget::keyPressEvent(QKeyEvent* event)
 void DisassemblyWidget::mousePressEvent(QMouseEvent* event)
 {
    // Check line
-   int line = event->y() / line_height_;
+   int line = event->position().y() / line_height_;
 
    // check position
-   int x = event->x();
+   int x = event->position().x();
 
    if ( line < nb_lines_ && x < width())
    {

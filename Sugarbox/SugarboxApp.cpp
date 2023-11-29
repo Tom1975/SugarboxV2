@@ -193,7 +193,7 @@ void SugarboxApp::InitSettings()
    debug_.SetSettings(&settings_);
 }
 
-int SugarboxApp::RunApp()
+int SugarboxApp::RunApp(SugarboxInitialisation& init)
 {
    // Settings
    InitSettings();
@@ -208,8 +208,8 @@ int SugarboxApp::RunApp()
    SizeChanged(window_width_, window_height_);
 
    display_.Init();
-   emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str());
-
+   emulation_->Init(&display_, this, &sound_mixer_, current_path_exe.string().c_str(), init);
+   EnableSSM();
    InitMenu();
 
    sound_mixer_.SetEmulation(emulation_->GetEngine());
@@ -228,6 +228,9 @@ int SugarboxApp::RunApp()
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
 
+   script_context_.Init(emulation_, &display_);
+   ScriptCommandFactory::InitFactory(&script_context_);
+
    // Get current directory, and add the CONF to it
    current_path_exe /= "CONF";
    dlg_settings_.Refresh(current_path_exe.string().c_str());
@@ -238,7 +241,14 @@ int SugarboxApp::RunApp()
    CreateActions();
    CreateStatusBar();
 
+   // Default: Enable SSM;
+   if (!init._script_to_run.empty())
+   {
+      emulation_->AddScript(init._script_to_run);
+   }
 
+   if (init._debug_start)
+      OpenDebugger();
 
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
    // It's no longer used, but I think I don't want to lose this code :)
@@ -572,6 +582,16 @@ void SugarboxApp::Eject(int drive)
    }
 }
 
+void SugarboxApp::LoadCsl()
+{
+   QString str = QFileDialog::getOpenFileName(this, tr(language_.GetString("L_FILEDIALOG_INSERT_DISK")), "", load_disk_extension_);
+   if (str.size() > 0)
+   {
+      std::filesystem::path csl_file(str.toUtf8().data());
+      emulation_->AddScript(csl_file);
+   }
+}
+
 void SugarboxApp::Insert(int drive)
 {
    if (AskForSaving(drive))
@@ -740,6 +760,8 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_EXIT, std::bind(&SugarboxApp::close, this), "L_FILE_EXIT");
    AddAction(IFunctionInterface::FN_AUTOLOAD, std::bind(&SugarboxApp::ToggleAutoload, this), "L_FN_AUTOLOAD", nullptr, std::bind(&Emulation::IsAutoloadEnabled, emulation_));
    AddAction(IFunctionInterface::FN_AUTOTYPE, std::bind(&SugarboxApp::AutoType, this), "L_FN_AUTOTYPE", std::bind(&SugarboxApp::IsSomethingInClipboard, this));
+   AddAction(IFunctionInterface::FN_CSL_LOAD, std::bind(&SugarboxApp::LoadCsl, this), "L_FN_LOADCSL", nullptr);
+   
    AddAction(IFunctionInterface::FN_CTRL_ONOFF, std::bind(&Emulation::HardReset, emulation_), "L_CONTROL_ONOFF");
    AddAction(IFunctionInterface::FN_CTRL_PAUSE, std::bind(&SugarboxApp::Pause, this), "L_CONTROL_PAUSE", nullptr, std::bind(&SugarboxApp::PauseEnabled, this));
 
@@ -856,7 +878,20 @@ void SugarboxApp::dropEvent(QDropEvent *event)
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)
-         continue;
+      {
+         // CSL ?
+         std::filesystem::path url_path = path;
+         if (url_path.extension() == ".csl"
+            || url_path.extension() == ".Csl"
+            || url_path.extension() == ".CSL")
+         {
+            // Ok : Load as CSL 
+            emulation_->AddScript(url_path);
+            return;
+         }
+
+      }
+         
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
       list_of_types.push_back(MediaManager::MEDIA_DISK);
@@ -944,4 +979,62 @@ void SugarboxApp::NotifyStop()
 {
    // call update for debugger
    debug_.Update();
+}
+
+
+void SugarboxApp::CustomFunction(unsigned int i)
+{
+   unsigned short current_addr = emulation_->GetEngine()->GetProc()->pc_;
+
+   if (current_addr == ssm_last_address_ + 2 && !ssm_first_)
+   {
+      // Create screenshot from current frame, name is generated from opcode
+      std::string crtc = std::to_string(emulation_->GetEngine()->GetCRTC()->type_crtc_);
+      std::string hh = std::to_string(i);
+      std::string ll = std::to_string(ll_);
+      std::string filename = "SUGARBOX_" + crtc + "_" + hh + ll + ".jpg";
+
+      display_.Screenshot(filename.c_str());
+      ssm_first_ = true;
+
+   }
+   else
+   {
+      // First opcode
+      ll_ = i;
+      ssm_last_address_ = current_addr;
+      ssm_first_ = false;
+   }
+
+}
+
+void SugarboxApp::EnableSSM()
+{
+   ssm_last_address_ = 0xFFFF;
+   ssm_first_ = true;
+   for (unsigned char i = 0; i < 0xFF; i++)
+   {
+      if ( (i <= 0x3F )
+         || (i >= 0x80 && i <= 0x9F)
+         || (i >= 0xA4 && i <= 0xA7)
+         || (i >= 0xAC && i <= 0xAF)
+         || (i >= 0xB4 && i <= 0xB7)
+         || (i >= 0xBC && i <= 0xBF)
+         || (i >= 0xC0 && i <= 0xEC)
+         || (i >= 0xEF && i <= 0xFD)
+         )
+      {
+         emulation_->GetEngine()->GetProc()->SetCustomOpcode<Z80::ED>(i, [=](unsigned int opcode) {CustomFunction(opcode); });
+      }
+   }
+
+}
+
+void SugarboxApp::DisableSSM()
+{
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::None>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::ED>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::CB>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::DD>();
+   emulation_->GetEngine()->GetProc()->ClearCustom<Z80::FD>();
 }

@@ -96,7 +96,8 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Files", {
       &function_list_.at(IFunctionInterface::FN_EXIT),
       &function_list_.at(IFunctionInterface::FN_AUTOLOAD),
-      & function_list_.at(IFunctionInterface::FN_AUTOTYPE)
+      & function_list_.at(IFunctionInterface::FN_AUTOTYPE),
+      & function_list_.at(IFunctionInterface::FN_CSL_LOAD),
       },[]() { return true; }));
 
    

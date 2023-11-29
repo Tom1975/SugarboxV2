@@ -16,7 +16,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set (SUGARBOX_VERSION "2.0.1" CACHE STRING "Version to build" FORCE)
+set (SUGARBOX_VERSION "2.0.2" CACHE STRING "Version to build" FORCE)
 
 MESSAGE (STATUS "Version :" ${SUGARBOX_VERSION})
 
@@ -32,31 +32,31 @@ set(CompilerFlags
         
         )
 
-find_package(Qt5 COMPONENTS Widgets WebSockets REQUIRED)
-qt5_add_resources(QRCS resources.qrc)
+find_package(Qt6 COMPONENTS Widgets WebSockets OpenGLWidgets OpenGL REQUIRED)
+qt6_add_resources(QRCS resources.qrc)
 
-if(Qt5_FOUND AND WIN32 AND TARGET Qt5::qmake AND NOT TARGET Qt5::windeployqt)
-    get_target_property(_qt5_qmake_location Qt5::qmake IMPORTED_LOCATION)
+if(Qt6_FOUND AND WIN32 AND TARGET Qt6::qmake AND NOT TARGET Qt6::windeployqt)
+    get_target_property(_qt6_qmake_location Qt6::qmake IMPORTED_LOCATION)
 
     execute_process(
-        COMMAND "${_qt5_qmake_location}" -query QT_INSTALL_PREFIX
+        COMMAND "${_qt6_qmake_location}" -query QT_INSTALL_PREFIX
         RESULT_VARIABLE return_code
-        OUTPUT_VARIABLE qt5_install_prefix
+        OUTPUT_VARIABLE qt6_install_prefix
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    set(imported_location "${qt5_install_prefix}/bin/windeployqt.exe")
+    set(imported_location "${qt6_install_prefix}/bin/windeployqt.exe")
 
     if(EXISTS ${imported_location})
-        add_executable(Qt5::windeployqt IMPORTED)
+        add_executable(Qt6::windeployqt IMPORTED)
 
-        set_target_properties(Qt5::windeployqt PROPERTIES
+        set_target_properties(Qt6::windeployqt PROPERTIES
             IMPORTED_LOCATION ${imported_location}
         )
     endif()
 endif()
 
-get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
+get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
 find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
@@ -146,8 +146,10 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_INSTALL_BINDIR})
 set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt5::Core Qt5::Widgets Qt5::WebSockets  ${LIB_EXT})
+target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt6::Core Qt6::Widgets Qt6::WebSockets Qt6::OpenGLWidgets  ${LIB_EXT})
+
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_BINDIR}")
+MESSAGE ( CMAKE_INSTALL_BINDIR = ${CMAKE_INSTALL_BINDIR})
 
 if (APPLE)
   target_link_libraries(Sugarbox "-framework OpenGL")
@@ -161,6 +163,7 @@ install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" DESTINATION .)
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .) 
 
+set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
 # MSVC CPACK Qt dlls
 IF(MSVC)
