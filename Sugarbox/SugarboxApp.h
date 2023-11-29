@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <map>
+#include <filesystem>
 
 #include <QMainWindow>
 #include <QtWidgets>
@@ -25,12 +26,13 @@
 #include "FlagHandler.h"
 #include "TapeWidget.h"
 #include "DiskWidget.h"
+#include "SCLPlayer.h"
+#include "Script.h"
 #include "SoundWidget.h"
 
 namespace Ui {
    class SugarboxApp;
 }
-
 
 class SugarboxApp : public QMainWindow, public ISoundFactory, public IFunctionInterface, public INotifier, public ISettingsChange, public IDebugerStopped, public ITapeInsertionCallback
 {
@@ -40,7 +42,7 @@ public:
    explicit SugarboxApp(QWidget *parent = 0);
    virtual ~SugarboxApp();
 
-   int RunApp();
+   int RunApp(SugarboxInitialisation& init);
 
    // Actions initialization
    void InitAllActions();
@@ -58,6 +60,8 @@ public:
    virtual bool FdcPresent();
    virtual bool TapePresent();
 
+   Emulation* GetEmulation() { return emulation_; }
+
    // Actions
    virtual void Pause();
    virtual bool PauseEnabled();
@@ -68,6 +72,7 @@ public:
    virtual void Eject(int drive);
    virtual void Insert(int drive);
    virtual void InsertBlank(int drive, IDisk::DiskType type);
+   virtual void LoadCsl();
    virtual void TapeInsert();
    virtual void TapeSaveAs();
    virtual void SnaLoad();
@@ -194,6 +199,7 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
+
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;
@@ -209,5 +215,18 @@ protected:
    TapeWidget status_tape_;
    DiskWidget status_disk_;
    SoundWidget status_sound_;
+
+   // SSM
+   void EnableSSM();
+   void DisableSSM();
+   void CustomFunction(unsigned int i);
+   bool ssm_first_;
+   unsigned short ssm_last_address_;
+   unsigned char ll_;
+
+   // Script player
+   ScriptContext script_context_;
+   SCLPlayer scl_player_;
+
 };
 

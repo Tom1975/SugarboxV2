@@ -144,9 +144,9 @@ void SoundWidget::mousePressEvent(QMouseEvent* event)
 {
    if (sound_notification_)
    {
-      if (event->x() < 64)
+      if (event->position().x() < 64)
       {
-         float f = ((float)event->x()) / (64.0);
+         const float f = static_cast<float>(event->position().x()) / (64.0f);
          sound_notification_->SetVolume(f);
          sound_changing_on_ = true;
          ComputePath();
@@ -154,7 +154,7 @@ void SoundWidget::mousePressEvent(QMouseEvent* event)
       }
       else
       {
-         if (event->x() < pos_record_x_)
+         if (event->position().x() < pos_record_x_)
          {
             sound_notification_->Mute(!sound_notification_->IsMuted());
          }
@@ -182,9 +182,9 @@ void SoundWidget::mouseMoveEvent(QMouseEvent* event)
    QWidget::mouseMoveEvent(event);
    if (sound_changing_on_)
    {
-      if (event->x() >= 1 && event->x() <= 65)
+      if (event->position().x() >= 1 && event->position().x() <= 65)
       {
-         float f = ((float)event->x()-1) / (64.0);
+         const float f = (static_cast<float>(event->position().x())-1) / (64.0f);
          sound_notification_->SetVolume(f);
          ComputePath();
       }
