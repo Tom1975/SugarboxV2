@@ -52,7 +52,7 @@ jobs:
         uses: actions/download-artifact@v3
         id: art-windows
         with:
-          name: SugarboxV2Win32
+          name: SugarboxV2
           
       - name: Download artifact MacOS
         uses: actions/download-artifact@v3
