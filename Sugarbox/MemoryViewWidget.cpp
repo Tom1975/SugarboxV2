@@ -18,7 +18,7 @@ MemoryViewWidget::MemoryViewWidget(QWidget* parent )
    char_size_(0),
    margin_size_(0),
    top_margin_(0),
-   back_color_(220, 220, 220),
+   back_color_(240, 240, 240),
    address_color_(Qt::blue),
    byte_color_(Qt::darkGray),
    char_color_(Qt::gray)

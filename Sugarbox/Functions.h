@@ -85,6 +85,10 @@ public:
       FN_DIS_FULLSCREEN,
       // DEBUGER
       FN_DEBUG_DEBUGGER,
+      FN_DEBUG_MEMORY_1,
+      FN_DEBUG_MEMORY_2,
+      FN_DEBUG_MEMORY_3,
+      FN_DEBUG_MEMORY_4,
 
    }FunctionType;
 

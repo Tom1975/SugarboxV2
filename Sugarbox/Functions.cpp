@@ -126,9 +126,15 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Debug",
       {
-      &function_list_.at(IFunctionInterface::FN_DEBUG_DEBUGGER)
-      }, []() { return true; }
-   ));
+      &function_list_.at(IFunctionInterface::FN_DEBUG_DEBUGGER),
+      new Function(multilanguage_, "L_DEBUG_MEMORY",
+      {
+         &function_list_.at(IFunctionInterface::FN_DEBUG_MEMORY_1),
+         &function_list_.at(IFunctionInterface::FN_DEBUG_MEMORY_2),
+         &function_list_.at(IFunctionInterface::FN_DEBUG_MEMORY_3),
+         &function_list_.at(IFunctionInterface::FN_DEBUG_MEMORY_4)
+      }, []() { return true; })
+      }, []() { return true; }));
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Disk",
       {

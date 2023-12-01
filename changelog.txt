@@ -1,8 +1,14 @@
 Sugarbox changelog
 ------------------
+v2.0.3 - 
+   * 
 
-v2.0.2 - 
+v2.0.2 - (29/11/2023)
    * Change Qt version to 6.5.1. Builds are now 64 bits only
+   * Add CSL script support, ans SSM opcodes
+   * Add tape counter
+   * Add screenshot command
+   * Add command line options : -d (debug), -s (csl script), -cfg (configuration), -cart (cartridge to load)
 
 v2.0.1 - (26/05/2023 22:59:26)
    * Add debugger, disassembly feature, register view, memory view

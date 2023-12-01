@@ -16,6 +16,7 @@
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "DebugDialog.h"
+#include "MemoryDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
@@ -84,6 +85,7 @@ public:
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
    virtual void OpenDebugger();
+   virtual void OpenMemory(int memory_index);
 
    // INotifier 
    virtual void DiskLoaded();
@@ -204,6 +206,7 @@ protected:
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;
+   MemoryDialog memory_[4];
 
    // Flag handler
    FlagHandler flag_handler_;

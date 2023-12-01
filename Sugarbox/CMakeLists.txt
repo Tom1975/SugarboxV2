@@ -93,13 +93,21 @@ set (SRCS
       ${SRCS}
    )
 
+set (EXTRA
+    ../changelog.txt
+    ../LICENSE
+    ../README.md
+   )
+
 set ( UIS
  SugarboxApp.ui
  DebugDialog.ui
+ MemoryDialog.ui
 )
 
 
 source_group("Resources" FILES ${RES} )
+source_group("Docs" FILES ${EXTRA} )
 
 if(UNIX)
     if (APPLE)
@@ -138,7 +146,7 @@ IF(WIN32)
 endif()
 
 
-add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} )
 
 target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
 
