@@ -119,5 +119,6 @@ void MemoryDialog::UpdateDebug()
 
 void MemoryDialog::SetAddress(unsigned int addr)
 {
+   ui->memoryWidget->ForceTopAddress(addr);
 }
 
