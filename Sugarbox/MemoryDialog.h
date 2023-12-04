@@ -39,6 +39,7 @@ public:
    public slots:
       void on_set_top_address_clicked();
       void on_dasm_address_returnPressed();
+      void ChangeMemorySource(int index);
 
     // Update the view
     virtual void Update();
@@ -46,7 +47,7 @@ public:
 protected:
    // Menu action
    void UpdateDebug();
-
+   void UpdateMemoryCombo();
 
 private:
    Ui::MemoryDialog *ui;

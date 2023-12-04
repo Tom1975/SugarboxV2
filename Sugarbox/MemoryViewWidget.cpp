@@ -14,6 +14,7 @@ MemoryViewWidget::MemoryViewWidget(QWidget* parent )
    nb_lines_(0),
    line_height_(0),
    nb_byte_per_lines_(0),
+   buffer_(nullptr),
    address_size_(0),
    char_size_(0),
    margin_size_(0),
@@ -29,6 +30,15 @@ MemoryViewWidget::MemoryViewWidget(QWidget* parent )
    connect(&horizontal_sb_, SIGNAL(valueChanged(int)), this, SLOT(OnValueChangeHorizontal(int)));
 }
 
+MemoryViewWidget::~MemoryViewWidget()
+{
+   if (buffer_ != nullptr)
+   {
+      delete[]buffer_;
+      buffer_ = nullptr;
+   }
+}
+
 void MemoryViewWidget::SetDisassemblyInfo(Emulation* machine, unsigned short max_address)
 {
    machine_ = machine->GetEngine();
@@ -42,7 +52,20 @@ void MemoryViewWidget::ForceTopAddress(unsigned short address)
    vertical_sb_.setValue(current_address_);
 
    // Update
-   repaint();
+   Update();
+}
+
+void MemoryViewWidget::SetMemoryToRead(Memory::DbgMemAccess mem_acces, int data)
+{
+   mem_acces_ = mem_acces;
+   mem_access_data_ = data;
+   Update();
+}
+
+void MemoryViewWidget::GetMemoryToRead(Memory::DbgMemAccess& mem_acces, int& data)
+{
+   mem_acces = mem_acces_;
+   data = mem_access_data_;
 }
 
 void MemoryViewWidget::wheelEvent(QWheelEvent* event)
@@ -59,7 +82,7 @@ void MemoryViewWidget::wheelEvent(QWheelEvent* event)
    {
       current_address_ -= ( numDegrees.y() / 15) * nb_byte_per_lines_;
    }
-   repaint();
+   Update();
    event->accept();
 }
 
@@ -97,6 +120,25 @@ void MemoryViewWidget::mousePressEvent(QMouseEvent* event)
    int x = event->x();
 }
 
+void MemoryViewWidget::Update()
+{
+   // Compute strings
+   if (buffer_ != nullptr )
+   {
+      delete[]buffer_;
+      buffer_ = nullptr;
+   }
+   if (nb_lines_ * nb_byte_per_lines_ > 0)
+   { 
+      buffer_ = new unsigned char[nb_lines_ * nb_byte_per_lines_];
+      machine_->GetMem()->GetDebugValue(buffer_, current_address_, nb_lines_ * nb_byte_per_lines_, mem_acces_, mem_access_data_);
+
+
+      // paint
+      repaint();
+   }
+}
+
 void MemoryViewWidget::paintEvent(QPaintEvent* /* event */)
 {
    QPainter painter(this);
@@ -114,10 +156,13 @@ void MemoryViewWidget::paintEvent(QPaintEvent* /* event */)
    byte_buffer.resize(nb_byte_per_lines_ * 3);
    char_buffer.resize(nb_byte_per_lines_ );
 
+   unsigned short mask_address = machine_->GetMem()->GetDebugMaxAdress(mem_acces_);
+
+   unsigned int index_byte = 0;
    for (int i = 0; i < nb_lines_; i++)
    {
       // Address 
-      sprintf(address, "%4.4X: ", line_address);
+      sprintf(address, "%4.4X: ", line_address & mask_address);
       painter.setPen(address_color_);
       painter.drawText(margin_size_, top_margin_ + line_height_ * i, address_size_, line_height_,Qt::AlignLeft|Qt::AlignVCenter, address);
 
@@ -126,7 +171,7 @@ void MemoryViewWidget::paintEvent(QPaintEvent* /* event */)
       for (int j = 0; j < nb_byte_per_lines_; j++)
       {
          char byte[4] = { 0 };
-         unsigned char b = machine_->GetMem()->Get(line_address + j);
+         unsigned char b = buffer_[index_byte++];
          sprintf(byte, "%2.2X ", b);
          byte_buffer += byte;
 
@@ -166,14 +211,14 @@ void MemoryViewWidget::OnValueChange(int valueScrollBar)
 {
    current_address_ = static_cast<unsigned int>(valueScrollBar);
    // Update;
-   repaint();
+   Update();
 }
 
 void MemoryViewWidget::OnValueChangeHorizontal(int valueScrollBar)
 {
    margin_size_ = valueScrollBar * -1;
    // Update;
-   repaint();
+   Update();
 }
 
 void MemoryViewWidget::ComputeScrollArea()

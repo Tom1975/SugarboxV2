@@ -61,6 +61,8 @@ void MemoryDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
    ui->memoryWidget->SetDisassemblyInfo(emu_handler, 0xFFFF);
+
+   UpdateMemoryCombo();
 }
 
 void MemoryDialog::SetFlagHandler(FlagHandler* flag_handler)
@@ -102,6 +104,7 @@ void MemoryDialog::Update()
    QEvent* event = new QEvent(QEvent::User);
    QCoreApplication::postEvent( this, event);
 
+
 }
 
 void MemoryDialog::showEvent(QShowEvent* event) 
@@ -110,8 +113,74 @@ void MemoryDialog::showEvent(QShowEvent* event)
    UpdateDebug();
 }
 
+void MemoryDialog::UpdateMemoryCombo()
+{
+
+   ui->bank->addItem("READ Memory", ((Memory::MEM_READ) << 8) | 0 );
+   ui->bank->addItem("WRITE Memory", ((Memory::MEM_WRITE) << 8) | 0);
+   ui->bank->addItem("RAM Bank : Lower 64ko bank", ((Memory::MEM_RAM_LOWER_BANK) << 8) | 0);
+
+   // High memory (if any)
+   auto mem = emu_handler_->GetEngine()->GetMem();
+   bool* available_ram = mem->GetAvailableRam();
+   if (available_ram[0])
+   {
+      ui->bank->addItem("RAM Bank : Upper 64ko bank", ((Memory::MEM_RAM_BANK) << 8) | 0);
+   }
+
+   // Memory expansions
+   for (int i = 1; i < 8; i++)
+   {
+      if (available_ram[i])
+      {
+         std::string label = "Expansion RAM Bank : " + std::to_string(i);
+         ui->bank->addItem (label.c_str(), ((Memory::MEM_RAM_BANK) << 8) | i);
+      }
+   }
+
+   // Specific ROM
+   bool* rom_available = mem->GetAvailableROM();
+
+   // Lower ROM ?
+   if (mem->IsLowerRomLoaded())
+   {
+      ui->bank->addItem("Lower ROM", ((Memory::MEM_LOWER_ROM) << 8) | 0);
+   }
+
+   for (int i = 0; i < 32; i++)
+   {
+      if (rom_available[i])
+      {
+         std::string label = "ROM Bank : " + std::to_string(i);
+         ui->bank->addItem(label.c_str(), ((Memory::MEM_ROM_BANK) << 8) | i);
+      }
+   }
+
+   // Specific Cartridge
+   bool* cart_available = mem->GetAvailableCartridgeSlot();
+
+   for (int i = 0; i < 32; i++)
+   {
+      if (cart_available[i])
+      {
+         std::string label = "Cartridge Bank : " + std::to_string(i);
+         ui->bank->addItem(label.c_str(), ((Memory::MEM_CART_SLOT) << 8) | i);
+      }
+   }
+
+   QObject::connect(ui->bank, SIGNAL(currentIndexChanged(int)), SLOT(ChangeMemorySource(int)));
+}
+
+void MemoryDialog::ChangeMemorySource(int index)
+{
+   // Get proper ram source
+   unsigned int data = ui->bank->currentData().toInt();
+   ui->memoryWidget->SetMemoryToRead((Memory::DbgMemAccess)(data >> 8), data & 0xFF);
+}
+
 void MemoryDialog::UpdateDebug()
 {
+
    // Update parent window
    parent_->repaint();
 }
