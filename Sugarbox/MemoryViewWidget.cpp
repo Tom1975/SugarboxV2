@@ -133,7 +133,6 @@ void MemoryViewWidget::Update()
       buffer_ = new unsigned char[nb_lines_ * nb_byte_per_lines_];
       machine_->GetMem()->GetDebugValue(buffer_, current_address_, nb_lines_ * nb_byte_per_lines_, mem_acces_, mem_access_data_);
 
-
       // paint
       repaint();
    }
@@ -156,41 +155,44 @@ void MemoryViewWidget::paintEvent(QPaintEvent* /* event */)
    byte_buffer.resize(nb_byte_per_lines_ * 3);
    char_buffer.resize(nb_byte_per_lines_ );
 
-   unsigned short mask_address = machine_->GetMem()->GetDebugMaxAdress(mem_acces_);
-
-   unsigned int index_byte = 0;
-   for (int i = 0; i < nb_lines_; i++)
+   if (buffer_ != nullptr)
    {
-      // Address 
-      sprintf(address, "%4.4X: ", line_address & mask_address);
-      painter.setPen(address_color_);
-      painter.drawText(margin_size_, top_margin_ + line_height_ * i, address_size_, line_height_,Qt::AlignLeft|Qt::AlignVCenter, address);
+      unsigned short mask_address = machine_->GetMem()->GetDebugMaxAdress(mem_acces_);
 
-      // Bytes 
-      byte_buffer.clear();
-      for (int j = 0; j < nb_byte_per_lines_; j++)
+      unsigned int index_byte = 0;
+      for (int i = 0; i < nb_lines_; i++)
       {
-         char byte[4] = { 0 };
-         unsigned char b = buffer_[index_byte++];
-         sprintf(byte, "%2.2X ", b);
-         byte_buffer += byte;
+         // Address 
+         sprintf(address, "%4.4X: ", line_address & mask_address);
+         painter.setPen(address_color_);
+         painter.drawText(margin_size_, top_margin_ + line_height_ * i, address_size_, line_height_, Qt::AlignLeft | Qt::AlignVCenter, address);
 
-         if (b >= 0x20 && b <= 126)
+         // Bytes 
+         byte_buffer.clear();
+         for (int j = 0; j < nb_byte_per_lines_; j++)
          {
-            char_buffer[j] = b;
+            char byte[4] = { 0 };
+            unsigned char b = buffer_[index_byte++];
+            sprintf(byte, "%2.2X ", b);
+            byte_buffer += byte;
+
+            if (b >= 0x20 && b <= 126)
+            {
+               char_buffer[j] = b;
+            }
+            else
+            {
+               char_buffer[j] = '.';
+            }
          }
-         else
-         {
-            char_buffer[j] = '.';
-         }
+         painter.setPen(byte_color_);
+         painter.drawText(margin_size_ + address_size_, top_margin_ + line_height_ * i, char_size_ * nb_byte_per_lines_ * 3, line_height_, Qt::AlignLeft | Qt::AlignVCenter, byte_buffer.c_str());
+         // Character (if displayable)
+         painter.setPen(char_color_);
+         painter.drawText(margin_size_ + address_size_ + char_size_ * nb_byte_per_lines_ * 3, top_margin_ + line_height_ * i, char_size_ * nb_byte_per_lines_, line_height_, Qt::AlignLeft | Qt::AlignVCenter, char_buffer.c_str());
+
+         line_address += nb_byte_per_lines_;
       }
-      painter.setPen(byte_color_);
-      painter.drawText(margin_size_ + address_size_, top_margin_ + line_height_ * i, char_size_* nb_byte_per_lines_*3, line_height_, Qt::AlignLeft|Qt::AlignVCenter, byte_buffer.c_str());
-      // Character (if displayable)
-      painter.setPen(char_color_);
-      painter.drawText(margin_size_ + address_size_ + char_size_* nb_byte_per_lines_*3, top_margin_ + line_height_ * i, char_size_* nb_byte_per_lines_, line_height_, Qt::AlignLeft|Qt::AlignVCenter, char_buffer.c_str());
-
-      line_address += nb_byte_per_lines_;
    }
 }
 

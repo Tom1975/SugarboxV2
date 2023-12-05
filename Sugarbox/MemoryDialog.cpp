@@ -17,6 +17,7 @@ MemoryDialog::MemoryDialog(QWidget *parent) :
 {
    parent_ = parent;
    ui->setupUi(this);
+   QObject::connect(ui->bank, SIGNAL(currentIndexChanged(int)), SLOT(ChangeMemorySource(int)));
 
 }
 
@@ -167,8 +168,6 @@ void MemoryDialog::UpdateMemoryCombo()
          ui->bank->addItem(label.c_str(), ((Memory::MEM_CART_SLOT) << 8) | i);
       }
    }
-
-   QObject::connect(ui->bank, SIGNAL(currentIndexChanged(int)), SLOT(ChangeMemorySource(int)));
 }
 
 void MemoryDialog::ChangeMemorySource(int index)
@@ -180,7 +179,6 @@ void MemoryDialog::ChangeMemorySource(int index)
 
 void MemoryDialog::UpdateDebug()
 {
-
    // Update parent window
    parent_->repaint();
 }
