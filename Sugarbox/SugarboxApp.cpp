@@ -12,7 +12,7 @@
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_, this), status_sound_(&sound_mixer_, &language_, this), debugger_link_(nullptr), debug_(this),
-memory_{ MemoryDialog(this), MemoryDialog(this), MemoryDialog(this), MemoryDialog(this) },
+memory_{ MemoryDialog(this), MemoryDialog(this), MemoryDialog(this), MemoryDialog(this) }, crtc_debug_(this), 
 status_speed_("0", this), status_tape_(this), status_disk_(this)
 {
    emulation_ = new Emulation(this);
@@ -192,6 +192,7 @@ void SugarboxApp::InitSettings()
 
 
    debug_.SetSettings(&settings_);
+   crtc_debug_.SetSettings(&settings_);
    for (auto& m : memory_)
    {
       m.SetSettings(&settings_);
@@ -221,6 +222,8 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 
    debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
+
+   crtc_debug_.SetEmulator (emulation_, &language_);)
 
    for (auto& m : memory_)
    {
@@ -523,6 +526,12 @@ void SugarboxApp::OpenDebugger()
    debug_.show();
 }
 
+void SugarboxApp::OpenCrtc()
+{
+   // Open debugger windows
+   crtc_debug_.show();
+}
+
 void SugarboxApp::InitFileDialogs()
 {
    std::vector<FormatType*> format_list = disk_builder_.GetFormatsList(DiskBuilder::WRITE);
@@ -797,6 +806,7 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_DEBUG_MEMORY_2, std::bind(&SugarboxApp::OpenMemory, this, 2), "L_DEBUG_OPEN_MEMORY_2");
    AddAction(IFunctionInterface::FN_DEBUG_MEMORY_3, std::bind(&SugarboxApp::OpenMemory, this, 3), "L_DEBUG_OPEN_MEMORY_3");
    AddAction(IFunctionInterface::FN_DEBUG_MEMORY_4, std::bind(&SugarboxApp::OpenMemory, this, 4), "L_DEBUG_OPEN_MEMORY_4");
+   AddAction(IFunctionInterface::FN_DEBUG_CRTC, std::bind(&SugarboxApp::OpenCrtc, this), "L_DEBUG_OPEN_CRTC");
 
    AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&SugarboxApp::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&SugarboxApp::Eject, this, 0), "L_FN_DISK_1_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 0));

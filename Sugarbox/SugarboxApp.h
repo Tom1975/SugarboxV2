@@ -17,6 +17,7 @@
 #include "Snapshot.h"
 #include "DebugDialog.h"
 #include "MemoryDialog.h"
+#include "CRTCDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
@@ -86,6 +87,7 @@ public:
    virtual void AutoType();
    virtual void OpenDebugger();
    virtual void OpenMemory(int memory_index);
+   virtual void OpenCrtc();
 
    // INotifier 
    virtual void DiskLoaded();
@@ -207,6 +209,7 @@ protected:
 
    DebugDialog debug_;
    MemoryDialog memory_[4];
+   CRTCDialog crtc_debug_;
 
    // Flag handler
    FlagHandler flag_handler_;
