@@ -223,7 +223,7 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
 
-   crtc_debug_.SetEmulator (emulation_, &language_);)
+   crtc_debug_.SetEmulator (emulation_, &language_);
 
    for (auto& m : memory_)
    {
