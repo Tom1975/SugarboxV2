@@ -17,7 +17,18 @@ CRTCDialog::CRTCDialog(QWidget *parent) :
 {
    parent_ = parent;
    ui->setupUi(this);
-   QObject::connect(ui->bank, SIGNAL(currentIndexChanged(int)), SLOT(ChangeMemorySource(int)));
+
+   // Add registers to CRTC dialog
+   for (int i = 0; i < 18; i++)
+   {
+      ui->gridLayout->addWidget(new QLabel(QString("%1").arg(i, 2, 10, QChar('0')), this));
+   }
+   
+   // Add internal counters
+   ui->gridLayout->addWidget(new QLabel(QString("VCC"), this));
+
+   // Add videobeam position
+
 
 }
 
@@ -91,6 +102,5 @@ void CRTCDialog::UpdateDebug()
 
 void CRTCDialog::SetAddress(unsigned int addr)
 {
-   ui->memoryWidget->ForceTopAddress(addr);
 }
 

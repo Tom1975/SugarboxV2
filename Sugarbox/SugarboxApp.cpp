@@ -1009,6 +1009,9 @@ void SugarboxApp::NotifyStop()
 {
    // call update for debugger
    debug_.Update();
+   for (auto& i: memory_)
+      i.Update();
+   crtc_debug_.Update();
 }
 
 
