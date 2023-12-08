@@ -18,23 +18,54 @@ CRTCDialog::CRTCDialog(QWidget *parent) :
    parent_ = parent;
    ui->setupUi(this);
 
-   // Add registers to CRTC dialog
-   for (int i = 0; i < 18; i++)
-   {
-      ui->gridLayout->addWidget(new QLabel(QString("%1").arg(i, 2, 10, QChar('0')), this));
-   }
-   
-   // Add internal counters
-   ui->gridLayout->addWidget(new QLabel(QString("VCC"), this));
+   registerGroup_ = new QGroupBox(tr("Registers"));
 
-   // Add videobeam position
-
+   // see https://doc.qt.io/qt-6/qtwidgets-widgets-lineedits-example.html
+   QGridLayout* layout = new QGridLayout;
+   layout->addWidget(registerGroup_, 0, 0);
+   setLayout(layout);
 
 }
 
 CRTCDialog::~CRTCDialog()
 {
 }
+
+
+void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
+{
+   language_ = language;
+   emu_handler_ = emu_handler;
+   emu_handler_->AddUpdateListener(this);
+
+   // Attach each register/counter to each value
+   auto crtc_list = emu_handler->GetEngine()->GetCRTC()->registers_list_;
+
+   // Add registers to CRTC dialog
+   int current_row = 0;
+   int current_column = 0;
+   for (int i = 0; i < 18; i++)
+   {
+      ui->gridLayout->addWidget(new QLabel(QString("%1").arg(i, 2, 10, QChar('0')), this), current_row, current_column++);
+      auto w = new QLineEdit(QString(""));
+      ui->gridLayout->addWidget(w, current_row, current_column++);
+      if (current_column > 16)
+      {
+         current_column = 0;
+         current_row++;
+      }
+   }
+
+   current_column = 0;
+   current_row++;
+   // Add internal counters
+   ui->gridLayout->addWidget(new QLabel(QString("VCC"), this), current_row, current_column++);
+   ui->gridLayout->addWidget(new QLineEdit(QString("")), current_row, current_column++);
+   // Add videobeam position
+
+
+}
+
 
 bool CRTCDialog::event(QEvent *event)
 {
@@ -65,13 +96,6 @@ void CRTCDialog::keyPressEvent(QKeyEvent* event)
 bool CRTCDialog::eventFilter(QObject* watched, QEvent* event)
 {
    return QDialog::eventFilter(watched, event);
-}
-
-void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
-{
-   language_ = language;
-   emu_handler_ = emu_handler;
-   emu_handler_->AddUpdateListener(this);
 }
 
 void CRTCDialog::SetSettings(Settings* settings)

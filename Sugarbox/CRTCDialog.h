@@ -55,4 +55,7 @@ private:
 
    // automatic shortcuts
    std::map<unsigned int, std::function<void()> > shortcuts_;
+
+
+   QGroupBox* registerGroup_;
 };
