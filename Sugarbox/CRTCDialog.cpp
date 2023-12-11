@@ -7,30 +7,73 @@
 #include <QMouseEvent>
 
 #include "CRTCDialog.h"
-#include "ui_CRTCDialog.h"
 
 
 CRTCDialog::CRTCDialog(QWidget *parent) :
    QDialog(nullptr),
-   ui(new Ui::CRTCDialog),
-   language_(nullptr)
+   language_(nullptr),
+   crtc_list_(nullptr)
 {
    parent_ = parent;
-   ui->setupUi(this);
 
-   registerGroup_ = new QGroupBox(tr("Registers"));
+   informations_group_ = new QGroupBox(tr("Generic informations"));
 
-   // see https://doc.qt.io/qt-6/qtwidgets-widgets-lineedits-example.html
-   QGridLayout* layout = new QGridLayout;
-   layout->addWidget(registerGroup_, 0, 0);
-   setLayout(layout);
+   register_group_ = new QGroupBox(tr("Registers"));
+   layout_reg_ = new QGridLayout;
+   int current_row = 0;
+   int current_column = 0;
+   for (unsigned int i = 0; i < 18; i++)
+   {
+      register_edit_ [i] = new QLineEdit(QString(""));
+      register_edit_[i]->setInputMask("HH");
+      connect(register_edit_[i], &QLineEdit::editingFinished, this, [=]() {UpdateRegister(register_edit_[i]->text(), i); });
+      register_label_[i] = new QLabel(QString("R%1").arg(i, 2, 10, QChar('0')), this);
+      layout_reg_->addWidget(register_label_[i], current_row, current_column++);
+      layout_reg_->addWidget(register_edit_[i], current_row, current_column++);
+      if (current_column > 16)
+      {
+         current_column = 0;
+         current_row++;
+      }
+   }
+   register_group_->setLayout(layout_reg_);
+
+   counters_group_ = new QGroupBox(tr("Counters"));
+   layout_counters_ = new QGridLayout;
+
+   layout_counters_->addWidget(new QLabel(QString("Vcc")), 0, 0);
+   layout_counters_->addWidget(new QLineEdit(QString("")), 0, 1);
+   
+   counters_group_->setLayout(layout_counters_);
+
+   layout_ = new QGridLayout;
+   layout_->addWidget(informations_group_, 0, 0);
+   layout_->addWidget(register_group_, 1, 0);
+   layout_->addWidget(counters_group_, 2, 0);
+   setLayout(layout_);
 
 }
 
 CRTCDialog::~CRTCDialog()
 {
+   // delete everything ?
+   // todo
 }
 
+
+void CRTCDialog::UpdateRegister(QString str, unsigned int i)
+{
+   // Update only on break
+   if (crtc_list_)
+   {
+      bool ok;
+      unsigned int value = str.toUInt(&ok, 16);
+      if (ok)
+      {
+         crtc_list_[i] = value;
+      }
+   }
+}
 
 void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
 {
@@ -38,32 +81,15 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
 
+   // Update group labels
+   informations_group_->setTitle(language_->GetString("L_DEBUG_CRTC_GEN_INFO"));
+   register_group_->setTitle(language_->GetString("L_DEBUG_CRTC_REGISTERS"));
+   counters_group_->setTitle(language_->GetString("L_DEBUG_CRTC_COUNTERS"));
+
    // Attach each register/counter to each value
-   auto crtc_list = emu_handler->GetEngine()->GetCRTC()->registers_list_;
+   crtc_list_ = emu_handler->GetEngine()->GetCRTC()->registers_list_;
 
-   // Add registers to CRTC dialog
-   int current_row = 0;
-   int current_column = 0;
-   for (int i = 0; i < 18; i++)
-   {
-      ui->gridLayout->addWidget(new QLabel(QString("%1").arg(i, 2, 10, QChar('0')), this), current_row, current_column++);
-      auto w = new QLineEdit(QString(""));
-      ui->gridLayout->addWidget(w, current_row, current_column++);
-      if (current_column > 16)
-      {
-         current_column = 0;
-         current_row++;
-      }
-   }
-
-   current_column = 0;
-   current_row++;
-   // Add internal counters
-   ui->gridLayout->addWidget(new QLabel(QString("VCC"), this), current_row, current_column++);
-   ui->gridLayout->addWidget(new QLineEdit(QString("")), current_row, current_column++);
-   // Add videobeam position
-
-
+   Update();
 }
 
 
@@ -119,6 +145,14 @@ void CRTCDialog::showEvent(QShowEvent* event)
 
 void CRTCDialog::UpdateDebug()
 {
+   // Update
+   for (int i = 0; i < 18; i++)
+   {
+      register_edit_[i]->setText(QString("%1").arg(crtc_list_[i], 2, 10, QChar('0')));
+   }
+
+
+
    // Update parent window
    parent_->repaint();
 }

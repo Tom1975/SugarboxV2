@@ -1077,5 +1077,10 @@ void SugarboxApp::closeEvent(QCloseEvent* event)
    // do what you need here
    // then call parent's procedure
    debug_.close();
+   crtc_debug_.close();
+   for (auto& m : memory_)
+   {
+      m.close();
+   }
    QWidget::closeEvent(event);
 }

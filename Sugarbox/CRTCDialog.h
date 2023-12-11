@@ -12,9 +12,6 @@
 #include "Settings.h"
 #include "MultiLanguage.h"
 
-namespace Ui {
-class CRTCDialog;
-}
 
 class CRTCDialog : public QDialog, public DebugInterface, IUpdate
 {
@@ -40,22 +37,42 @@ public:
 
 public slots:
 
-
+   void UpdateRegister(QString str, unsigned int i);
 
 protected:
    // Menu action
    void UpdateDebug();
 
 private:
-   Ui::CRTCDialog *ui;
+   //Ui::CRTCDialog *ui;
    Emulation* emu_handler_;
    Settings* settings_;
+   unsigned char* crtc_list_;
+
    MultiLanguage* language_;
    QWidget* parent_;
 
    // automatic shortcuts
    std::map<unsigned int, std::function<void()> > shortcuts_;
 
+   // Groups
+   QGroupBox* informations_group_;
+   QGroupBox* register_group_;
+   QGroupBox* counters_group_;
 
-   QGroupBox* registerGroup_;
+   QGridLayout* layout_reg_;
+   QGridLayout* layout_counters_;
+
+   QGridLayout* layout_;
+
+   QLabel* register_label_[18];
+   QLineEdit* register_edit_[18];
+
+   // informations
+   QComboBox* type_crtc_;
+   // Registers
+   QLineEdit* registers_[18];
+   // Counters
+   QLineEdit* vcc_;
+   QLineEdit* hcc_;
 };
