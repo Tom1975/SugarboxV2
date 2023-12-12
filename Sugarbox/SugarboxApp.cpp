@@ -177,6 +177,11 @@ void SugarboxApp::InitSettings()
    settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_1, QColor(0xff, 0, 0, 0xff));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_2, QColor(0x90, 0, 0, 0xff));
 
+
+   settings_.AddColor(SettingsValues::EDIT_BACK, Qt::white);
+   settings_.AddColor(SettingsValues::EDIT_TEXT, Qt::black);
+   settings_.AddColor(SettingsValues::EDIT_TEXT_CHANGED, Qt::red);
+
    //
    settings_.AddAction(SettingsValues::DBG_RUN_ACTION, { "DBG_RUN", Qt::Key_F5 });
    settings_.AddAction(SettingsValues::DBG_BREAK_ACTION, { "DBG_BREAK", Qt::Key_F5 });

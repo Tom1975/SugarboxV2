@@ -42,12 +42,16 @@ public slots:
 protected:
    // Menu action
    void UpdateDebug();
+   void UpdateValue(QLineEdit* edit, unsigned char new_value, bool is_new, bool is_running);
 
 private:
-   //Ui::CRTCDialog *ui;
+   void Cleanup();
+
    Emulation* emu_handler_;
    Settings* settings_;
    unsigned char* crtc_list_;
+   unsigned char crtc_list_old_[18];
+   unsigned char old_vcc_;
 
    MultiLanguage* language_;
    QWidget* parent_;
@@ -60,19 +64,28 @@ private:
    QGroupBox* register_group_;
    QGroupBox* counters_group_;
 
+   // Layouts
    QGridLayout* layout_reg_;
    QGridLayout* layout_counters_;
 
    QGridLayout* layout_;
 
-   QLabel* register_label_[18];
-   QLineEdit* register_edit_[18];
-
    // informations
    QComboBox* type_crtc_;
-   // Registers
-   QLineEdit* registers_[18];
    // Counters
    QLineEdit* vcc_;
    QLineEdit* hcc_;
+
+   class  EditValue
+   {
+   public:
+      QLabel* label_;
+      QLineEdit* edit_;
+      unsigned char* value;
+      unsigned char* old_value;
+   };
+   std::vector<EditValue> edit_list_;
+
+   void CreateEditValue(QGridLayout* layout, QString l, int row, int column, QString input_mask, unsigned char* ptr_current, unsigned char* ptr_old);
+
 };

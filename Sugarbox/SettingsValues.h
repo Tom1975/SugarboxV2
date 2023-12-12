@@ -22,6 +22,9 @@ public:
       DRIVE_STATUS_READ_2,
       DRIVE_STATUS_WRITE_1,
       DRIVE_STATUS_WRITE_2,
+      EDIT_BACK,
+      EDIT_TEXT,
+      EDIT_TEXT_CHANGED,
    };
 
    enum FontType

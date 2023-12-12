@@ -89,7 +89,6 @@ set ( UIS
  SugarboxApp.ui
  DebugDialog.ui
  MemoryDialog.ui
- CRTCDialog.ui
 )
 
 source_group("Resources" FILES ${RES} )
