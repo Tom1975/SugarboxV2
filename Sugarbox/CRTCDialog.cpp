@@ -12,7 +12,6 @@
 CRTCDialog::CRTCDialog(QWidget *parent) :
    QDialog(nullptr),
    language_(nullptr),
-   crtc_list_(nullptr), 
    informations_group_(nullptr), 
    register_group_(nullptr),
    counters_group_(nullptr),
@@ -32,9 +31,10 @@ void CRTCDialog::Cleanup()
 {
    for (auto& it : edit_list_)
    {
-      disconnect(it.edit_);
-      delete it.edit_;
-      delete it.label_;
+      disconnect(it->edit_);
+      delete it->edit_;
+      delete it->label_;
+      delete it;
    }
 
    edit_list_.clear();
@@ -46,34 +46,17 @@ void CRTCDialog::Cleanup()
    delete layout_reg_; layout_reg_ = nullptr;
 }
 
-void CRTCDialog::UpdateRegister(QString str, unsigned int i)
+template<typename T>
+void CRTCDialog::CreateEditValue(QWidget* parent, QGridLayout* layout, QString l, int row, int column, ValueEditCtrl::RegisterType reg_type, T* ptr_current)
 {
-   // Update only on break
-   if (crtc_list_)
-   {
-      bool ok;
-      unsigned int value = str.toUInt(&ok, 16);
-      if (ok)
-      {
-         crtc_list_[i] = value;
-      }
-   }
-}
-
-void CRTCDialog::CreateEditValue(QGridLayout *layout, QString l, int row, int column, QString input_mask, unsigned char* ptr_current, unsigned char* ptr_old )
-{
-   EditValue edit_value;
-   edit_value.label_ = new QLabel(l, this);
-   layout->addWidget(edit_value.label_, row, column);
-   edit_value.edit_ = new QLineEdit(QString(""), this);
-   edit_value.edit_->setInputMask(input_mask);
-   layout->addWidget(edit_value.edit_, row, column + 1);
-   edit_value.value = ptr_current;
-   edit_value.old_value = ptr_old;
+   ValueEditCtrlImp<T> * edit_value = new ValueEditCtrlImp<T>(parent, settings_, reg_type);
+   edit_value->label_ = new QLabel(l, this);
+   layout->addWidget(edit_value->label_, row, column);
+   layout->addWidget(edit_value->edit_, row, column + 1);
+   edit_value->value_ = ptr_current;
    edit_list_.push_back(edit_value );
 
-   connect(edit_value.edit_, &QLineEdit::editingFinished, this, [=]() mutable {bool ok; unsigned int value = edit_value.edit_->text().toUInt(&ok, 16);
-                                                                                                      if (ok) { *edit_value.value = static_cast<unsigned char>(value & 0xFF); }});
+   connect(edit_value->edit_, &QLineEdit::editingFinished, this, [=]() mutable {edit_value->Validate(emu_handler_->IsRunning()); });
 }
 
 void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
@@ -81,7 +64,6 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    language_ = language;
    emu_handler_ = emu_handler;
    emu_handler_->AddUpdateListener(this);
-   crtc_list_ = emu_handler->GetEngine()->GetCRTC()->registers_list_;
 
    // Clean up all elements
    Cleanup();
@@ -94,7 +76,7 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    int current_column = 0;
    for (unsigned int i = 0; i < 18; i++)
    {
-      CreateEditValue(layout_reg_, QString("R%1").arg(i, 2, 10, QChar('0')), current_row, current_column, "HH", &crtc_list_[i], &crtc_list_old_[i]);
+      CreateEditValue<unsigned char>(this, layout_reg_, QString("R%1").arg(i, 2, 10, QChar('0')), current_row, current_column, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->registers_list_[i]);
       current_column += 2;
       if (current_column > 16)
       {
@@ -108,7 +90,18 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    counters_group_ = new QGroupBox(tr("Counters"));
    layout_counters_ = new QGridLayout;
 
-   CreateEditValue(layout_counters_, QString("Vcc"), 0, 0, "HH", &emu_handler->GetEngine()->GetCRTC()->vcc_, &old_vcc_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Hcc"), 0, 0, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->hcc_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Vlc"), 0, 2, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->vlc_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Vcc"), 0, 4, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->vcc_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("R52"), 0, 6, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetVGA()->interrupt_counter_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Vert. Adjust"), 0, 8, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->vertical_adjust_counter_);
+   CreateEditValue<unsigned short>(this, layout_counters_, QString("MA"), 1, 0, ValueEditCtrl::_16Bit, &emu_handler->GetEngine()->GetCRTC()->ma_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Addr. Reg."), 1, 2, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->adddress_register_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Status Reg."), 1, 4, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->status_register_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Horiz.Pulse"), 1, 6, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->horinzontal_pulse_);
+   CreateEditValue<unsigned char>(this, layout_counters_, QString("Vert.Pulse"), 1, 8, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->scanline_vbl_);
+   CreateEditValue<int>(this, layout_counters_, QString("Video Beam X"), 2, 0, ValueEditCtrl::_ValueInt, &emu_handler->GetEngine()->GetMonitor()->x_);
+   CreateEditValue<int>(this, layout_counters_, QString("Video Beam Y"), 2, 2, ValueEditCtrl::_ValueInt, &emu_handler->GetEngine()->GetMonitor()->y_);
 
    counters_group_->setLayout(layout_counters_);
 
@@ -176,24 +169,13 @@ void CRTCDialog::showEvent(QShowEvent* event)
    UpdateDebug();
 }
 
-void CRTCDialog::UpdateValue(QLineEdit* edit, unsigned char new_value, bool is_new, bool is_running)
-{
-   QPalette palette;
-   palette.setColor(QPalette::Base, settings_->GetColor(SettingsValues::BACK_COLOR));
-   palette.setColor(QPalette::Text, is_new ? settings_->GetColor(SettingsValues::EDIT_TEXT_CHANGED) : settings_->GetColor(SettingsValues::EDIT_TEXT));
-   edit->setPalette(palette);
-   edit->setText(QString("%1").arg(new_value, 2, 10, QChar('0')));
-   edit->setReadOnly(is_running);
-}
-
 void CRTCDialog::UpdateDebug()
 {
    if (emu_handler_ != nullptr)
    {
       for (auto it : edit_list_)
       {
-         UpdateValue(it.edit_, *it.value, *it.value != *it.old_value, emu_handler_->IsRunning());
-         *it.old_value = *it.value;
+         it->UpdateValue(emu_handler_->IsRunning());
       }
    }
 

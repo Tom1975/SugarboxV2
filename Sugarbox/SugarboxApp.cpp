@@ -180,6 +180,7 @@ void SugarboxApp::InitSettings()
 
    settings_.AddColor(SettingsValues::EDIT_BACK, Qt::white);
    settings_.AddColor(SettingsValues::EDIT_TEXT, Qt::black);
+   settings_.AddColor(SettingsValues::EDIT_TEXT_DISABLED, Qt::gray);
    settings_.AddColor(SettingsValues::EDIT_TEXT_CHANGED, Qt::red);
 
    //

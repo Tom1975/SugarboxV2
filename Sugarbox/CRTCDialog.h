@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QListWidgetItem>
 
+#include "ValueEditCtrl.h"
+
 #include "IUpdate.h"
 #include "DebugInterface.h"
 #include "Emulation.h"
@@ -37,21 +39,15 @@ public:
 
 public slots:
 
-   void UpdateRegister(QString str, unsigned int i);
-
 protected:
    // Menu action
    void UpdateDebug();
-   void UpdateValue(QLineEdit* edit, unsigned char new_value, bool is_new, bool is_running);
 
 private:
    void Cleanup();
 
    Emulation* emu_handler_;
    Settings* settings_;
-   unsigned char* crtc_list_;
-   unsigned char crtc_list_old_[18];
-   unsigned char old_vcc_;
 
    MultiLanguage* language_;
    QWidget* parent_;
@@ -76,16 +72,9 @@ private:
    QLineEdit* vcc_;
    QLineEdit* hcc_;
 
-   class  EditValue
-   {
-   public:
-      QLabel* label_;
-      QLineEdit* edit_;
-      unsigned char* value;
-      unsigned char* old_value;
-   };
-   std::vector<EditValue> edit_list_;
+   std::vector<ValueEditCtrl*> edit_list_;
 
-   void CreateEditValue(QGridLayout* layout, QString l, int row, int column, QString input_mask, unsigned char* ptr_current, unsigned char* ptr_old);
+   template<typename T>
+   void CreateEditValue(QWidget* parent, QGridLayout* layout, QString l, int row, int column, ValueEditCtrl::RegisterType reg_type, T* ptr_current);
 
 };
