@@ -179,7 +179,9 @@ void Emulation::EmulationLoop()
             break;
          }
 
-         if (old_action != debug_action_)
+         if (old_action != debug_action_
+            && (debug_action_ == DBG_BREAK
+            || debug_action_ == DBG_RUN))
          {
             // Notify anyone interrested that the code is stopped
             for (auto& it : notifier_dbg_list_)

@@ -24,6 +24,7 @@ CRTCDialog::CRTCDialog(QWidget *parent) :
 
 CRTCDialog::~CRTCDialog()
 {
+   layout_reg_ = nullptr;
    Cleanup();
 }
 
@@ -109,12 +110,14 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    layout_->addWidget(informations_group_, 0, 0);
    layout_->addWidget(register_group_, 1, 0);
    layout_->addWidget(counters_group_, 2, 0);
-   setLayout(layout_);
 
    // Update group labels
    informations_group_->setTitle(language_->GetString("L_DEBUG_CRTC_GEN_INFO"));
    register_group_->setTitle(language_->GetString("L_DEBUG_CRTC_REGISTERS"));
    counters_group_->setTitle(language_->GetString("L_DEBUG_CRTC_COUNTERS"));
+
+   setLayout(layout_);
+  
 
    Update();
 }
