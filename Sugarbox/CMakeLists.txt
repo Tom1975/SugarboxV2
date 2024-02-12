@@ -16,7 +16,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set (SUGARBOX_VERSION "2.0.2" CACHE STRING "Version to build" FORCE)
+set (SUGARBOX_VERSION "2.0.3" CACHE STRING "Version to build" FORCE)
 
 MESSAGE (STATUS "Version :" ${SUGARBOX_VERSION})
 
@@ -32,7 +32,7 @@ set(CompilerFlags
         
         )
 
-find_package(Qt6 COMPONENTS Widgets WebSockets OpenGLWidgets OpenGL REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets WebSockets OpenGLWidgets OpenGL REQUIRED)
 qt6_add_resources(QRCS resources.qrc)
 
 if(Qt6_FOUND AND WIN32 AND TARGET Qt6::qmake AND NOT TARGET Qt6::windeployqt)

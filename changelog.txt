@@ -1,7 +1,8 @@
 Sugarbox changelog
 ------------------
 v2.0.3 - 
-   * 
+   * Memory debug window added (up to 4)
+   * CRTC debug window added
 
 v2.0.2 - (29/11/2023)
    * Change Qt version to 6.5.1. Builds are now 64 bits only

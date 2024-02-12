@@ -13,6 +13,7 @@
 #include "Z80Desassember.h"
 
 #include "SCLPlayer.h"
+#include "Log.h"
 
 
 class INotifier
@@ -199,5 +200,5 @@ protected:
    void ExecuteNextScript();
 
    SCLPlayer script_player_;
-
+   Log log_;
 };

@@ -72,6 +72,7 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    emulator_settings_.Load("Sugarbox.ini");
 
    emulator_engine_ = new EmulatorEngine();
+   emulator_engine_->SetLog( &log_);
    emulator_engine_->SetDirectories(this);
    emulator_engine_->SetConfigurationManager(&config_manager_);
    emulator_engine_->Init(display, nullptr);
