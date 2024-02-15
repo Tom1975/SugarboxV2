@@ -69,6 +69,7 @@ private:
    FlagHandler* flag_handler_;
    Settings* settings_;
    MultiLanguage* language_;
+   QWidget* parent_;
 
    ///////////////////////////////
    // Register data

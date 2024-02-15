@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
 if (MSVC)
-   set( CMAKE_INSTALL_PREFIX bin)
-   set (CMAKE_INSTALL_BINDIR ".")
+   set (CMAKE_INSTALL_BINDIR .)
+   set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install)
 endif()
 
 #no config util
