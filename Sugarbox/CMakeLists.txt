@@ -91,8 +91,16 @@ set ( UIS
  MemoryDialog.ui
 )
 
+set (ACTION
+    ../.github/workflows/macos.yml
+    ../.github/workflows/release.yml
+    ../.github/workflows/ubuntu.yml
+    ../.github/workflows/windows.yml
+   )
+
 source_group("Resources" FILES ${RES} )
 source_group("Docs" FILES ${EXTRA} )
+source_group("Github Action" FILES ${ACTION} )
 
 if(UNIX)
     if (APPLE)
@@ -131,7 +139,7 @@ IF(WIN32)
 endif()
 
 
-add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} )
+add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
 
 target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
 

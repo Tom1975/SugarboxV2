@@ -289,7 +289,8 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
    // Convert this key to new config file !
-   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   //keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
    event_keyboard->ignore();
    /*keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
 
@@ -400,7 +401,7 @@ void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 
 void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
 {
-   keyboard_handler_->SendScanCode(event_keyboard->key(), false);
+   keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), false);
 }
 
 void SugarboxApp::DrawStatusBar()
