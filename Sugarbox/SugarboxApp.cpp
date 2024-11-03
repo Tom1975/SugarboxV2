@@ -288,6 +288,8 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
+   qDebug() << "Keypressed " << "down " << QString(" %1").arg(event_keyboard->nativeScanCode(), 2, 16, QChar('0'));
+
    // Convert this key to new config file !
    //keyboard_handler_->SendScanCode(event_keyboard->key(), true);
    keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
