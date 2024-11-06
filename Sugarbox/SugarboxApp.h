@@ -106,6 +106,11 @@ public:
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
    virtual void keyReleaseEvent(QKeyEvent *event_keyboard);
    
+   bool focusNextPrevChild(bool) override {
+      // Return false to ignore the default focus behavior.
+      return false;
+   }
+
    // Display
    void FullScreenToggle();
    void closeEvent(QCloseEvent* event);
