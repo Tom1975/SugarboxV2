@@ -909,7 +909,8 @@ void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)
 
 void SugarboxApp::dropEvent(QDropEvent *event)
 {
-   foreach(const QUrl &url, event->mimeData()->urls())
+   QList<QUrl> url_list = event->mimeData()->urls();
+   foreach(const QUrl &url, url_list)
    {
       QString fileName = url.toLocalFile();
       std::string path = fileName.toUtf8().constData();
