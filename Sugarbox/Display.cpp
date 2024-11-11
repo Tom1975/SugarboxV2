@@ -68,6 +68,7 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init()
 {
+   grabKeyboard();
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024 * 1024];
