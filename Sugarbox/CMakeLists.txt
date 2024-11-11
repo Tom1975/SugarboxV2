@@ -167,10 +167,12 @@ install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .)
 
 qt_generate_deploy_app_script(
     TARGET Sugarbox
-    OUTPUT_SCRIPT deploy_script
+	FILENAME_VARIABLE deploy_script
+    #OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
-    NO_COMPILER_RUNTIME
-)
+    #NO_COMPILER_RUNTIME
+	)
+
 install(SCRIPT ${deploy_script})
 
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
