@@ -148,14 +148,17 @@ endif()
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
 
 IF(APPLE)
-set_target_properties(Sugarbox PROPERTIES
-    BUNDLE True
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.domain.style.identifier.Sugarbox
-    MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
-    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/customtemplate.plist.in
-)
+   MESSAGE (STATUS "MACOS Specific build")
+   set_target_properties(Sugarbox PROPERTIES
+       BUNDLE True
+       MACOSX_BUNDLE_GUI_IDENTIFIER my.domain.style.identifier.Sugarbox
+       MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
+       MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+       MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+       MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/customtemplate.plist.in
+   )
+ 
+   target_link_libraries(Sugarbox "-framework OpenGL")
 
 endif()
 
@@ -170,10 +173,6 @@ target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt6::Core Qt6::Widge
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_BINDIR}")
 MESSAGE ( CMAKE_INSTALL_BINDIR = ${CMAKE_INSTALL_BINDIR})
 
-if (APPLE)
-  target_link_libraries(Sugarbox "-framework OpenGL")
-endif()
-
 # Ready-to-use configuration
 install ( TARGETS Sugarbox RUNTIME DESTINATION .)
 install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION .) 
@@ -185,7 +184,7 @@ install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .)
 
 qt_generate_deploy_app_script(
     TARGET Sugarbox
-	FILENAME_VARIABLE deploy_script
+	 FILENAME_VARIABLE deploy_script
     #OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
     #NO_COMPILER_RUNTIME

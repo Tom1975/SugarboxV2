@@ -1,7 +1,7 @@
 #pragma once
 
-#include <qlabel>
-#include <qlineedit>
+#include <QLabel>
+#include <QLineEdit>
 
 #include "Settings.h"
 #include "SettingsValues.h"

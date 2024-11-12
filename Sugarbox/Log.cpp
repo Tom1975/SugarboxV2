@@ -1,5 +1,5 @@
 #include "Log.h"
-#include <QDebug.h>
+#include <QDebug>
 
 void Log::WriteLog(const char* pLog)
 {  
