@@ -138,17 +138,11 @@ IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
-
-IF(APPLE)
-   set (EXTRA_DEFINE MACOSX_BUNDLE )
-else()
-   set (EXTRA_DEFINE "")
-endif()
-
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
 
 IF(APPLE)
    MESSAGE (STATUS "MACOS Specific build")
+   set_target_properties(Sugarbox PROPERTIES  MACOSX_BUNDLE ON    )
    set_target_properties(Sugarbox PROPERTIES
        BUNDLE True
        MACOSX_BUNDLE_GUI_IDENTIFIER my.domain.style.identifier.Sugarbox
