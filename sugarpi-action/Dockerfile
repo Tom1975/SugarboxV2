@@ -1,5 +1,5 @@
-# Download base image ubuntu 23.10
-FROM ubuntu:23.10
+# Download base image ubuntu 24.04
+FROM ubuntu:24.04
 
 # LABEL about the custom image
 LABEL maintainer="thomas.guillemin@gmail.com"
