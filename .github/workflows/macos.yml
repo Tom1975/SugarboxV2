@@ -48,6 +48,9 @@ jobs:
         cd build
         echo 'Version : '  ${{ inputs.version }}
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        
+    - name: Build
+      run: |
         make package
         ls -l
       
