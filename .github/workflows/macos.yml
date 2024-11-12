@@ -41,16 +41,13 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive 
 
-    - name: Configure CMake
+    - name: Configure & build CMake
       run: |
         echo 'Generating makefile'
         mkdir build
         cd build
         echo 'Version : '  ${{ inputs.version }}
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
-        
-    - name: Build
-      run: |
         make package
         ls -l
       
