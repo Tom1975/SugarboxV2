@@ -149,7 +149,7 @@ IF(APPLE)
        MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-       MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/customtemplate.plist.in
+       MACOSX_BUNDLE_COPYRIGHT "Thomas GUILLEMIN"
    )
  
    target_link_libraries(Sugarbox "-framework OpenGL")
