@@ -32,7 +32,6 @@ jobs:
         sudo apt-get install libxinerama-dev libxcursor-dev --fix-missing
         sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev --fix-missing
         sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3-dev libcairo2-dev --fix-missing
-        sudo apt-get install libgconf2-dev --fix-missing
 
     - name: Checkout submodules
       run: git submodule update --init --recursive 

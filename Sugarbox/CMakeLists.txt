@@ -139,7 +139,25 @@ IF(WIN32)
 endif()
 
 
+IF(APPLE)
+   set (EXTRA_DEFINE MACOSX_BUNDLE )
+else()
+   set (EXTRA_DEFINE "")
+endif()
+
 add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+
+IF(APPLE)
+set_target_properties(Sugarbox PROPERTIES
+    BUNDLE True
+    MACOSX_BUNDLE_GUI_IDENTIFIER my.domain.style.identifier.Sugarbox
+    MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/customtemplate.plist.in
+)
+
+endif()
 
 target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
 
