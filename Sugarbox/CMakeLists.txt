@@ -181,6 +181,11 @@ install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" DESTINATION .)
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .) 
 
+IF(APPLE)
+   set(deploy_tool_options_arg --hardened-runtime)
+elseif(WIN32)
+   set(deploy_tool_options_arg --release)
+endif()
 
 qt_generate_deploy_app_script(
     TARGET Sugarbox
