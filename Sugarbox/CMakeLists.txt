@@ -175,8 +175,16 @@ MESSAGE ( CMAKE_INSTALL_BINDIR = ${CMAKE_INSTALL_BINDIR})
 
 # Ready-to-use configuration
 if(WIN32)
-   install (CODE "set (__qt_deploy_tool_extra_options \"--release\")")
+   install (CODE [[
+   if($<CONFIG:Release>)
+    set (__qt_deploy_tool_extra_options "--release")
+   else()
+    MESSAGE (STATUS \"Nothing to go\")
+   endif()
+   ]]
+   )
 endif()
+
 install ( TARGETS Sugarbox RUNTIME DESTINATION . BUNDLE DESTINATION .)
 install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" DESTINATION .) 
@@ -187,9 +195,6 @@ install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .)
 IF(APPLE)
    set(deploy_tool_options_arg --hardened-runtime)
 elseif(WIN32)
-   MESSAGE (STATUS "Win32 Specific build")
-   set(deploy_tool_options_arg "--release")
-   set(__qt_deploy_tool_extra_options "--release")
 endif()
 
 qt_generate_deploy_app_script(
