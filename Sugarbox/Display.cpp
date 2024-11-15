@@ -68,7 +68,8 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init()
 {
-   grabKeyboard();
+   // TODO TG : Beware of this, as it can prevent using keyboard in debug windows (for example)
+   // grabKeyboard();
    for (int i = 0; i < NB_FRAMES; i++)
    {
       framebufferArray_[i] = new int[1024 * 1024];
