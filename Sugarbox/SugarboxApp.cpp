@@ -15,6 +15,7 @@ dlg_settings_(&config_manager_, this), status_sound_(&sound_mixer_, &language_, 
 memory_{ MemoryDialog(this), MemoryDialog(this), MemoryDialog(this), MemoryDialog(this) }, crtc_debug_(this), 
 status_speed_("0", this), status_tape_(this), status_disk_(this)
 {
+   installEventFilter(this);
    emulation_ = new Emulation(this);
 
    emulation_->AddNotifierDbg(this);
