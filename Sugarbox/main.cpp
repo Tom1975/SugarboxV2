@@ -31,6 +31,7 @@ public:
    {
       static bool deadkey = 0;
       static unsigned int scancode = 0;
+#ifdef _WIN32
       if (eventType == "windows_generic_MSG") {
          MSG* msg = static_cast<MSG*>(message);
          MSG peekedMsg;
@@ -82,6 +83,7 @@ public:
          MSG* msg = static_cast<MSG*>(message);
          // ...
       }
+#endif
       return false;
    }
 protected:
