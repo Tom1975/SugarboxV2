@@ -12,8 +12,10 @@
 SugarboxApp::SugarboxApp(QWidget *parent) : QMainWindow(parent), old_speed_(0), counter_(0),
 save_disk_extension_(""), keyboard_handler_(nullptr), language_(), functions_list_(&language_),
 dlg_settings_(&config_manager_, this), status_sound_(&sound_mixer_, &language_, this), debugger_link_(nullptr), debug_(this),
+memory_{ MemoryDialog(this), MemoryDialog(this), MemoryDialog(this), MemoryDialog(this) }, crtc_debug_(this), 
 status_speed_("0", this), status_tape_(this), status_disk_(this)
 {
+   installEventFilter(this);
    emulation_ = new Emulation(this);
 
    emulation_->AddNotifierDbg(this);
@@ -176,6 +178,12 @@ void SugarboxApp::InitSettings()
    settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_1, QColor(0xff, 0, 0, 0xff));
    settings_.AddColor(SettingsValues::DRIVE_STATUS_WRITE_2, QColor(0x90, 0, 0, 0xff));
 
+
+   settings_.AddColor(SettingsValues::EDIT_BACK, Qt::white);
+   settings_.AddColor(SettingsValues::EDIT_TEXT, Qt::black);
+   settings_.AddColor(SettingsValues::EDIT_TEXT_DISABLED, Qt::gray);
+   settings_.AddColor(SettingsValues::EDIT_TEXT_CHANGED, Qt::red);
+
    //
    settings_.AddAction(SettingsValues::DBG_RUN_ACTION, { "DBG_RUN", Qt::Key_F5 });
    settings_.AddAction(SettingsValues::DBG_BREAK_ACTION, { "DBG_BREAK", Qt::Key_F5 });
@@ -191,6 +199,11 @@ void SugarboxApp::InitSettings()
 
 
    debug_.SetSettings(&settings_);
+   crtc_debug_.SetSettings(&settings_);
+   for (auto& m : memory_)
+   {
+      m.SetSettings(&settings_);
+   }
 }
 
 int SugarboxApp::RunApp(SugarboxInitialisation& init)
@@ -216,6 +229,13 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 
    debug_.SetEmulator(emulation_, &language_);
    debug_.SetFlagHandler(&flag_handler_);
+
+   crtc_debug_.SetEmulator (emulation_, &language_);
+
+   for (auto& m : memory_)
+   {
+      m.SetEmulator(emulation_, &language_);
+   }
 
    status_tape_.SetEmulation(emulation_);
    status_disk_.SetEmulation(emulation_, &settings_, functions_list_.GetMenu(4)->GetMenu(0));
@@ -269,8 +289,13 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
+   qDebug() << "Keypressed " << "down nativeScanCode = " << QString(" %1").arg(event_keyboard->nativeScanCode(), 2, 16, QChar('0'));
+   qDebug() << "Keypressed " << "down key = " << QString(" %1").arg(event_keyboard->key(), 2, 16, QChar('0'));
+   qDebug() << "Keypressed " << "down nativeVirtualKey = " << QString(" %1").arg(event_keyboard->nativeVirtualKey(), 2, 16, QChar('0'));
+   
    // Convert this key to new config file !
-   keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   //keyboard_handler_->SendScanCode(event_keyboard->key(), true);
+   keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
    event_keyboard->ignore();
    /*keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
 
@@ -381,7 +406,7 @@ void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 
 void SugarboxApp::keyReleaseEvent(QKeyEvent *event_keyboard)
 {
-   keyboard_handler_->SendScanCode(event_keyboard->key(), false);
+   keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), false);
 }
 
 void SugarboxApp::DrawStatusBar()
@@ -500,11 +525,23 @@ void SugarboxApp::ConfigurationSettings()
 {
 }
 
+void SugarboxApp::OpenMemory(int memory_index)
+{
+   // Open debugger windows
+   memory_[memory_index].show();
+}
+
 
 void SugarboxApp::OpenDebugger()
 {
    // Open debugger windows
    debug_.show();
+}
+
+void SugarboxApp::OpenCrtc()
+{
+   // Open debugger windows
+   crtc_debug_.show();
 }
 
 void SugarboxApp::InitFileDialogs()
@@ -777,6 +814,11 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&SugarboxApp::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
 
    AddAction(IFunctionInterface::FN_DEBUG_DEBUGGER, std::bind(&SugarboxApp::OpenDebugger, this), "L_DEBUG_OPEN_DBG");
+   AddAction(IFunctionInterface::FN_DEBUG_MEMORY_1, std::bind(&SugarboxApp::OpenMemory, this, 1), "L_DEBUG_OPEN_MEMORY_1");
+   AddAction(IFunctionInterface::FN_DEBUG_MEMORY_2, std::bind(&SugarboxApp::OpenMemory, this, 2), "L_DEBUG_OPEN_MEMORY_2");
+   AddAction(IFunctionInterface::FN_DEBUG_MEMORY_3, std::bind(&SugarboxApp::OpenMemory, this, 3), "L_DEBUG_OPEN_MEMORY_3");
+   AddAction(IFunctionInterface::FN_DEBUG_MEMORY_4, std::bind(&SugarboxApp::OpenMemory, this, 4), "L_DEBUG_OPEN_MEMORY_4");
+   AddAction(IFunctionInterface::FN_DEBUG_CRTC, std::bind(&SugarboxApp::OpenCrtc, this), "L_DEBUG_OPEN_CRTC");
 
    AddAction(IFunctionInterface::FN_DISK_1_SAVE_AS, std::bind(&SugarboxApp::SaveAs, this, 0), "L_FN_DISK_1_SAVE_AS", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
    AddAction(IFunctionInterface::FN_DISK_1_EJECT, std::bind(&SugarboxApp::Eject, this, 0), "L_FN_DISK_1_EJECT", std::bind(&Emulation::IsDiskPresent, emulation_, 0));
@@ -870,7 +912,8 @@ void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)
 
 void SugarboxApp::dropEvent(QDropEvent *event)
 {
-   foreach(const QUrl &url, event->mimeData()->urls())
+   QList<QUrl> url_list = event->mimeData()->urls();
+   foreach(const QUrl &url, url_list)
    {
       QString fileName = url.toLocalFile();
       std::string path = fileName.toUtf8().constData();
@@ -979,6 +1022,9 @@ void SugarboxApp::NotifyStop()
 {
    // call update for debugger
    debug_.Update();
+   for (auto& i: memory_)
+      i.Update();
+   crtc_debug_.Update();
 }
 
 
@@ -1037,4 +1083,17 @@ void SugarboxApp::DisableSSM()
    emulation_->GetEngine()->GetProc()->ClearCustom<Z80::CB>();
    emulation_->GetEngine()->GetProc()->ClearCustom<Z80::DD>();
    emulation_->GetEngine()->GetProc()->ClearCustom<Z80::FD>();
+}
+
+void SugarboxApp::closeEvent(QCloseEvent* event)
+{
+   // do what you need here
+   // then call parent's procedure
+   debug_.close();
+   crtc_debug_.close();
+   for (auto& m : memory_)
+   {
+      m.close();
+   }
+   QWidget::closeEvent(event);
 }

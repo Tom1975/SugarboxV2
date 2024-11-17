@@ -1,0 +1,7 @@
+# action.yml
+name: 'SugarBox V2 Build for Ubuntu'
+description: 'Build SugarBox V2 for Ubuntu'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

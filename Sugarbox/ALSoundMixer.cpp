@@ -174,26 +174,15 @@ void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
    ALenum error;
    OAWaveHDR* oal_wav = (OAWaveHDR*)new_buffer;
    alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
-   if ((error = alGetError()) != AL_NO_ERROR)
-   {
-   }
 
    alSourceQueueBuffers(source_, 1, &((OAWaveHDR*)new_buffer)->buffer);
-   if ((error = alGetError()) != AL_NO_ERROR)
-   {
-   }
    // If not launch, play the music !
    ALint source_state;
    alGetSourcei(source_, AL_SOURCE_STATE, &source_state);
    
    if (!play_ || source_state != AL_PLAYING)
-   {
-      
-          
+   {          
       alSourcePlay(source_);
-      if ((error = alGetError()) != AL_NO_ERROR)
-      {
-      }
 
       play_ = true;
    }
@@ -343,14 +332,9 @@ void ALSoundMixer::AddWav(int id, const unsigned char* databuffer, unsigned int 
    }
    ALenum error;
    alGenBuffers((ALuint)1, &info.buffer);
-   if ((error = alGetError()) != AL_NO_ERROR)
-   {
-   }
-
+   
    alBufferData(info.buffer, info.format, info.data, info.size, info.samplerate);
-   if ((error = alGetError()) != AL_NO_ERROR)
-   {
-   }
+
    wav_list_[id] = info;
 }
 
@@ -375,9 +359,6 @@ void ALSoundMixer::PlayWav(int wav_registered)
 
    ALenum error;
    alSourcePlay(source);
-   if ((error = alGetError()) != AL_NO_ERROR)
-   {
-   }
 
    ALint source_state;
    alGetSourcei(source, AL_SOURCE_STATE, &source_state);

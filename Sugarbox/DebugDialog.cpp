@@ -61,10 +61,11 @@ std::string& DebugDialog::FlagView::GetValue()
 
 
 DebugDialog::DebugDialog(QWidget *parent) :
-   QDialog(parent),
+   QDialog(nullptr),
    ui(new Ui::DebugDialog),
    language_(nullptr)
 {
+   parent_ = parent;
    ui->setupUi(this);
    ui->listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -205,6 +206,9 @@ void DebugDialog::on_set_top_address_clicked()
          // Set disassembly
          UpdateDisassembly(addr);
 
+         ui->memoryWidget->SetMemoryToRead(Memory::MEM_READ, 0);
+         ui->memoryWidget->ForceTopAddress(addr);
+
          // Write it on the log window
          std::string out_txt;
          //disassembler_.DisassembleArrayOfcode(emu_handler_->GetMotherboard(), addr, 512, out_txt);
@@ -273,7 +277,7 @@ void DebugDialog::showEvent(QShowEvent* event)
 void DebugDialog::UpdateDebug()
 {
    // Update parent window
-   this->parentWidget()->repaint();
+   parent_->repaint();
 
    // Get CPU
    Z80* z80 = emu_handler_->GetEngine()->GetProc();
@@ -288,6 +292,8 @@ void DebugDialog::UpdateDebug()
    // set top address at the upper tier of the screen
    ui->listWidget->ForceTopAddress(z80->pc_);
    ui->stackWidget->ForceTopAddress(z80->sp_ - 8);
+   ui->memoryWidget->SetMemoryToRead(Memory::MEM_READ, 0);
+   ui->memoryWidget->ForceTopAddress(z80->pc_);
 
    // set status
    ui->run_status->setText(emu_handler_->IsRunning() ? language_->GetString("L_DEBUG_RUNNING") : language_->GetString("L_DEBUG_BREAK"));

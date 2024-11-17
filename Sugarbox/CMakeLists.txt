@@ -16,7 +16,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set (SUGARBOX_VERSION "2.0.2" CACHE STRING "Version to build" FORCE)
+set (SUGARBOX_VERSION "2.0.3" CACHE STRING "Version to build" FORCE)
 
 MESSAGE (STATUS "Version :" ${SUGARBOX_VERSION})
 
@@ -32,7 +32,7 @@ set(CompilerFlags
         
         )
 
-find_package(Qt6 COMPONENTS Widgets WebSockets OpenGLWidgets OpenGL REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets WebSockets OpenGLWidgets OpenGL REQUIRED)
 qt6_add_resources(QRCS resources.qrc)
 
 if(Qt6_FOUND AND WIN32 AND TARGET Qt6::qmake AND NOT TARGET Qt6::windeployqt)
@@ -60,20 +60,6 @@ get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
 find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
-function(windeployqt target)
-
-    # POST_BUILD step
-    # - after build, we have a bin/lib for analyzing qt dependencies
-    # - we run windeployqt on target and deploy Qt libs
-
-    add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND "${_qt_bin_dir}/windeployqt.exe"         
-                \"$<TARGET_FILE:${target}>\"
-        COMMENT "Deploying Qt libraries using windeployqt for compilation target '${target}' ..."
-    )
-
-endfunction()
-
 file(GLOB HEADERS
     *.h
 )
@@ -93,13 +79,28 @@ set (SRCS
       ${SRCS}
    )
 
+set (EXTRA
+    ../changelog.txt
+    ../LICENSE
+    ../README.md
+   )
+
 set ( UIS
  SugarboxApp.ui
  DebugDialog.ui
+ MemoryDialog.ui
 )
 
+set (ACTION
+    ../.github/workflows/macos.yml
+    ../.github/workflows/release.yml
+    ../.github/workflows/ubuntu.yml
+    ../.github/workflows/windows.yml
+   )
 
 source_group("Resources" FILES ${RES} )
+source_group("Docs" FILES ${EXTRA} )
+source_group("Github Action" FILES ${ACTION} )
 
 if(UNIX)
     if (APPLE)
@@ -137,8 +138,29 @@ IF(WIN32)
    set (OPENGL_LINK opengl32)
 endif()
 
+IF(APPLE)
+   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+else()
+   add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+endif()
 
-add_executable(Sugarbox ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES}  )
+
+
+IF(APPLE)
+   MESSAGE (STATUS "MACOS Specific build")
+   set_target_properties(Sugarbox PROPERTIES  MACOSX_BUNDLE ON    )
+   set_target_properties(Sugarbox PROPERTIES
+       BUNDLE True
+       MACOSX_BUNDLE_GUI_IDENTIFIER my.domain.style.identifier.Sugarbox
+       MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
+       MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+       MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+       MACOSX_BUNDLE_COPYRIGHT "Thomas GUILLEMIN"
+   )
+ 
+   target_link_libraries(Sugarbox "-framework OpenGL")
+
+endif()
 
 target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
 
@@ -151,49 +173,44 @@ target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt6::Core Qt6::Widge
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_BINDIR}")
 MESSAGE ( CMAKE_INSTALL_BINDIR = ${CMAKE_INSTALL_BINDIR})
 
-if (APPLE)
-  target_link_libraries(Sugarbox "-framework OpenGL")
+# Ready-to-use configuration
+if(WIN32)
+   install (CODE [[
+   if($<CONFIG:Release>)
+    set (__qt_deploy_tool_extra_options "--release")
+   else()
+    MESSAGE (STATUS \"Nothing to go\")
+   endif()
+   ]]
+   )
 endif()
 
-# Ready-to-use configuration
-install ( TARGETS Sugarbox RUNTIME DESTINATION .)
+install ( TARGETS Sugarbox RUNTIME DESTINATION . BUNDLE DESTINATION .)
 install ( FILES "${PROJECT_SOURCE_DIR}/Sugarbox.ini" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ROM" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CART" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/CONF" DESTINATION .) 
 install ( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Resources" DESTINATION .) 
 
+IF(APPLE)
+   set(deploy_tool_options_arg --hardened-runtime)
+elseif(WIN32)
+endif()
+
+qt_generate_deploy_app_script(
+    TARGET Sugarbox
+	 FILENAME_VARIABLE deploy_script
+    #OUTPUT_SCRIPT deploy_script
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    #NO_COMPILER_RUNTIME
+	)
+
+install(SCRIPT ${deploy_script})
+
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
-# MSVC CPACK Qt dlls
-IF(MSVC)
-   install (CODE "
-      set (_outpath ${CMAKE_INSTALL_PREFIX})
-      set (_file ${CMAKE_CURRENT_BINARY_DIR}/$<$<CONFIG:debug>:Debug>$<$<CONFIG:release>:Release>$<$<CONFIG:RelWithDebInfo>:RelWithDebInfo>$<$<CONFIG:MinSizeRel>:MinSizeRel>/Sugarbox.exe)
-      set ( rel_or_debug  $<$<CONFIG:debug>:--debug>$<$<CONFIG:release>:--release>$<$<CONFIG:RelWithDebInfo>:--release>$<$<CONFIG:MinSizeRel>:--release> )
-      execute_process(
-              COMMAND \"${CMAKE_COMMAND}\" -E
-                  env PATH=\"${_qt_bin_dir}\" \"${WINDEPLOYQT_EXECUTABLE}\"
-                      --dry-run
-                      --no-compiler-runtime
-                      --list mapping
-                      \${rel_or_debug}
-                      \${_file}
-               OUTPUT_VARIABLE _output
-               OUTPUT_STRIP_TRAILING_WHITESPACE
-          )
-      separate_arguments(_files WINDOWS_COMMAND \${_output})
-      while(_files)
-         list(GET _files 0 _src)
-         list(GET _files 1 _dest)
-         execute_process(
-            COMMAND \"${CMAKE_COMMAND}\" -E
-            copy   \${_src} \${CMAKE_INSTALL_PREFIX}/\${_dest}\
-         )
-         list(REMOVE_AT _files 0 1)
-      endwhile()
-   "  )
-endif()
+
+
 
 # CPACK
 set(CPACK_GENERATOR "TGZ;ZIP")
