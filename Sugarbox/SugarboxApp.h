@@ -16,6 +16,8 @@
 #include "Motherboard.h"
 #include "Snapshot.h"
 #include "DebugDialog.h"
+#include "MemoryDialog.h"
+#include "CRTCDialog.h"
 #include "ConfigurationManager.h"
 #include "MultiLanguage.h"
 #include "Functions.h"
@@ -84,6 +86,8 @@ public:
    virtual bool IsSomethingInClipboard();
    virtual void AutoType();
    virtual void OpenDebugger();
+   virtual void OpenMemory(int memory_index);
+   virtual void OpenCrtc();
 
    // INotifier 
    virtual void DiskLoaded();
@@ -102,8 +106,14 @@ public:
    virtual void keyPressEvent(QKeyEvent * event_keyboard);
    virtual void keyReleaseEvent(QKeyEvent *event_keyboard);
    
+   bool focusNextPrevChild(bool) override {
+      // Return false to ignore the default focus behavior.
+      return false;
+   }
+
    // Display
    void FullScreenToggle();
+   void closeEvent(QCloseEvent* event);
 
 public slots:
    void clear();
@@ -203,6 +213,8 @@ protected:
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;
+   MemoryDialog memory_[4];
+   CRTCDialog crtc_debug_;
 
    // Flag handler
    FlagHandler flag_handler_;

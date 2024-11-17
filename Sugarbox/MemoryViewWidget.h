@@ -12,9 +12,15 @@ class MemoryViewWidget : public QWidget
 
 public:
    explicit MemoryViewWidget(QWidget* parent = nullptr);
+   virtual ~MemoryViewWidget();
 
    void SetDisassemblyInfo(Emulation* machine, unsigned short max_address);
    void ForceTopAddress(unsigned short address);
+
+   void SetMemoryToRead(Memory::DbgMemAccess mem_acces, int data);
+   void GetMemoryToRead(Memory::DbgMemAccess& mem_acces, int& data);
+
+   void Update();
 
 protected:
    void wheelEvent(QWheelEvent* event);
@@ -39,9 +45,16 @@ protected:
    unsigned short max_address_;
    int current_address_;
    int current_line_selected_;
+
+   // Type of memory
+   Memory::DbgMemAccess mem_acces_;
+   int mem_access_data_;
+
    int nb_lines_;
    int line_height_;
    int nb_byte_per_lines_;
+
+   unsigned char* buffer_;
 
    unsigned int address_size_;
    int char_size_;

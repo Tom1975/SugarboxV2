@@ -72,6 +72,7 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
    emulator_settings_.Load("Sugarbox.ini");
 
    emulator_engine_ = new EmulatorEngine();
+   emulator_engine_->SetLog( &log_);
    emulator_engine_->SetDirectories(this);
    emulator_engine_->SetConfigurationManager(&config_manager_);
    emulator_engine_->Init(display, nullptr);
@@ -179,7 +180,9 @@ void Emulation::EmulationLoop()
             break;
          }
 
-         if (old_action != debug_action_)
+         if (old_action != debug_action_
+            && (debug_action_ == DBG_BREAK
+            || debug_action_ == DBG_RUN))
          {
             // Notify anyone interrested that the code is stopped
             for (auto& it : notifier_dbg_list_)
