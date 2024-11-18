@@ -5,6 +5,8 @@
 #include <QImageWriter>
 #include <QPainter>
 
+#include <thread>
+
 #include "Display.h"
 
 
@@ -21,18 +23,31 @@
 #define DISP_WINDOW_Y   544
 
 
-CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0)
+CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0), sync_on_frame_(false)
 {
    setFocusPolicy(Qt::StrongFocus);
    memset(index_to_display_, 0, sizeof index_to_display_);
    setAutoFillBackground(false);
+
+   buffer_list_ = new FrameItem[NB_FRAMES];
+   buffer_list_[0].Init();
+   buffer_list_[0].status_ = FrameItem::IN_USE;
+   buffer_list_[0].sample_number_ = sample_number_++;
+   index_current_buffer_ = 0;
+
+   for (int i = 1; i < NB_FRAMES; i++)
+   {
+      buffer_list_[i].Init();
+   }
+
 }
 
 CDisplay::~CDisplay()
 {
+   delete[]buffer_list_;
    for (int i = 0; i < NB_FRAMES; i++)
    {
-      delete[]framebufferArray_[i];
+      //delete[]framebufferArray_[i];
    }
 
 }
@@ -54,12 +69,13 @@ int CDisplay::GetHeight ()
 
 int* CDisplay::GetVideoBuffer (int y )
 {
-   return &((framebufferArray_[current_texture_])[ REAL_DISP_X * y]);
+   //return &((framebufferArray_[current_texture_])[ REAL_DISP_X * y]);
+   return &((buffer_list_[index_current_buffer_].framebufferArray_)[REAL_DISP_X * y]);
 }
 
 void CDisplay::Reset ()
 {
-   memset( framebufferArray_[current_texture_], 0, REAL_DISP_X * REAL_DISP_Y*4);
+   memset(buffer_list_[index_current_buffer_].framebufferArray_, 0, REAL_DISP_X * REAL_DISP_Y*4);
 }
 
 void CDisplay::Show ( bool bShow )
@@ -68,12 +84,7 @@ void CDisplay::Show ( bool bShow )
 
 void CDisplay::Init()
 {
-   // TODO TG : Beware of this, as it can prevent using keyboard in debug windows (for example)
-   // grabKeyboard();
-   for (int i = 0; i < NB_FRAMES; i++)
-   {
-      framebufferArray_[i] = new int[1024 * 1024];
-   }
+      //framebufferArray_[i] = new int[1024 * 1024];
 }
 
 void CDisplay::initializeGL()
@@ -190,7 +201,7 @@ void CDisplay::Screenshot()
 {
    // Take a screenshot : Last displayed
 
-   QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, QImage::Format_ARGB32);
+   QImage img((unsigned char*)buffer_list_[0].framebufferArray_, 1024, 1024, QImage::Format_ARGB32);
    QImage scr(DISP_WINDOW_X, DISP_WINDOW_Y, QImage::Format_ARGB32);
 
    QPainter p;
@@ -210,7 +221,7 @@ void CDisplay::Screenshot(const char* scr_path)
 {
    // Take a screenshot : Last displayed
 
-   QImage img((unsigned char*)framebufferArray_[0], 1024, 1024, QImage::Format_ARGB32);
+   QImage img((unsigned char*)buffer_list_[0].framebufferArray_, 1024, 1024, QImage::Format_ARGB32);
    QImage scr(DISP_WINDOW_X, DISP_WINDOW_Y, QImage::Format_ARGB32);
 
    QPainter p;
@@ -228,17 +239,74 @@ void CDisplay::Screenshot(const char* scr_path)
 
 }
 
+void CDisplay::SyncWithFrame(bool set)
+{
+   sync_on_frame_ = set;
+}
+
+bool CDisplay::IsWaitHandled()
+{
+   // Wait, depending on the selected value
+   // VBL : wait for next VBL
+   glFinish();
+
+   return true;
+};
+
 void CDisplay::VSync (bool bDbg)
 {
-   // Add a frame to display, if display buffer is not full !
-   if (number_of_frame_to_display_ < NB_FRAMES)
+   int free_buffer = 0;
+   // if sync_on_frame_, wait untile there is no more than 1 frame
+   while (sync_on_frame_ && free_buffer < 2 )
    {
-      //index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
-      index_to_display_[0] = current_texture_;
-      //current_texture_ = (current_texture_ + 1) % NB_FRAMES;
-      number_of_frame_to_display_=1;
-      emit FrameIsReady();
+#ifdef  __circle__
+      mutex_sound.Acquire();
+#endif
+      free_buffer = NB_FRAMES;
+      for (int i = 0; i < NB_FRAMES; i++)
+      {
+         if (buffer_list_[i].status_ != FrameItem::FREE)
+         {
+            free_buffer--;
+         }
+      }
+#ifndef NO_MULTITHREAD
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+#endif
    }
+   int next_to_play = -1;
+   for (int i = 0; i < NB_FRAMES && next_to_play == -1; i++)
+   {
+      if (buffer_list_[i].status_ == FrameItem::FREE)
+      {
+         next_to_play = i;
+         //break;
+      }
+
+   }
+
+   if (next_to_play != -1)
+   {
+      // Buffer is full ? Prepare next, and mark this one to be played
+      buffer_list_[index_current_buffer_].status_ = FrameItem::TO_PLAY;
+      emit FrameIsReady();
+      index_current_buffer_ = next_to_play;
+   }
+   buffer_list_[index_current_buffer_].status_ = FrameItem::IN_USE;
+   buffer_list_[index_current_buffer_].sample_number_ = sample_number_++;
+
+
+   // Add a frame to display, if display buffer is not full !
+   /*if (number_of_frame_to_display_ < NB_FRAMES)
+   {
+
+      index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
+      //index_to_display_[0] = current_texture_;
+      current_texture_ = (current_texture_ + 1) % NB_FRAMES;
+      number_of_frame_to_display_++;
+      //number_of_frame_to_display_=1;
+      emit FrameIsReady();
+   }*/
 }
 
 void CDisplay::Display()
@@ -252,10 +320,28 @@ void CDisplay::WaitVbl ()
 
 void CDisplay::paintGL()
 {
+   int index_to_convert = -1;
+   int sample_number = -1;
 
-   if (number_of_frame_to_display_ > 0)
+   for (int i = 0; i < NB_FRAMES; i++)
    {
-      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
+      if (buffer_list_[i].status_ == FrameItem::TO_PLAY
+         && (sample_number == -1 || buffer_list_[i].sample_number_ <= sample_number))
+      {
+         sample_number = buffer_list_[i].sample_number_;
+         index_to_convert = i;
+      }
+   }
+
+   if (index_to_convert != -1)
+   {
+      buffer_list_[index_to_convert].status_ = FrameItem::LOCKED;
+
+   //if (number_of_frame_to_display_ > 0)
+   //{
+      //textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
+      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)buffer_list_[index_to_convert].framebufferArray_);
+      
 
       glDisable(GL_MULTISAMPLE);
       glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
@@ -275,5 +361,8 @@ void CDisplay::paintGL()
 
       textures[0]->bind();
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+      // Put it back to 'free_buffers_'
+      buffer_list_[index_to_convert].status_ = FrameItem::FREE;
    }
 }

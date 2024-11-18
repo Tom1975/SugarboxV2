@@ -91,6 +91,9 @@ set ( UIS
  MemoryDialog.ui
 )
 
+set (LABELS
+   Resources/labels.ini
+)
 set (ACTION
     ../.github/workflows/macos.yml
     ../.github/workflows/release.yml
@@ -101,6 +104,8 @@ set (ACTION
 source_group("Resources" FILES ${RES} )
 source_group("Docs" FILES ${EXTRA} )
 source_group("Github Action" FILES ${ACTION} )
+source_group("Labels" FILES ${LABELS} )
+
 
 if(UNIX)
     if (APPLE)
@@ -139,9 +144,9 @@ IF(WIN32)
 endif()
 
 IF(APPLE)
-   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS}} )
 else()
-   add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+   add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS})
 endif()
 
 

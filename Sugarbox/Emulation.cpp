@@ -61,7 +61,7 @@ void RunLoop(Emulation* emulator)
 
 unsigned int Emulation::GetSpeed()
 {
-   return emulator_engine_->GetSpeed();
+   return emulator_engine_->GetSpeedPercent();
 }
 
 void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init)

@@ -28,6 +28,9 @@ public :
    void Init();
    void Show(bool bShow);
 
+   void SyncWithFrame(bool set);
+   bool IsSyncOnFrame() { return sync_on_frame_; }
+
    virtual unsigned int ConvertRGB(unsigned int rgb);
    virtual void SetScanlines ( int scan ) {};
    virtual bool AFrameIsReady  () {return true;};
@@ -52,7 +55,7 @@ public :
    virtual void ForceFullScreen (bool bSetFullScreen ){}
    virtual void WindowChanged (int xIn, int yIn, int wndWidth, int wndHeight){};
    virtual bool SetSyncWithVbl ( int speed ){return false; };
-   virtual bool IsWaitHandled() { return false; };
+   virtual bool IsWaitHandled();
    virtual bool GetBlackScreenInterval () { return false ;};
    virtual void SetBlackScreenInterval (bool bBS) { };
 
@@ -85,8 +88,41 @@ protected:
    int m_Width;
    int m_Height;
 
+   class FrameItem
+   {
+   public:
+      FrameItem() {
+         framebufferArray_ = new int[1024 * 1024];
+         sample_number_ = 0;
+      }
+      virtual ~FrameItem() {
+         delete[]framebufferArray_;
+      }
+
+      void Init() {
+         status_ = FREE;
+         sample_number_ = 0;   
+      }
+
+      enum BufferState {
+         FREE,
+         IN_USE,
+         LOCKED,
+         TO_PLAY,
+      };
+
+      int* framebufferArray_;
+      BufferState status_;
+      int sample_number_;
+   };
+
+   FrameItem* buffer_list_;
+   int sample_number_;
+
+   // Current buffer lists
+   int index_current_buffer_;
    // Window
-   int* framebufferArray_[NB_FRAMES];
+   //int* framebufferArray_[NB_FRAMES];
 
    // Textures to display indexes
    int index_to_display_[NB_FRAMES];
@@ -95,6 +131,8 @@ protected:
 
    // Texture Indexes
    int current_texture_;
+
+   bool sync_on_frame_;
 
    // Open gl stuff
    QColor clearColor;
