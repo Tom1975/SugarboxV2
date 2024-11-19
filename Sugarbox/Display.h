@@ -28,7 +28,7 @@ public :
    void Init();
    void Show(bool bShow);
 
-   void SyncWithFrame(bool set);
+   void SyncOnFrame(bool set) override ;
    bool IsSyncOnFrame() { return sync_on_frame_; }
 
    virtual unsigned int ConvertRGB(unsigned int rgb);

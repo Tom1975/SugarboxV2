@@ -239,7 +239,7 @@ void CDisplay::Screenshot(const char* scr_path)
 
 }
 
-void CDisplay::SyncWithFrame(bool set)
+void CDisplay::SyncOnFrame(bool set)
 {
    sync_on_frame_ = set;
 }
@@ -364,5 +364,12 @@ void CDisplay::paintGL()
 
       // Put it back to 'free_buffers_'
       buffer_list_[index_to_convert].status_ = FrameItem::FREE;
+
+      // Wait vsync if vsync needed
+      if (sync_on_frame_)
+      {
+         glFinish();
+      }
+      
    }
 }
