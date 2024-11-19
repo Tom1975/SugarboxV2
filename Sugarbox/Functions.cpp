@@ -119,11 +119,13 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                            }, []() { return true; })
                            }, []() { return true; }));
 
-   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
+   // TODO : Add again when it will be ok !
+   /*menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings",
                            {
                            &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)
                            }, []() { return true; }
                            ));
+                           */
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Debug",
       {

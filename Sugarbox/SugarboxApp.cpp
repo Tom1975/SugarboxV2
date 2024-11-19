@@ -827,6 +827,7 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_SOUND, std::bind(&SugarboxApp::SetSpeed, this, -2), "L_CONTROL_SPEED_SOUND", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, -1));
    AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&SugarboxApp::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 0));
 
+   // TODO : add when it will be working !
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&SugarboxApp::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
 
    AddAction(IFunctionInterface::FN_DEBUG_DEBUGGER, std::bind(&SugarboxApp::OpenDebugger, this), "L_DEBUG_OPEN_DBG");
