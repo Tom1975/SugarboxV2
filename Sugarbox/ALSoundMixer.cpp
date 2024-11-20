@@ -122,7 +122,14 @@ unsigned int ALSoundMixer::GetNbChannels()
 
 void ALSoundMixer::CheckBuffersStatus()
 {
-
+   // Something is currently played ?
+   ALint sourceState;
+   alGetSourcei(source_, AL_SOURCE_STATE, &sourceState);
+   if (sourceState != AL_PLAYING)
+   {
+      // nothing to play !
+      int dbg=  1;
+   }
 }
 
 IWaveHDR* ALSoundMixer::GetFreeBuffer()
