@@ -84,6 +84,7 @@ protected:
 protected:
 
    // Displayed window : 
+   int frame_emitted_;
    int m_X, m_Y;
    int m_Width;
    int m_Height;

@@ -23,7 +23,8 @@
 #define DISP_WINDOW_Y   544
 
 
-CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0), sync_on_frame_(false)
+CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0), sync_on_frame_(false),
+   frame_emitted_ (0)
 {
    setFocusPolicy(Qt::StrongFocus);
    memset(index_to_display_, 0, sizeof index_to_display_);
@@ -34,7 +35,7 @@ CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_inde
    buffer_list_[0].status_ = FrameItem::IN_USE;
    buffer_list_[0].sample_number_ = sample_number_++;
    index_current_buffer_ = 0;
-
+   
    for (int i = 1; i < NB_FRAMES; i++)
    {
       buffer_list_[i].Init();
@@ -242,6 +243,7 @@ void CDisplay::Screenshot(const char* scr_path)
 void CDisplay::SyncOnFrame(bool set)
 {
    sync_on_frame_ = set;
+   // Restart sync : We try to avoid deadlocks
 }
 
 bool CDisplay::IsWaitHandled()
@@ -289,6 +291,7 @@ void CDisplay::VSync (bool bDbg)
    {
       // Buffer is full ? Prepare next, and mark this one to be played
       buffer_list_[index_current_buffer_].status_ = FrameItem::TO_PLAY;
+      frame_emitted_++;
       emit FrameIsReady();
       index_current_buffer_ = next_to_play;
    }
@@ -320,6 +323,9 @@ void CDisplay::WaitVbl ()
 
 void CDisplay::paintGL()
 {
+   // Signal received
+   frame_emitted_--;
+
    int index_to_convert = -1;
    int sample_number = -1;
 
@@ -370,6 +376,11 @@ void CDisplay::paintGL()
       {
          glFinish();
       }
+      
+   }
+   else
+   {
+      // Redraw old frame ? (or do nothing !)
       
    }
 }

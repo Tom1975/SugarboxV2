@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <chrono>
+#include <thread>
 
 #include "ALSoundMixer.h"
 
@@ -125,6 +127,7 @@ void ALSoundMixer::CheckBuffersStatus()
    // Something is currently played ?
    ALint sourceState;
    alGetSourcei(source_, AL_SOURCE_STATE, &sourceState);
+   
    if (sourceState != AL_PLAYING)
    {
       // nothing to play !
@@ -200,6 +203,18 @@ void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 void ALSoundMixer::SyncWithSound()
 {
    // Wait until there's only xx buffer
+   ALint buffer_queued;
+   ALint buffer_processed;
+   alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
+   alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
+
+   while (buffer_queued - buffer_processed < 2)
+   {
+      alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
+      alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
+   }
+
 }
 
 void ALSoundMixer::SetDefaultConfiguration()
@@ -374,9 +389,8 @@ void ALSoundMixer::PlayWav(int wav_registered)
       alGetSourcei(source, AL_SOURCE_STATE, &source_state);
       // check for errors
    }
-/*   // cleanup context
+   // cleanup context
    alDeleteSources(1, &source);
-   alDeleteBuffers(1, &buffer);
+   //alDeleteBuffers(1, &buffer);
    alcMakeContextCurrent(NULL);
-   */
 }
