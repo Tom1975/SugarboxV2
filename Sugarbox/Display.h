@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string>
 #include <memory.h>
+#include <mutex>
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -144,4 +145,6 @@ protected:
    QOpenGLTexture *textures[1];
    QOpenGLShaderProgram *program;
    QOpenGLBuffer vbo;
+
+   std::mutex sync_mutex_;
 };

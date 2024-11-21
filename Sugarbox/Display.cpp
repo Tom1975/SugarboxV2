@@ -187,6 +187,9 @@ void CDisplay::initializeGL()
 
    program->bind();
    program->setUniformValue("texture", 0);
+
+   
+
 }
 
 void CDisplay::HSync ()
@@ -258,8 +261,21 @@ bool CDisplay::IsWaitHandled()
 void CDisplay::VSync (bool bDbg)
 {
    int free_buffer = 0;
+
+   if (sync_on_frame_)
+   {
+      while (frame_emitted_ > 1)
+      {
+         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+
+   }
+   else
+   {
+
+   }
    // if sync_on_frame_, wait untile there is no more than 1 frame
-   while (sync_on_frame_ && free_buffer < 2 )
+   /*while (sync_on_frame_ && free_buffer < 1)
    {
 #ifdef  __circle__
       mutex_sound.Acquire();
@@ -275,7 +291,7 @@ void CDisplay::VSync (bool bDbg)
 #ifndef NO_MULTITHREAD
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
-   }
+   }*/
    int next_to_play = -1;
    for (int i = 0; i < NB_FRAMES && next_to_play == -1; i++)
    {
@@ -291,7 +307,9 @@ void CDisplay::VSync (bool bDbg)
    {
       // Buffer is full ? Prepare next, and mark this one to be played
       buffer_list_[index_current_buffer_].status_ = FrameItem::TO_PLAY;
+      sync_mutex_.lock();
       frame_emitted_++;
+      sync_mutex_.unlock();
       emit FrameIsReady();
       index_current_buffer_ = next_to_play;
    }
@@ -324,11 +342,12 @@ void CDisplay::WaitVbl ()
 void CDisplay::paintGL()
 {
    // Signal received
+   sync_mutex_.lock();
    frame_emitted_--;
+   sync_mutex_.unlock();
 
    int index_to_convert = -1;
    int sample_number = -1;
-
    for (int i = 0; i < NB_FRAMES; i++)
    {
       if (buffer_list_[i].status_ == FrameItem::TO_PLAY
@@ -375,6 +394,7 @@ void CDisplay::paintGL()
       if (sync_on_frame_)
       {
          glFinish();
+         // Unblock waiting thread
       }
       
    }
