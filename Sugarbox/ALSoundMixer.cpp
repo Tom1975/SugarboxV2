@@ -16,7 +16,9 @@ ALSoundMixer::ALSoundMixer():sample_rate_(0),
    format_(AL_FORMAT_STEREO16),
    emulation_(nullptr),
    mute_(false),
-volume_(1.0)
+   volume_(1.0),
+   buffer_size_for_sync_(1),
+   sync_on_sound_(false)
 {
    device_ = alcOpenDevice(NULL);
    if (device_) 
@@ -181,7 +183,6 @@ IWaveHDR* ALSoundMixer::GetFreeBuffer()
 
 void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 {
-   ALenum error;
    OAWaveHDR* oal_wav = (OAWaveHDR*)new_buffer;
    alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
 
@@ -193,11 +194,21 @@ void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
    if (!play_ || source_state != AL_PLAYING)
    {          
       alSourcePlay(source_);
+      if (sync_on_sound_ && source_state == AL_STOPPED)
+      {
+         // Adjust buffer
+         buffer_size_for_sync_++;
+      }
 
       play_ = true;
    }
    new_buffer->status_ = IWaveHDR::INQUEUE;
 
+}
+
+void ALSoundMixer::SyncOnSound(bool set)
+{
+   sync_on_sound_ = set;
 }
 
 void ALSoundMixer::SyncWithSound()
@@ -208,7 +219,7 @@ void ALSoundMixer::SyncWithSound()
    alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
    alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
 
-   while (buffer_queued - buffer_processed < 2)
+   while (sync_on_sound_ && buffer_queued - buffer_processed > buffer_size_for_sync_)
    {
       alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
       alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
@@ -352,7 +363,7 @@ void ALSoundMixer::AddWav(int id, const unsigned char* databuffer, unsigned int 
          info.format = AL_FORMAT_STEREO16;
       }
    }
-   ALenum error;
+
    alGenBuffers((ALuint)1, &info.buffer);
    
    alBufferData(info.buffer, info.format, info.data, info.size, info.samplerate);
@@ -379,7 +390,6 @@ void ALSoundMixer::PlayWav(int wav_registered)
 
    alSourcei(source, AL_BUFFER, wav_list_[wav_registered].buffer);
 
-   ALenum error;
    alSourcePlay(source);
 
    ALint source_state;
