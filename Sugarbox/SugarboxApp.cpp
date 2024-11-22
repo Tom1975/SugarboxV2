@@ -30,6 +30,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
    setAcceptDrops(true);
    //setAutoFillBackground(true);
    menuBar()->setFocusPolicy(Qt::ClickFocus); 
+   
    setCentralWidget(&display_);
 
    clear();

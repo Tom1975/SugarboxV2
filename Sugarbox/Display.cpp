@@ -7,7 +7,18 @@
 
 #include <thread>
 
+#include "stdafx.h"
+
 #include "Display.h"
+
+#define START_CHRONO  QueryPerformanceFrequency((LARGE_INTEGER*)&freq);;QueryPerformanceCounter ((LARGE_INTEGER*)&s1);
+#define STOP_CHRONO   QueryPerformanceCounter ((LARGE_INTEGER*)&s2);t=(DWORD)(((s2 - s1) * 1000000) / freq);
+#define PROF_DISPLAY sprintf(s, "Duree displays Frame: %d us\n", t);OutputDebugStringA (s);
+
+static __int64 s1, s2, freq;
+static DWORD t;
+static char s[1024];
+
 
 
 #define REAL_DISP_X  1024 //832 //1024 // 768
@@ -23,9 +34,17 @@
 #define DISP_WINDOW_Y   544
 
 
+
 CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_index_to_display_(0), number_of_frame_to_display_(0), sync_on_frame_(false),
    frame_emitted_ (0)
 {
+   QSurfaceFormat format;
+   format.setSwapBehavior(QSurfaceFormat::DoubleBuffer); // Double buffering
+   format.setSwapInterval(1); // Activer VSync
+   //format.setVersion(3, 3); // Utiliser une version moderne si nécessaire
+   QSurfaceFormat::setDefaultFormat(format);
+   setFormat(format);
+
    setFocusPolicy(Qt::StrongFocus);
    memset(index_to_display_, 0, sizeof index_to_display_);
    setAutoFillBackground(false);
@@ -110,8 +129,6 @@ void CDisplay::initializeGL()
    textures[0]->setFormat(QOpenGLTexture::RGBA8_UNorm);
    textures[0]->allocateStorage();
 
-
-
    QVector<GLfloat> vertData;
 
    float ratiox = (float)DISP_WINDOW_X / (float)REAL_DISP_X;
@@ -187,8 +204,7 @@ void CDisplay::initializeGL()
 
    program->bind();
    program->setUniformValue("texture", 0);
-
-   
+   START_CHRONO
 
 }
 
@@ -262,9 +278,9 @@ void CDisplay::VSync (bool bDbg)
 {
    int free_buffer = 0;
 
-   if (sync_on_frame_)
+   /*if (sync_on_frame_)
    {
-      while (frame_emitted_ > 1)
+      while (frame_emitted_ > 2)
       {
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
@@ -273,7 +289,7 @@ void CDisplay::VSync (bool bDbg)
    else
    {
 
-   }
+   }*/
    // if sync_on_frame_, wait untile there is no more than 1 frame
    /*while (sync_on_frame_ && free_buffer < 1)
    {
@@ -293,16 +309,23 @@ void CDisplay::VSync (bool bDbg)
 #endif
    }*/
    int next_to_play = -1;
-   for (int i = 0; i < NB_FRAMES && next_to_play == -1; i++)
+
+   do
    {
-      if (buffer_list_[i].status_ == FrameItem::FREE)
+      for (int i = 0; i < NB_FRAMES && next_to_play == -1; i++)
       {
-         next_to_play = i;
-         //break;
+         if (buffer_list_[i].status_ == FrameItem::FREE)
+         {
+            next_to_play = i;
+            //break;
+         }
       }
-
-   }
-
+      if (sync_on_frame_ && next_to_play == -1)
+      {
+         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+   } while (sync_on_frame_ && next_to_play == -1);
+   
    if (next_to_play != -1)
    {
       // Buffer is full ? Prepare next, and mark this one to be played
@@ -312,6 +335,11 @@ void CDisplay::VSync (bool bDbg)
       sync_mutex_.unlock();
       emit FrameIsReady();
       index_current_buffer_ = next_to_play;
+   }
+   else
+   {
+      // What ?!!!
+      int dbg = 1;
    }
    buffer_list_[index_current_buffer_].status_ = FrameItem::IN_USE;
    buffer_list_[index_current_buffer_].sample_number_ = sample_number_++;
@@ -393,8 +421,11 @@ void CDisplay::paintGL()
       // Wait vsync if vsync needed
       if (sync_on_frame_)
       {
+
+         const QSurfaceFormat fmt = format();
+         int swp = fmt.swapInterval();
          glFinish();
-         // Unblock waiting thread
+
       }
       
    }
