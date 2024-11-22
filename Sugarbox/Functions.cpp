@@ -115,6 +115,7 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_400),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_VSync),
                               & function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_SOUND),
+                              & function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_GSYNC),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_MAX)
                            }, []() { return true; })
                            }, []() { return true; }));

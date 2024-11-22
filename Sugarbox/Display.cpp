@@ -11,15 +11,6 @@
 
 #include "Display.h"
 
-#define START_CHRONO  QueryPerformanceFrequency((LARGE_INTEGER*)&freq);;QueryPerformanceCounter ((LARGE_INTEGER*)&s1);
-#define STOP_CHRONO   QueryPerformanceCounter ((LARGE_INTEGER*)&s2);t=(DWORD)(((s2 - s1) * 1000000) / freq);
-#define PROF_DISPLAY sprintf(s, "Duree displays Frame: %d us\n", t);OutputDebugStringA (s);
-
-static __int64 s1, s2, freq;
-static DWORD t;
-static char s[1024];
-
-
 
 #define REAL_DISP_X  1024 //832 //1024 // 768
 #define REAL_DISP_Y  624 //-16 //624 //576
@@ -65,11 +56,6 @@ CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_inde
 CDisplay::~CDisplay()
 {
    delete[]buffer_list_;
-   for (int i = 0; i < NB_FRAMES; i++)
-   {
-      //delete[]framebufferArray_[i];
-   }
-
 }
 
 unsigned int CDisplay::ConvertRGB(unsigned int rgb)
@@ -204,8 +190,6 @@ void CDisplay::initializeGL()
 
    program->bind();
    program->setUniformValue("texture", 0);
-   START_CHRONO
-
 }
 
 void CDisplay::HSync ()
@@ -277,41 +261,12 @@ bool CDisplay::IsWaitHandled()
 void CDisplay::VSync (bool bDbg)
 {
    int free_buffer = 0;
-
-   /*if (sync_on_frame_)
-   {
-      while (frame_emitted_ > 2)
-      {
-         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      }
-
-   }
-   else
-   {
-
-   }*/
-   // if sync_on_frame_, wait untile there is no more than 1 frame
-   /*while (sync_on_frame_ && free_buffer < 1)
-   {
-#ifdef  __circle__
-      mutex_sound.Acquire();
-#endif
-      free_buffer = NB_FRAMES;
-      for (int i = 0; i < NB_FRAMES; i++)
-      {
-         if (buffer_list_[i].status_ != FrameItem::FREE)
-         {
-            free_buffer--;
-         }
-      }
-#ifndef NO_MULTITHREAD
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
-   }*/
    int next_to_play = -1;
+   int count_deadlock = 0;
 
    do
    {
+      sync_mutex_.lock();
       for (int i = 0; i < NB_FRAMES && next_to_play == -1; i++)
       {
          if (buffer_list_[i].status_ == FrameItem::FREE)
@@ -320,11 +275,13 @@ void CDisplay::VSync (bool bDbg)
             //break;
          }
       }
-      if (sync_on_frame_ && next_to_play == -1)
+      sync_mutex_.unlock();
+      if (sync_on_frame_ && next_to_play == -1 )
       {
+         count_deadlock++;
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-   } while (sync_on_frame_ && next_to_play == -1);
+   } while (sync_on_frame_ && next_to_play == -1 && count_deadlock < 100);
    
    if (next_to_play != -1)
    {
@@ -343,19 +300,6 @@ void CDisplay::VSync (bool bDbg)
    }
    buffer_list_[index_current_buffer_].status_ = FrameItem::IN_USE;
    buffer_list_[index_current_buffer_].sample_number_ = sample_number_++;
-
-
-   // Add a frame to display, if display buffer is not full !
-   /*if (number_of_frame_to_display_ < NB_FRAMES)
-   {
-
-      index_to_display_[(current_index_of_index_to_display_ + number_of_frame_to_display_) % NB_FRAMES] = current_texture_;
-      //index_to_display_[0] = current_texture_;
-      current_texture_ = (current_texture_ + 1) % NB_FRAMES;
-      number_of_frame_to_display_++;
-      //number_of_frame_to_display_=1;
-      emit FrameIsReady();
-   }*/
 }
 
 void CDisplay::Display()
@@ -376,6 +320,7 @@ void CDisplay::paintGL()
 
    int index_to_convert = -1;
    int sample_number = -1;
+   sync_mutex_.lock();
    for (int i = 0; i < NB_FRAMES; i++)
    {
       if (buffer_list_[i].status_ == FrameItem::TO_PLAY
@@ -389,7 +334,7 @@ void CDisplay::paintGL()
    if (index_to_convert != -1)
    {
       buffer_list_[index_to_convert].status_ = FrameItem::LOCKED;
-
+      sync_mutex_.unlock();
    //if (number_of_frame_to_display_ > 0)
    //{
       //textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
@@ -432,6 +377,6 @@ void CDisplay::paintGL()
    else
    {
       // Redraw old frame ? (or do nothing !)
-      
+      sync_mutex_.unlock();
    }
 }

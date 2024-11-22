@@ -50,6 +50,7 @@ public:
       FN_CTRL_SET_SPEED_400,
       FN_CTRL_SET_SPEED_VSync,
       FN_CTRL_SET_SPEED_SOUND,
+      FN_CTRL_SET_SPEED_GSYNC,
       FN_CTRL_SET_SPEED_MAX,
       // DISK
       FN_DISK_1_EJECT,

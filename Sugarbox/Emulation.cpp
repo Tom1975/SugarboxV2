@@ -103,6 +103,7 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
 
 void Emulation::Stop()
 {
+   emulator_engine_->GetMixer()->StopMixer();
    running_thread_ = false;
    worker_thread_->join();
    delete worker_thread_;
