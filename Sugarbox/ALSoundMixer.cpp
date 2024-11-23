@@ -147,7 +147,7 @@ IWaveHDR* ALSoundMixer::GetFreeBuffer()
 
    alSourceUnqueueBuffers(source_, nb_processed_buffers, buffer_to_remove);
 
-   for (int j = 0; j < nb_processed_buffers; j++)
+   for (int j = 0; j < nb_processed_buffers && j < NB_BUFFERS_; j++)
    {
       for (auto& wav_index : wav_buffers_list_)
       {
