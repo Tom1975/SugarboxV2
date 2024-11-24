@@ -144,7 +144,7 @@ IF(WIN32)
 endif()
 
 IF(APPLE)
-   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS}} )
+   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS} )
 else()
    add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS})
 endif()
