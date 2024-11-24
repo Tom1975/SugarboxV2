@@ -140,52 +140,43 @@ void ALSoundMixer::CheckBuffersStatus()
 IWaveHDR* ALSoundMixer::GetFreeBuffer()
 {
    IWaveHDR* next_buffer = nullptr;
-   ALenum error;
    ALint nb_processed_buffers;
    alGetSourcei(source_, AL_BUFFERS_PROCESSED, &nb_processed_buffers);
    ALuint buffer_to_remove[NB_BUFFERS_] ;
 
    alSourceUnqueueBuffers(source_, nb_processed_buffers, buffer_to_remove);
-   if ((error = alGetError()) != AL_NO_ERROR) 
+   for (int j = 0; j < nb_processed_buffers && j < NB_BUFFERS_; j++)
    {
-      // Ok, do something !
-      alGenSources((ALuint)1, &source_);
-      alSourceUnqueueBuffers(source_, nb_processed_buffers, buffer_to_remove);
-   }
-   else
-   {
-      for (int j = 0; j < nb_processed_buffers && j < NB_BUFFERS_; j++)
+      for (auto& wav_index : wav_buffers_list_)
       {
-         for (auto& wav_index : wav_buffers_list_)
+         if (wav_index.buffer == buffer_to_remove[j])
          {
-            if (wav_index.buffer == buffer_to_remove[j])
+            if (next_buffer == nullptr)
             {
-               if (next_buffer == nullptr)
-               {
-                  next_buffer = &wav_index;
-                  wav_index.status_ = IWaveHDR::USED;
-               }
-               else
-               {
-                  wav_index.status_ = IWaveHDR::UNUSED;
-               }
-            }
-         }
-      }
-
-      if (next_buffer == nullptr)
-      {
-         for (auto& wav_index : wav_buffers_list_)
-         {
-            if (wav_index.status_ == IWaveHDR::UNUSED)
-            {
-               wav_index.status_ = IWaveHDR::USED;
                next_buffer = &wav_index;
-               break;
+               wav_index.status_ = IWaveHDR::USED;
+            }
+            else
+            {
+               wav_index.status_ = IWaveHDR::UNUSED;
             }
          }
       }
    }
+
+   if (next_buffer == nullptr)
+   {
+      for (auto& wav_index : wav_buffers_list_)
+      {
+         if (wav_index.status_ == IWaveHDR::UNUSED)
+         {
+            wav_index.status_ = IWaveHDR::USED;
+            next_buffer = &wav_index;
+            break;
+         }
+      }
+   }
+
    return next_buffer;
 }
 
@@ -421,7 +412,5 @@ void ALSoundMixer::PlayWav(int wav_registered)
    }
    // cleanup context
    alDeleteSources(1, &source);
-   //alDeleteBuffers(1, &buffer);
-   //alcMakeContextCurrent(NULL);
-   //alcMakeContextCurrent(context_);
+
 }
