@@ -61,7 +61,7 @@ void RunLoop(Emulation* emulator)
 
 unsigned int Emulation::GetSpeed()
 {
-   return emulator_engine_->GetSpeed();
+   return emulator_engine_->GetSpeedPercent();
 }
 
 void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init)
@@ -103,6 +103,7 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sou
 
 void Emulation::Stop()
 {
+   emulator_engine_->GetMixer()->StopMixer();
    running_thread_ = false;
    worker_thread_->join();
    delete worker_thread_;

@@ -238,7 +238,6 @@ protected:
 
    // Script player
    ScriptContext script_context_;
-   SCLPlayer scl_player_;
-
+   
 };
 
