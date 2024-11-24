@@ -80,19 +80,19 @@ set (SRCS
    )
 
 set (EXTRA
-    ../changelog.txt
-    ../LICENSE
-    ../README.md
+    ${CMAKE_CURRENT_SOURCE_DIR}/../changelog.txt
+    ${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../README.md
    )
 
 set ( UIS
- SugarboxApp.ui
- DebugDialog.ui
- MemoryDialog.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/SugarboxApp.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/DebugDialog.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/MemoryDialog.ui
 )
 
 set (LABELS
-   Resources/labels.ini
+   ${CMAKE_CURRENT_SOURCE_DIR}/Resources/labels.ini
 )
 set (ACTION
     ../.github/workflows/macos.yml
