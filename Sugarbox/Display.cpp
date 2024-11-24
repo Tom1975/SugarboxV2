@@ -11,7 +11,8 @@
 #define REAL_DISP_X  1024 //832 //1024 // 768
 #define REAL_DISP_Y  624 //-16 //624 //576
 
-#define ORIGIN_X     143.f
+//#define ORIGIN_X     143.f
+#define ORIGIN_X     193.f
 #define ORIGIN_Y     47.f
 
 #define DISP_WIDTH    1024
