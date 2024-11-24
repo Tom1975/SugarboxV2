@@ -30,6 +30,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
    setAcceptDrops(true);
    //setAutoFillBackground(true);
    menuBar()->setFocusPolicy(Qt::ClickFocus); 
+   
    setCentralWidget(&display_);
 
    clear();
@@ -39,6 +40,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
 SugarboxApp::~SugarboxApp()
 {
    //key_mgr_out.CloseFile();
+
    delete emulation_;
 }
 
@@ -289,14 +291,10 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
 
 void SugarboxApp::keyPressEvent(QKeyEvent * event_keyboard)
 {
-   qDebug() << "Keypressed " << "down nativeScanCode = " << QString(" %1").arg(event_keyboard->nativeScanCode(), 2, 16, QChar('0'));
-   qDebug() << "Keypressed " << "down key = " << QString(" %1").arg(event_keyboard->key(), 2, 16, QChar('0'));
-   qDebug() << "Keypressed " << "down nativeVirtualKey = " << QString(" %1").arg(event_keyboard->nativeVirtualKey(), 2, 16, QChar('0'));
-   
    // Convert this key to new config file !
-   //keyboard_handler_->SendScanCode(event_keyboard->key(), true);
    keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
    event_keyboard->ignore();
+
    /*keyboard_handler_->SendScanCode(event_keyboard->nativeScanCode(), true);
 
    int value_key = event_keyboard->key();
@@ -510,14 +508,49 @@ void SugarboxApp::Pause()
    UpdateMenu();
 }
 
-bool SugarboxApp::CheckSpeed(int speedlimit)
+bool SugarboxApp::CheckSpeed(EmulatorEngine::SpeedLimit speedlimit, int speed)
 {
-   return emulation_->GetEngine()->GetSpeedLimit() == speedlimit;
+   if (emulation_->GetEngine()->GetSpeedLimit() != speedlimit)
+   {
+      return false;
+   }
+   switch (speedlimit)
+   {
+   case EmulatorEngine::E_CUSTOM:
+      return (emulation_->GetEngine()->GetSpeed() == speed);
+   case EmulatorEngine::E_FULL:
+   case EmulatorEngine::E_VBL:
+   case EmulatorEngine::E_SOUND:
+   case EmulatorEngine::E_SOUND_AND_VBL:
+   default:
+      return true;
+   }
 }
 
 void SugarboxApp::SetSpeed(int speedlimit)
 {
-   emulation_->GetEngine()->SetSpeed(speedlimit);
+   switch (speedlimit)
+   {
+   case -3:
+      emulation_->GetEngine()->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
+      emulation_->GetEngine()->SetSpeed(100);
+      break;
+   case -2:
+      emulation_->GetEngine()->SetSpeedLimit(EmulatorEngine::E_SOUND);
+      emulation_->GetEngine()->SetSpeed(100);
+      break;
+   case -1:
+      emulation_->GetEngine()->SetSpeedLimit(EmulatorEngine::E_VBL);
+      emulation_->GetEngine()->SetSpeed(100);
+      break;
+   case 0:
+      emulation_->GetEngine()->SetSpeedLimit(EmulatorEngine::E_FULL);
+      break;
+   default:
+      emulation_->GetEngine()->SetSpeedLimit(EmulatorEngine::E_CUSTOM);
+      emulation_->GetEngine()->SetSpeed(speedlimit);
+      break;
+   }
    UpdateMenu();
 }
 
@@ -802,15 +835,18 @@ void SugarboxApp::InitAllActions()
    AddAction(IFunctionInterface::FN_CTRL_ONOFF, std::bind(&Emulation::HardReset, emulation_), "L_CONTROL_ONOFF");
    AddAction(IFunctionInterface::FN_CTRL_PAUSE, std::bind(&SugarboxApp::Pause, this), "L_CONTROL_PAUSE", nullptr, std::bind(&SugarboxApp::PauseEnabled, this));
 
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_10, std::bind(&SugarboxApp::SetSpeed, this, 10), "L_CONTROL_SPEED_10", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 10) );
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_50, std::bind(&SugarboxApp::SetSpeed, this, 50), "L_CONTROL_SPEED_50", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 50));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_100, std::bind(&SugarboxApp::SetSpeed, this, 100), "L_CONTROL_SPEED_100", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 100));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_150, std::bind(&SugarboxApp::SetSpeed, this, 150), "L_CONTROL_SPEED_150", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 150));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_200, std::bind(&SugarboxApp::SetSpeed, this, 200), "L_CONTROL_SPEED_200", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 200));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_400, std::bind(&SugarboxApp::SetSpeed, this, 400), "L_CONTROL_SPEED_400", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 400));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, std::bind(&SugarboxApp::SetSpeed, this, -1), "L_CONTROL_SPEED_VSYNC", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, -1));
-   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&SugarboxApp::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, 0));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_10, std::bind(&SugarboxApp::SetSpeed, this, 10), "L_CONTROL_SPEED_10", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 10) );
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_50, std::bind(&SugarboxApp::SetSpeed, this, 50), "L_CONTROL_SPEED_50", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 50));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_100, std::bind(&SugarboxApp::SetSpeed, this, 100), "L_CONTROL_SPEED_100", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 100));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_150, std::bind(&SugarboxApp::SetSpeed, this, 150), "L_CONTROL_SPEED_150", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 150));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_200, std::bind(&SugarboxApp::SetSpeed, this, 200), "L_CONTROL_SPEED_200", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 200));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_400, std::bind(&SugarboxApp::SetSpeed, this, 400), "L_CONTROL_SPEED_400", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_CUSTOM, 400));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_VSync, std::bind(&SugarboxApp::SetSpeed, this, -1), "L_CONTROL_SPEED_VSYNC", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_VBL, -1));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_SOUND, std::bind(&SugarboxApp::SetSpeed, this, -2), "L_CONTROL_SPEED_SOUND", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_SOUND, -1));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_GSYNC, std::bind(&SugarboxApp::SetSpeed, this, -3), "L_CONTROL_SPEED_SOUND_VBL", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_SOUND_AND_VBL, -1));
+   AddAction(IFunctionInterface::FN_CTRL_SET_SPEED_MAX, std::bind(&SugarboxApp::SetSpeed, this, 0), "L_CONTROL_SPEED_MAX", nullptr, std::bind(&SugarboxApp::CheckSpeed, this, EmulatorEngine::E_FULL, 0));
 
+   // TODO : add when it will be working !
    AddAction(IFunctionInterface::FN_CONFIG_SETTINGS, std::bind(&SugarboxApp::ConfigurationSettings, this), "L_SETTINGS_CONFIG");
 
    AddAction(IFunctionInterface::FN_DEBUG_DEBUGGER, std::bind(&SugarboxApp::OpenDebugger, this), "L_DEBUG_OPEN_DBG");

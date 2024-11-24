@@ -16,7 +16,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set (SUGARBOX_VERSION "2.0.3" CACHE STRING "Version to build" FORCE)
+set (SUGARBOX_VERSION "2.0.4" CACHE STRING "Version to build" FORCE)
 
 MESSAGE (STATUS "Version :" ${SUGARBOX_VERSION})
 
@@ -80,17 +80,20 @@ set (SRCS
    )
 
 set (EXTRA
-    ../changelog.txt
-    ../LICENSE
-    ../README.md
+    ${CMAKE_CURRENT_SOURCE_DIR}/../changelog.txt
+    ${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../README.md
    )
 
 set ( UIS
- SugarboxApp.ui
- DebugDialog.ui
- MemoryDialog.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/SugarboxApp.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/DebugDialog.ui
+ ${CMAKE_CURRENT_SOURCE_DIR}/MemoryDialog.ui
 )
 
+set (LABELS
+   ${CMAKE_CURRENT_SOURCE_DIR}/Resources/labels.ini
+)
 set (ACTION
     ../.github/workflows/macos.yml
     ../.github/workflows/release.yml
@@ -101,6 +104,8 @@ set (ACTION
 source_group("Resources" FILES ${RES} )
 source_group("Docs" FILES ${EXTRA} )
 source_group("Github Action" FILES ${ACTION} )
+source_group("Labels" FILES ${LABELS} )
+
 
 if(UNIX)
     if (APPLE)
@@ -139,9 +144,9 @@ IF(WIN32)
 endif()
 
 IF(APPLE)
-   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+   add_executable(Sugarbox MACOSX_BUNDLE ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS} )
 else()
-   add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} )
+   add_executable(Sugarbox ${EXTRA_DEF} ${SRCS} ${HEADERS} ${QRCS} ${UIS} ${RES} ${EXTRA} ${ACTION} ${LABELS})
 endif()
 
 
@@ -179,7 +184,11 @@ if(WIN32)
    if($<CONFIG:Release>)
     set (__qt_deploy_tool_extra_options "--release")
    else()
-    MESSAGE (STATUS \"Nothing to go\")
+      if($<CONFIG:RelWithDebInfo> )
+         set (__qt_deploy_tool_extra_options "--release")
+      else()
+      MESSAGE (STATUS \"Nothing to go\")
+      endif()
    endif()
    ]]
    )

@@ -114,15 +114,19 @@ void FunctionList::InitFunctions(IFunctionInterface* function_handler)
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_200),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_400),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_VSync),
+                              & function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_SOUND),
+                              & function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_GSYNC),
                               &function_list_.at(IFunctionInterface::FN_CTRL_SET_SPEED_MAX)
                            }, []() { return true; })
                            }, []() { return true; }));
 
-   menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings", 
+   // TODO : Add again when it will be ok !
+   /*menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Settings",
                            {
                            &function_list_.at(IFunctionInterface::FN_CONFIG_SETTINGS)
                            }, []() { return true; }
                            ));
+                           */
 
    menu_list_.push_back(new Function(multilanguage_, "L_FN_MENU_Debug",
       {

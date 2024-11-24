@@ -52,6 +52,7 @@ public:
    virtual void AddBufferToPlay(IWaveHDR*);
 
    virtual void SyncWithSound();
+   virtual void SyncOnSound(bool set);
 
    // Play other sound
    void AddWav(int id, const unsigned char * buffer, unsigned int size);
@@ -101,5 +102,8 @@ protected:
    // Sound volume
    bool mute_;
    float volume_;
+
+   bool sync_on_sound_;
+   int buffer_size_for_sync_;
 };
 

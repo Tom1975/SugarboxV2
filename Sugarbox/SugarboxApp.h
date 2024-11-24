@@ -67,7 +67,7 @@ public:
    // Actions
    virtual void Pause();
    virtual bool PauseEnabled();
-   virtual bool CheckSpeed(int speedlimit);
+   virtual bool CheckSpeed(EmulatorEngine::SpeedLimit speedlimit, int speed);
    virtual void SetSpeed(int speedlimit);
    virtual void ConfigurationSettings();
    virtual void SaveAs(int drive);
@@ -238,7 +238,6 @@ protected:
 
    // Script player
    ScriptContext script_context_;
-   SCLPlayer scl_player_;
-
+   
 };
 
