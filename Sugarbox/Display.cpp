@@ -92,6 +92,7 @@ void CDisplay::Show ( bool bShow )
 void CDisplay::Init()
 {
       //framebufferArray_[i] = new int[1024 * 1024];
+   // grabKeyboard();
 }
 
 void CDisplay::initializeGL()
