@@ -25,7 +25,6 @@ jobs:
         ]
     name: ${{ arch }}
     runs-on: ${{ matrix.runner }}  
-    runs-on:  windows-latest
 
     steps:
     - uses: actions/checkout@v3
