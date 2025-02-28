@@ -30,7 +30,7 @@ jobs:
           arch: win64_msvc2019
           zipname: SugarboxV2_32
 
-    name: ${{ arch }}
+    name: ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}  
 
     steps:
