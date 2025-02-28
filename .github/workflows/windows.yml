@@ -21,12 +21,10 @@ jobs:
     strategy:
       matrix:
         include:
-        - msystem: MINGW64
-          runner: windows-latest
+        - runner: windows-latest
           arch: win64_msvc2019_64
           zipname: SugarboxV2_64
-        - msystem: MINGW32
-          runner: windows-latest
+        - runner: windows-latest
           arch: win64_msvc2019
           zipname: SugarboxV2_32
 
