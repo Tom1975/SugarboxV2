@@ -19,10 +19,16 @@ env:
 jobs:
   build:
     matrix:
-        include: [
-            { arch: win64_msvc2019_64, runner: windows-latest, zipname: SugarboxV2_32 },
-            { arch: win64_msvc2019_32, runner: windows-latest, zipname: SugarboxV2_64 },
-        ]
+      include:
+        - msystem: MINGW64
+          runner: windows-latest
+          arch: win64_msvc2019_64
+          zipname: SugarboxV2_64
+        - msystem: MINGW32
+          runner: windows-latest
+          arch: win64_msvc2019
+          zipname: SugarboxV2_32
+
     name: ${{ arch }}
     runs-on: ${{ matrix.runner }}  
 
