@@ -18,8 +18,9 @@ env:
 
 jobs:
   build:
-    matrix:
-      include:
+    strategy:
+      matrix:
+        include:
         - msystem: MINGW64
           runner: windows-latest
           arch: win64_msvc2019_64
