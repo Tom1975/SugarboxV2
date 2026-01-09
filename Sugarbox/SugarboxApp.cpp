@@ -210,6 +210,11 @@ void SugarboxApp::InitSettings()
 
 int SugarboxApp::RunApp(SugarboxInitialisation& init)
 {
+   if (init._no_show)
+   {
+      hide();
+   }
+   
    // Settings
    InitSettings();
 
@@ -244,8 +249,19 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    
    status_sound_.SetEmulation(emulation_);
 
-   debugger_link_ = new DebugSocket(this, emulation_);
-   debugger_link_->StartServer();
+   if ( init._gdb_server.size() > 0)
+   {
+      unsigned short port = static_cast< unsigned short >( std::strtoul(init._gdb_server.c_str(), NULL, 0) );
+      if (port > 0)
+      {
+         debugger_link_ = new DebugSocket(this, emulation_, port);
+         debugger_link_->StartServer();
+      }
+      else
+      {
+         // Error 
+      }
+   }
 
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();

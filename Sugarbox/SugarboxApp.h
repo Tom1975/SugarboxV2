@@ -24,7 +24,7 @@
 #include "SettingsList.h"
 #include "Settings.h"
 #include "DlgSettings.h"
-#include "DebugSocket.h"
+#include "debugers/zrc/DebugSocket.h"
 #include "FlagHandler.h"
 #include "TapeWidget.h"
 #include "DiskWidget.h"

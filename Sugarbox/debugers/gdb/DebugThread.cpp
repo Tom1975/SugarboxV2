@@ -5,12 +5,7 @@
 #include <QTcpSocket>
 #include <cstdio>
 
-#include "DebugSocket.h"
-
-
-#define ABOUT_STRING       "Sugarbox remote command protocol"
-#define CURRENT_VERSION    "10.0"
-#define CURRENT_MACHINE    "ZX Spectrum+ 128k"
+#include "DebugThread.h"
 
 #define STATE_DEFAULT      ""
 #define STATE_CPU_STEP     "cpu-step"
@@ -21,30 +16,6 @@ QT_USE_NAMESPACE
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
 #endif
-
-DebugSocket::DebugSocket(QObject* parent, Emulation* emulation) :emulation_(emulation), QTcpServer(parent)
-{
-}
-
-void DebugSocket::StartServer()
-{
-   if (!this->listen(QHostAddress::Any, 10000))
-   {
-      qDebug() << "Could not start server";
-   }
-   else
-   {
-      qDebug() << "Listening...";
-   }
-}
-
-void DebugSocket::incomingConnection(qintptr socketDescriptor)
-{
-   qDebug() << socketDescriptor << " Connecting...";
-   DebugThread *thread = new DebugThread(emulation_, socketDescriptor, this);
-   connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-   thread->start();
-}
 
 
 DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
@@ -82,8 +53,6 @@ void DebugThread::run()
 
    qDebug() << socketDescriptor_ << " Client connected";
 
-   socket_->write("Welcome to ZEsarUX remote command protocol (ZRCP)\nWrite help for available commands\n");
-   socket_->write("\ncommand> ");
    // make this thread a loop
    exec();
 }
