@@ -5,7 +5,7 @@
 #include <QTcpSocket>
 #include <cstdio>
 
-#include "DebugThread.h"
+#include "ZrcDebugThread.h"
 
 #define STATE_DEFAULT      ""
 #define STATE_CPU_STEP     "cpu-step"
@@ -18,7 +18,7 @@ QT_USE_NAMESPACE
 #endif
 
 
-DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
+ZrcDebugThread::ZrcDebugThread(Emulation* emulation, int ID, QObject *parent) :
    emulation_(emulation), QThread(parent)
 {
    pending_command_ = STATE_DEFAULT;
@@ -28,15 +28,15 @@ DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
    // Breakpoitn handler
    emulation->AddNotifier(this);
 
-   qDebug() << socketDescriptor_ << " DebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
+   qDebug() << socketDescriptor_ << " ZrcDebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
 }
 
-void DebugThread::run()
+void ZrcDebugThread::run()
 {
    // thread starts here
-   qDebug() << socketDescriptor_ << " DebugThread -> Starting thread - Thread ID : " << currentThreadId();
+   qDebug() << socketDescriptor_ << " ZrcDebugThread -> Starting thread - Thread ID : " << currentThreadId();
    socket_ = new QTcpSocket();
-   worker_ = new DebugWorker(socket_, socketDescriptor_, emulation_);
+   worker_ = new ZrcDebugWorker(socket_, socketDescriptor_, emulation_);
    if (!socket_->setSocketDescriptor(this->socketDescriptor_))
    {
       emit Error(socket_->error());
@@ -57,7 +57,7 @@ void DebugThread::run()
    exec();
 }
 
-void DebugThread::Disconnected()
+void ZrcDebugThread::Disconnected()
 {
    qDebug() << socketDescriptor_ << " Disconnected";
    socket_->deleteLater();
@@ -76,7 +76,7 @@ void split(const std::string &s, char delim, Out result) {
    }
 }
 
-void DebugThread::ReadyRead()
+void ZrcDebugThread::ReadyRead()
 {
    QByteArray Data = socket_->readAll();
    
@@ -165,7 +165,7 @@ void DebugThread::ReadyRead()
    }
 }
 
-void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
+void ZrcDebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
 {
    action->InitCommand(this, emulation_);
 
@@ -184,7 +184,7 @@ void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std:
    command_list_[action] = command_list;
 }
 
-void DebugThread::InitMap()
+void ZrcDebugThread::InitMap()
 {
    AddCommand(new RemoteCommandAbout(), { "about" });
    AddCommand(new RemoteCommandBreak(), { "break", "b" });
@@ -201,10 +201,12 @@ void DebugThread::InitMap()
    AddCommand(new RemoteCommandGetRegisters(), { "get-registers", "gr" });
    AddCommand(new RemoteCommandGetVersion(), { "get-version" });
    AddCommand(new RemoteCommandHardReset(), { "hard-reset-cpu" });
-   AddCommand(new RemoteCommandHelp(this), { "help", "?" });
    AddCommand(new RemoteCommandReadMemory(), { "read-memory" });
    AddCommand(new RemoteCommandRun(), { "run", "r" });
    AddCommand(new RemoteCommandSetBreakpoint(), { "set-breakpoint", "sb" });
+
+   AddCommand(new ZrcRemoteCommandHelp(this), { "help", "?" });
+   
 
    // todo 
    // cpu-code-coverage get
@@ -222,7 +224,7 @@ void DebugThread::InitMap()
 
 }
 
-void DebugThread::SendMultilineString(std::string str)
+void ZrcDebugThread::SendMultilineString(std::string str)
 {
    std::vector<std::string> string_lines;
    split(str, '\n', std::back_inserter(string_lines));
@@ -233,7 +235,7 @@ void DebugThread::SendMultilineString(std::string str)
    }
 }
 
-bool DebugThread::Help(std::vector<std::string> param)
+bool ZrcDebugThread::Help(std::vector<std::string> param)
 {
    std::string output = "";
 
@@ -278,114 +280,58 @@ bool DebugThread::Help(std::vector<std::string> param)
 
 }
 
-void DebugThread::NotifyBreak(unsigned int nb_opcodes)
+void ZrcDebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
    qDebug() << "  NotifyBreak - Thread ID : " << currentThreadId();
    emit SignalBreak(nb_opcodes);
 }
 
-void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
+void ZrcDebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
 {
    qDebug() << "  BreakpointEncountered - Thread ID : " << currentThreadId();
    emit SignalBreakpoint(breakpoint);
 }
 
-void DebugThread::SendResponse(const char* response)
+void ZrcDebugThread::SendResponse(const char* response)
 {
    socket_->write(response);
    qDebug() << socketDescriptor_ << response;
 }
-void DebugThread::SendEoL()
+void ZrcDebugThread::SendEoL()
 {
    socket_->write(cr_lf_.c_str());
 }
 
-void DebugThread::EnterCpuStep()
+void ZrcDebugThread::EnterCpuStep()
 {
    worker_->EnterCpuStep();
 }
 
-void DebugThread::ExitCpuStep()
+void ZrcDebugThread::ExitCpuStep()
 {
    worker_->ExitCpuStep();
 }
 
-void DebugThread::Log(const char* log)
+void ZrcDebugThread::Log(const char* log)
 {
    qDebug() << socketDescriptor_ << log;
 }
 
 //////////////////////////////////////////////
 // Help command
-RemoteCommandHelp::RemoteCommandHelp(DebugThread* debug):debug_(debug)
+ZrcRemoteCommandHelp::ZrcRemoteCommandHelp(ZrcDebugThread* debug):debug_(debug)
 {
    
 }
 
-bool RemoteCommandHelp::Execute(std::vector<std::string>& param)
+bool ZrcRemoteCommandHelp::Execute(std::vector<std::string>& param)
 {
    return debug_->Help(param);
 }
 
-std::string RemoteCommandHelp::Help()
+std::string ZrcRemoteCommandHelp::Help()
 {
    return "Display the command list";
 }
 
 
-//////////////////////////////////////////////
-// callback & signals
-DebugWorker::DebugWorker(QTcpSocket *socket, int socketDescriptor, Emulation* emulation) : socket_(socket), socketDescriptor_(socketDescriptor), emulation_(emulation)
-{
-   prompt_ = "";
-   state_ = STATE_NONE;
-}
-
-void DebugWorker::EnterCpuStep()
-{
-   prompt_ = STATE_CPU_STEP;
-   state_ = STATE_STEP;
-}
-
-void DebugWorker::ExitCpuStep()
-{
-   prompt_ = "";
-   state_ = STATE_NONE;
-}
-
-void DebugWorker::WritePrompt()
-{
-   socket_->write("command");
-   if (prompt_.size() > 0)
-   {
-      socket_->write("@");
-      socket_->write(prompt_.c_str());
-   }
-   socket_->write("> ");
-
-}
-
-void DebugWorker::Break(unsigned int nb_opcodes)
-{
-   // Done. Send ... something : todo
-   char out[64];
-   sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
-   qDebug() << out;
-   socket_->write(out);
-   EnterCpuStep();
-   WritePrompt();
-}
-
-void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
-{
-   // Done. Send ... something : todo
-   if (breakpoint != nullptr)
-   {
-      char out[64];
-      sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
-      qDebug() << out;
-      socket_->write(out);
-      WritePrompt();
-   }
-}
- 

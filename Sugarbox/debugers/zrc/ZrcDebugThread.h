@@ -3,67 +3,18 @@
 #include <functional>
 
 #include <QtWebSockets/QtWebSockets>
-#include <QTcpServer>
 #include <QTcpSocket>
 #include "Emulation.h"
 
 #include "../DebugCommand.h"
 
-class DebugSocket : public QTcpServer
+#include "ZrcDebugWorker.h"
+
+class ZrcDebugThread : public QThread, public IBeakpointNotifier, public ICommandResponse
 {
    Q_OBJECT
 public:
-   explicit DebugSocket(QObject* parent, Emulation* emulation, unsigned short port);
-   void StartServer();
-
-signals:
-
-public slots:
-
-protected:   
-   void incomingConnection(qintptr socketDescriptor);
-protected:
-   Emulation* emulation_;
-   unsigned short port_;
-};
-
-
-class DebugWorker : public QObject
-{
-   Q_OBJECT
-public:
-   DebugWorker(QTcpSocket *socket, int socketDescriptor, Emulation* emulation);
-
-   void WritePrompt();
-
-public slots:
-   void Break(unsigned int nb_opcodes);
-   void BreakpointReached(IBreakpointItem* breakpoint);
-
-public:
-   // Debug commands
-   void EnterCpuStep();
-   void ExitCpuStep();
-
-protected:
-   // State machine
-   enum {
-      STATE_NONE,
-      STATE_STEP
-   } state_;
-   std::string prompt_;
-
-   QTcpSocket *socket_;
-   int socketDescriptor_;
-
-   Emulation* emulation_;
-};
-
-class DebugThread : public QThread, public IBeakpointNotifier, public ICommandResponse
-{
-   Q_OBJECT
-public:
-   explicit DebugThread(Emulation* emulation, int iID, QObject *parent = 0);
+   explicit ZrcDebugThread(Emulation* emulation, int iID, QObject *parent = 0);
    
    void run();
    virtual void NotifyBreak(unsigned int nb_opcodes);
@@ -93,7 +44,7 @@ protected:
    Emulation* emulation_;
 
    // Socket handling
-   DebugWorker * worker_;
+   ZrcDebugWorker * worker_;
    QTcpSocket *socket_;
    int socketDescriptor_;
    std::string pending_command_;
@@ -109,12 +60,12 @@ protected:
 };
 
 
-class RemoteCommandHelp : public IRemoteCommand
+class ZrcRemoteCommandHelp : public IRemoteCommand
 {
 public:
-   RemoteCommandHelp(DebugThread* debug);
+   ZrcRemoteCommandHelp(ZrcDebugThread* debug);
    virtual bool Execute(std::vector<std::string>&);
    virtual std::string Help();
 protected:
-   DebugThread* debug_;
+   ZrcDebugThread* debug_;
 };

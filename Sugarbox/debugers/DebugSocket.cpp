@@ -6,11 +6,7 @@
 #include <cstdio>
 
 #include "DebugSocket.h"
-#include "DebugThread.h"
 
-
-#define STATE_DEFAULT      ""
-#define STATE_CPU_STEP     "cpu-step"
 
 QT_USE_NAMESPACE
 
@@ -19,7 +15,7 @@ QT_USE_NAMESPACE
 #define strnicmp strncasecmp
 #endif
 
-DebugSocket::DebugSocket(QObject* parent, Emulation* emulation, unsigned short port) :emulation_(emulation), QTcpServer(parent), port_(port)
+DebugSocket::DebugSocket(QObject* parent, Emulation* emulation, IThreadCreator* creator, unsigned short port) :emulation_(emulation), QTcpServer(parent), creator_(creator), port_(port)
 {
 }
 
@@ -38,7 +34,9 @@ void DebugSocket::StartServer()
 void DebugSocket::incomingConnection(qintptr socketDescriptor)
 {
    qDebug() << socketDescriptor << " Connecting...";
-   DebugThread *thread = new DebugThread(emulation_, socketDescriptor, this);
+
+   QThread *thread = creator_->CreateThread(emulation_, socketDescriptor, this);
+
    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
    thread->start();
 }

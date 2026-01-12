@@ -63,14 +63,14 @@ find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 file(GLOB HEADERS
     *.h
     debugers/*.h
-    #debugers/zrc/*.h
+    debugers/zrc/*.h
     debugers/gdb/*.h
 )
 
 file(GLOB SRCS
     *.cpp
     debugers/*.cpp
-    #debugers/zrc/*.cpp
+    debugers/zrc/*.cpp
     debugers/gdb/*.cpp
 )
 

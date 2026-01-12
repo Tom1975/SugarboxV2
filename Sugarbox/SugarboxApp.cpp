@@ -35,6 +35,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
 
    clear();
 
+   gdbCreator_ = new GdbThreadCreator();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -42,6 +43,7 @@ SugarboxApp::~SugarboxApp()
    //key_mgr_out.CloseFile();
 
    delete emulation_;
+   delete gdbCreator_;
 }
 
 //////////////////////////////////////////////
@@ -254,7 +256,7 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
       unsigned short port = static_cast< unsigned short >( std::strtoul(init._gdb_server.c_str(), NULL, 0) );
       if (port > 0)
       {
-         debugger_link_ = new DebugSocket(this, emulation_, port);
+         debugger_link_ = new DebugSocket(this, emulation_, gdbCreator_, port);
          debugger_link_->StartServer();
       }
       else

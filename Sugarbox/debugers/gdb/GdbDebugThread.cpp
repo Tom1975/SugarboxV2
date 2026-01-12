@@ -5,7 +5,7 @@
 #include <QTcpSocket>
 #include <cstdio>
 
-#include "DebugSocket.h"
+#include "GdbDebugThread.h"
 
 #define STATE_DEFAULT      ""
 #define STATE_CPU_STEP     "cpu-step"
@@ -17,33 +17,9 @@ QT_USE_NAMESPACE
 #define strnicmp strncasecmp
 #endif
 
-DebugSocket::DebugSocket(QObject* parent, Emulation* emulation, unsigned short port) :emulation_(emulation), QTcpServer(parent), port_(port)
-{
-}
 
-void DebugSocket::StartServer()
-{
-   if (!this->listen(QHostAddress::Any, port_))
-   {
-      qDebug() << "Could not start server";
-   }
-   else
-   {
-      qDebug() << "Listening...";
-   }
-}
-
-void DebugSocket::incomingConnection(qintptr socketDescriptor)
-{
-   qDebug() << socketDescriptor << " Connecting...";
-   DebugThread *thread = new DebugThread(emulation_, socketDescriptor, this);
-   connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-   thread->start();
-}
-
-
-DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
-   emulation_(emulation), QThread(parent)
+GdbDebugThread::GdbDebugThread(Emulation* emulation, int ID, QObject *parent) :
+   emulation_(emulation), QThread(parent), state_(WAITING_START)
 {
    pending_command_ = STATE_DEFAULT;
 
@@ -52,15 +28,15 @@ DebugThread::DebugThread(Emulation* emulation, int ID, QObject *parent) :
    // Breakpoitn handler
    emulation->AddNotifier(this);
 
-   qDebug() << socketDescriptor_ << " DebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
+   qDebug() << socketDescriptor_ << " GdbDebugThread Constructor -> Starting thread - Thread ID : " << currentThreadId();
 }
 
-void DebugThread::run()
+void GdbDebugThread::run()
 {
    // thread starts here
-   qDebug() << socketDescriptor_ << " DebugThread -> Starting thread - Thread ID : " << currentThreadId();
+   qDebug() << socketDescriptor_ << " GdbDebugThread -> Starting thread - Thread ID : " << currentThreadId();
    socket_ = new QTcpSocket();
-   worker_ = new DebugWorker(socket_, socketDescriptor_, emulation_);
+   worker_ = new GdbDebugWorker(socket_, socketDescriptor_, emulation_);
    if (!socket_->setSocketDescriptor(this->socketDescriptor_))
    {
       emit Error(socket_->error());
@@ -77,13 +53,11 @@ void DebugThread::run()
 
    qDebug() << socketDescriptor_ << " Client connected";
 
-   socket_->write("Welcome to ZEsarUX remote command protocol (ZRCP)\nWrite help for available commands\n");
-   socket_->write("\ncommand> ");
    // make this thread a loop
    exec();
 }
 
-void DebugThread::Disconnected()
+void GdbDebugThread::Disconnected()
 {
    qDebug() << socketDescriptor_ << " Disconnected";
    socket_->deleteLater();
@@ -102,96 +76,89 @@ void split(const std::string &s, char delim, Out result) {
    }
 }
 
-void DebugThread::ReadyRead()
+void GdbDebugThread::ReadyRead()
 {
    QByteArray Data = socket_->readAll();
    
    // Add command to potential unfinished string
    std::string tmp = (const char*)Data;
-   pending_command_.append(tmp);
+   pending_buffer_.append(tmp);
 
-   // Handle backspace (to make command line debug easier..)
-   for (unsigned int i = 0; i < pending_command_.size(); i++)
+
+   bool finished = false;
+   while (!finished)
    {
-      if (pending_command_[i] == 8)
+      switch (state_)
       {
-         if (i > 0)
-            pending_command_.erase(i - 1, 2);
-         else
-            pending_command_.erase(0, 1);
-      }
-   }
-   
-   // Only get until the last ';'
-   bool complete_command = true;
-   size_t last = pending_command_.find_last_of('\n');
-   if (last != std::string::npos)
-   {
-      std::string processed_command = pending_command_.substr(0, last);
-      pending_command_ = pending_command_.substr(last + 1);
-
-      if (processed_command.size() > 0 && processed_command.back() == '\r')
-      {
-         cr_lf_ = "\r\n";
-         processed_command.pop_back();
-      }
-      else
-      {
-         cr_lf_ = "\n";
-      }
-
-      if (current_command_ != nullptr)
-      {
-         // do something smart !
-      }
-
-      if (processed_command.size() > 0)
-      {
-         // Handle commands from string : Split them
-         std::vector<std::string> command_list;
-         split(processed_command, '\n', std::back_inserter(command_list));
-
-         for (auto &it : command_list)
-         {
-            qDebug() << socketDescriptor_ << " Command : " << it.c_str();
-
-            std::vector<std::string> command_parameters;
-            split(processed_command, ' ', std::back_inserter(command_parameters));
-            current_command_ = nullptr;
-            if (function_map_.find(command_parameters[0]) != function_map_.end())
+         case WAITING_START:
+            // remove every character until "$"
+            while (pending_buffer_.size() > 0 && pending_buffer_[0] != '$')
             {
-               current_command_ = function_map_[command_parameters[0]];
+               pending_buffer_.erase(0, 1);
             }
-            else if(alternate_command_.find(command_parameters[0]) != alternate_command_.end())
+            if (pending_buffer_.size() > 0 && pending_buffer_[0] == '$')
             {
-               current_command_ = alternate_command_[command_parameters[0]];
-            }
-            if (current_command_ != nullptr)
-            {
-               //command_parameters.pop_front();
-               complete_command  = current_command_->Execute(command_parameters);
-               if (complete_command)
-               {
-                  current_command_ = nullptr;
-               }
+               qDebug() << socketDescriptor_ << " Start of command";
+               pending_buffer_.erase(0, 1);
+               state_ = IN_PAYLOAD;
             }
             else
             {
-               socket_->write("bad command");
-               qDebug() << "bad command";
+               // waiting for something else
+               finished = true;
             }
+         break;
+         case IN_PAYLOAD:
+            // Any commands ?
+            while (pending_buffer_.size() > 0 && pending_buffer_[0] != '#')
+            {
+               pending_command_ += pending_buffer_[0];
+               pending_buffer_.erase(0, 1);
+            }
+            if (pending_buffer_.size() > 0 && pending_buffer_[0] == '#')
+            {
+               qDebug() << socketDescriptor_ << " Command : " << QString::fromStdString(pending_command_) << " - Waiting for checksum";
+               pending_buffer_.erase(0, 1);
+               state_ = IN_CHECKSUM;
+            }
+            else
+            {
+               // waiting for something else
+               finished = true;
+            }
+         break;
+         case IN_CHECKSUM:
+         if ( pending_buffer_.size() >= 2)
+         {
+            // Verify checksum
+            checksum_ = pending_buffer_.substr(0, 2);
+            pending_buffer_.erase(0, 2);
 
+            qDebug() << socketDescriptor_ << " checksum : " <<  QString::fromStdString(checksum_ );
+            // Execute command
+            Execute (pending_command_, checksum_);
+            state_ = WAITING_START;
          }
-         socket_->write(cr_lf_.c_str());
-      }
-      if (complete_command)
-      {
-         worker_->WritePrompt();
+         else
+         {  
+            // waiting for more characters
+            finished = true;
+         }
+         break;
       }
    }
 }
 
-void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
+void GdbDebugThread::Execute(std::string command, std::string checksum)
+{
+   qDebug() << socketDescriptor_ << "Execution ";
+
+   // Checksum
+
+   // answer
+}
+
+void GdbDebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
 {
    action->InitCommand(this, emulation_);
 
@@ -210,9 +177,9 @@ void DebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std:
    command_list_[action] = command_list;
 }
 
-void DebugThread::InitMap()
+void GdbDebugThread::InitMap()
 {
-   AddCommand(new RemoteCommandAbout(), { "about" });
+   /*AddCommand(new RemoteCommandAbout(), { "about" });
    AddCommand(new RemoteCommandBreak(), { "break", "b" });
    AddCommand(new RemoteCommandClearMembreakpoints(), { "clear-membreakpoints" });
    AddCommand(new RemoteCommandCpuStep(), { "cpu-step", "cs" });
@@ -230,7 +197,9 @@ void DebugThread::InitMap()
    AddCommand(new RemoteCommandHelp(this), { "help", "?" });
    AddCommand(new RemoteCommandReadMemory(), { "read-memory" });
    AddCommand(new RemoteCommandRun(), { "run", "r" });
-   AddCommand(new RemoteCommandSetBreakpoint(), { "set-breakpoint", "sb" });
+   AddCommand(new RemoteCommandSetBreakpoint(), { "set-breakpoint", "sb" });*/
+
+
 
    // todo 
    // cpu-code-coverage get
@@ -248,7 +217,7 @@ void DebugThread::InitMap()
 
 }
 
-void DebugThread::SendMultilineString(std::string str)
+void GdbDebugThread::SendMultilineString(std::string str)
 {
    std::vector<std::string> string_lines;
    split(str, '\n', std::back_inserter(string_lines));
@@ -259,7 +228,7 @@ void DebugThread::SendMultilineString(std::string str)
    }
 }
 
-bool DebugThread::Help(std::vector<std::string> param)
+bool GdbDebugThread::Help(std::vector<std::string> param)
 {
    std::string output = "";
 
@@ -304,46 +273,46 @@ bool DebugThread::Help(std::vector<std::string> param)
 
 }
 
-void DebugThread::NotifyBreak(unsigned int nb_opcodes)
+void GdbDebugThread::NotifyBreak(unsigned int nb_opcodes)
 {
    qDebug() << "  NotifyBreak - Thread ID : " << currentThreadId();
    emit SignalBreak(nb_opcodes);
 }
 
-void DebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
+void GdbDebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
 {
    qDebug() << "  BreakpointEncountered - Thread ID : " << currentThreadId();
    emit SignalBreakpoint(breakpoint);
 }
 
-void DebugThread::SendResponse(const char* response)
+void GdbDebugThread::SendResponse(const char* response)
 {
    socket_->write(response);
    qDebug() << socketDescriptor_ << response;
 }
-void DebugThread::SendEoL()
+void GdbDebugThread::SendEoL()
 {
    socket_->write(cr_lf_.c_str());
 }
 
-void DebugThread::EnterCpuStep()
+void GdbDebugThread::EnterCpuStep()
 {
    worker_->EnterCpuStep();
 }
 
-void DebugThread::ExitCpuStep()
+void GdbDebugThread::ExitCpuStep()
 {
    worker_->ExitCpuStep();
 }
 
-void DebugThread::Log(const char* log)
+void GdbDebugThread::Log(const char* log)
 {
    qDebug() << socketDescriptor_ << log;
 }
 
 //////////////////////////////////////////////
 // Help command
-RemoteCommandHelp::RemoteCommandHelp(DebugThread* debug):debug_(debug)
+RemoteCommandHelp::RemoteCommandHelp(GdbDebugThread* debug):debug_(debug)
 {
    
 }
@@ -359,59 +328,3 @@ std::string RemoteCommandHelp::Help()
 }
 
 
-//////////////////////////////////////////////
-// callback & signals
-DebugWorker::DebugWorker(QTcpSocket *socket, int socketDescriptor, Emulation* emulation) : socket_(socket), socketDescriptor_(socketDescriptor), emulation_(emulation)
-{
-   prompt_ = "";
-   state_ = STATE_NONE;
-}
-
-void DebugWorker::EnterCpuStep()
-{
-   prompt_ = STATE_CPU_STEP;
-   state_ = STATE_STEP;
-}
-
-void DebugWorker::ExitCpuStep()
-{
-   prompt_ = "";
-   state_ = STATE_NONE;
-}
-
-void DebugWorker::WritePrompt()
-{
-   socket_->write("command");
-   if (prompt_.size() > 0)
-   {
-      socket_->write("@");
-      socket_->write(prompt_.c_str());
-   }
-   socket_->write("> ");
-
-}
-
-void DebugWorker::Break(unsigned int nb_opcodes)
-{
-   // Done. Send ... something : todo
-   char out[64];
-   sprintf(out, "Returning after %d opcodes\n", nb_opcodes);
-   qDebug() << out;
-   socket_->write(out);
-   EnterCpuStep();
-   WritePrompt();
-}
-
-void DebugWorker::BreakpointReached(IBreakpointItem* breakpoint)
-{
-   // Done. Send ... something : todo
-   if (breakpoint != nullptr)
-   {
-      char out[64];
-      sprintf(out, "Breakpoint fired:%s\n", breakpoint->GetBreakpointFormat().c_str());
-      qDebug() << out;
-      socket_->write(out);
-      WritePrompt();
-   }
-}
- 

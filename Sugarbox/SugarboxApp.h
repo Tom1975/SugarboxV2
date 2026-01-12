@@ -24,13 +24,14 @@
 #include "SettingsList.h"
 #include "Settings.h"
 #include "DlgSettings.h"
-#include "debugers/zrc/DebugSocket.h"
+#include "debugers/DebugSocket.h"
 #include "FlagHandler.h"
 #include "TapeWidget.h"
 #include "DiskWidget.h"
 #include "SCLPlayer.h"
 #include "Script.h"
 #include "SoundWidget.h"
+#include "debugers/gdb/GdbThreadCreator.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -209,7 +210,7 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
-
+   GdbThreadCreator* gdbCreator_;
    DebugSocket* debugger_link_;
 
    DebugDialog debug_;
