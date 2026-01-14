@@ -12,6 +12,9 @@
 #define CURRENT_VERSION    "10.0"
 #define CURRENT_MACHINE    "ZX Spectrum+ 128k"
 
+
+
+
 ////////////////////////////////////////////////////////
 /// About
 ///

@@ -1,11 +1,15 @@
 
+#include "GdbDebugThread.h"
+
 #include <sstream>
 #include <functional>
 #include <QtCore>
 #include <QTcpSocket>
 #include <cstdio>
 
-#include "GdbDebugThread.h"
+#include "GdbCommands.h"
+
+
 
 #define STATE_DEFAULT      ""
 #define STATE_CPU_STEP     "cpu-step"
@@ -100,6 +104,7 @@ void GdbDebugThread::ReadyRead()
             {
                qDebug() << socketDescriptor_ << " Start of command";
                pending_buffer_.erase(0, 1);
+               pending_command_.clear();
                state_ = IN_PAYLOAD;
             }
             else
@@ -119,6 +124,7 @@ void GdbDebugThread::ReadyRead()
             {
                qDebug() << socketDescriptor_ << " Command : " << QString::fromStdString(pending_command_) << " - Waiting for checksum";
                pending_buffer_.erase(0, 1);
+               checksum_.clear();
                state_ = IN_CHECKSUM;
             }
             else
@@ -149,13 +155,73 @@ void GdbDebugThread::ReadyRead()
    }
 }
 
+void GdbDebugThread::SendReply(std::string reply)
+{
+   unsigned char checksum = 0;
+   for (unsigned int index = 0; index < reply.size(); index++)
+   {
+      checksum += reply[index];
+   }
+   char hex_checksum[3] = {0};
+   sprintf(hex_checksum, "%2.2X", checksum);
+   
+   std::string complete_reply = "$" + reply + "#" + hex_checksum;
+   socket_->write(complete_reply.c_str());
+
+   // Waiting for "+" or "-";
+
+}
+
 void GdbDebugThread::Execute(std::string command, std::string checksum)
 {
-   qDebug() << socketDescriptor_ << "Execution ";
+   qDebug() << socketDescriptor_ << "Execution : command " << QString::fromStdString(command) << " - checksum : " << QString::fromStdString(checksum);
 
    // Checksum
+   unsigned char compute_checksum = 0;
+   for (unsigned int index = 0; index < command.size(); index++)
+   {
+      compute_checksum += command[index];
+   }
+   char * endPtr;
+   unsigned char read_checksum = strtoul( checksum.c_str(), &endPtr, 16 ); 
+   if ( read_checksum == compute_checksum)
+   {
+      qDebug() << socketDescriptor_ << "Checksum ok";
+      socket_->write("+");
 
-   // answer
+      // Handle command
+      HandleCommand(command);
+   }
+   else
+   {
+      qDebug() << socketDescriptor_ << "Checksum error : " << (int)read_checksum << "instead of" << (int)compute_checksum;
+      socket_->write("-");
+   }
+}
+
+void GdbDebugThread::HandleCommand(std::string command)
+{
+   // Prefixe command :
+   unsigned char prefix = command[0];
+   std::vector<std::string> vector;
+   vector.push_back(command.substr(1));
+
+   if ( command_map_.find(prefix) != command_map_.end())
+   {
+      command_map_[prefix]->Execute(vector);
+   }
+   else
+   {
+      // Unknown command
+      SendReply("E01");
+   }
+
+}
+
+void GdbDebugThread::AddCommand (IRemoteCommand* action, char command)
+{
+   action->InitCommand(this, emulation_);
+   command_map_[command] = action;
 }
 
 void GdbDebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<std::string >commands)
@@ -179,6 +245,8 @@ void GdbDebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<s
 
 void GdbDebugThread::InitMap()
 {
+   AddCommand (new RemoteCommandQuery, 'q');
+
    /*AddCommand(new RemoteCommandAbout(), { "about" });
    AddCommand(new RemoteCommandBreak(), { "break", "b" });
    AddCommand(new RemoteCommandClearMembreakpoints(), { "clear-membreakpoints" });
@@ -290,6 +358,7 @@ void GdbDebugThread::SendResponse(const char* response)
    socket_->write(response);
    qDebug() << socketDescriptor_ << response;
 }
+
 void GdbDebugThread::SendEoL()
 {
    socket_->write(cr_lf_.c_str());

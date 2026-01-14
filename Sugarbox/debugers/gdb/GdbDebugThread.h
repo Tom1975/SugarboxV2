@@ -20,6 +20,7 @@ public:
    virtual void NotifyBreak(unsigned int nb_opcodes);
    virtual void BreakpointEncountered(IBreakpointItem* breakpoint);
 
+   void SendReply(std::string reply);
    void SendResponse(const char* response);
    void SendEoL();
    void EnterCpuStep();
@@ -40,7 +41,9 @@ public slots:
 protected:
    
    void Execute(std::string command, std::string checksum);
-
+   void HandleCommand(std::string command);
+   
+   void AddCommand (IRemoteCommand* action, char command);
    void AddCommand(IRemoteCommand* action, std::initializer_list<std::string >commands);
    void SendMultilineString(std::string str);
 
@@ -58,6 +61,8 @@ protected:
    std::map<std::string, IRemoteCommand* > function_map_;
    std::map<std::string, IRemoteCommand* > alternate_command_;
    std::map<IRemoteCommand*, std::vector<std::string>> command_list_;
+
+   std::map<char, IRemoteCommand* > command_map_;
 
    IRemoteCommand* current_command_;
    void InitMap();
