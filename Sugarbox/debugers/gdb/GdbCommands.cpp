@@ -4,6 +4,12 @@
 
 ////////////////////////////////////////////////////////
 /// query 'q'
+
+RemoteCommandQuery::RemoteCommandQuery():IRemoteCommand()
+{
+
+}
+
 bool RemoteCommandQuery::Execute(std::vector<std::string>& commandlist)
 {
     if ( commandlist.size() == 0 )

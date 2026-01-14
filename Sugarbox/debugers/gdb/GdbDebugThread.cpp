@@ -208,11 +208,13 @@ void GdbDebugThread::HandleCommand(std::string command)
 
    if ( command_map_.find(prefix) != command_map_.end())
    {
+      qDebug() << socketDescriptor_ << "Execution of " << QString::fromStdString(vector[0]);
       command_map_[prefix]->Execute(vector);
    }
    else
    {
       // Unknown command
+      qDebug() << socketDescriptor_ << "Unknown command";
       SendReply("E01");
    }
 
