@@ -20,7 +20,6 @@ public:
    virtual void NotifyBreak(unsigned int nb_opcodes);
    virtual void BreakpointEncountered(IBreakpointItem* breakpoint);
 
-   void SendReply(std::string reply);
    void SendResponse(const char* response);
    void SendEoL();
    void EnterCpuStep();

@@ -155,22 +155,6 @@ void GdbDebugThread::ReadyRead()
    }
 }
 
-void GdbDebugThread::SendReply(std::string reply)
-{
-   unsigned char checksum = 0;
-   for (unsigned int index = 0; index < reply.size(); index++)
-   {
-      checksum += reply[index];
-   }
-   char hex_checksum[3] = {0};
-   sprintf(hex_checksum, "%2.2X", checksum);
-   
-   std::string complete_reply = "$" + reply + "#" + hex_checksum;
-   socket_->write(complete_reply.c_str());
-
-   // Waiting for "+" or "-";
-
-}
 
 void GdbDebugThread::Execute(std::string command, std::string checksum)
 {
@@ -215,7 +199,7 @@ void GdbDebugThread::HandleCommand(std::string command)
    {
       // Unknown command
       qDebug() << socketDescriptor_ << "Unknown command";
-      SendReply("E01");
+      SendResponse("E01");
    }
 
 }
@@ -248,6 +232,12 @@ void GdbDebugThread::AddCommand (IRemoteCommand* action, std::initializer_list<s
 void GdbDebugThread::InitMap()
 {
    AddCommand (new RemoteCommandQuery, 'q');
+   AddCommand (new RemoteCommandV, 'v');
+   AddCommand (new RemoteCommandH, 'H');
+   AddCommand (new RemoteCommandC, 'c');
+   AddCommand (new RemoteCommandAsk, '?');
+   AddCommand (new RemoteCommandStack, 'g');
+   
 
    /*AddCommand(new RemoteCommandAbout(), { "about" });
    AddCommand(new RemoteCommandBreak(), { "break", "b" });
@@ -357,8 +347,19 @@ void GdbDebugThread::BreakpointEncountered(IBreakpointItem* breakpoint)
 
 void GdbDebugThread::SendResponse(const char* response)
 {
-   socket_->write(response);
-   qDebug() << socketDescriptor_ << response;
+   std::string reply = response;
+   unsigned char checksum = 0;
+   for (unsigned int index = 0; index < reply.size(); index++)
+   {
+      checksum += reply[index];
+   }
+   char hex_checksum[3] = {0};
+   sprintf(hex_checksum, "%2.2X", checksum);
+   
+   std::string complete_reply = "$" + reply + "#" + hex_checksum;
+
+   socket_->write(complete_reply.c_str());
+   qDebug() << socketDescriptor_ << "Response sent : " << QString::fromStdString(complete_reply);
 }
 
 void GdbDebugThread::SendEoL()
