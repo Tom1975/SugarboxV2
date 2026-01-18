@@ -1,0 +1,65 @@
+{
+  "name": "z80-debug",
+  "displayName": "Z80 Debug Adapter",
+  "description": "Debug adapter for Z80 emulators (RASM + custom emulator)",
+  "version": "0.0.1",
+  "publisher": "yourname",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onDebug"
+  ],
+  "main": "./out/main.js",
+  "contributes": {
+    "debuggers": [
+      {
+        "type": "z80",
+        "label": "Z80 Emulator",
+        "program": "./out/main.js",
+        "runtime": "node",
+        "languages": [
+          "asm"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "ASM source file"
+              },
+              "port": {
+                "type": "number",
+                "default": 1234,
+                "description": "TCP port of the Z80 emulator"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.30",
+    "@types/vscode": "^1.108.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "vscode-debugadapter": "^1.51.0",
+    "vscode-debugprotocol": "^1.51.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

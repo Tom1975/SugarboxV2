@@ -28,4 +28,5 @@ set ( USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE )
 
 add_subdirectory(CPCCore)
 add_subdirectory(openal-soft)
+add_subdirectory(json)
 add_subdirectory(Sugarbox)

@@ -4,3 +4,7 @@
 [submodule "openal-soft"]
 	path = openal-soft
 	url = https://github.com/kcat/openal-soft.git
+[submodule "json"]
+	path = json
+	url = https://github.com/nlohmann/json
+	branch = master

@@ -32,6 +32,7 @@
 #include "Script.h"
 #include "SoundWidget.h"
 #include "debugers/gdb/GdbThreadCreator.h"
+#include "debugers/DebugServer.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -211,7 +212,7 @@ protected:
 
    // Debugger
    GdbThreadCreator* gdbCreator_;
-   DebugSocket* debugger_link_;
+   DebugServer* debugger_link_;
 
    DebugDialog debug_;
    MemoryDialog memory_[4];

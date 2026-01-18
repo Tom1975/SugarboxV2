@@ -251,12 +251,12 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    
    status_sound_.SetEmulation(emulation_);
 
-   if ( init._gdb_server.size() > 0)
+   if ( init._dbs_server.size() > 0)
    {
-      unsigned short port = static_cast< unsigned short >( std::strtoul(init._gdb_server.c_str(), NULL, 0) );
+      unsigned short port = static_cast< unsigned short >( std::strtoul(init._dbs_server.c_str(), NULL, 0) );
       if (port > 0)
       {
-         debugger_link_ = new DebugSocket(this, emulation_, gdbCreator_, port);
+         debugger_link_ = new DebugServer(emulation_, port);
          debugger_link_->StartServer();
       }
       else

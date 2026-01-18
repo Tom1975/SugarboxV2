@@ -143,10 +143,10 @@ int main(int argc, char *argv[])
    parser.addOption(noShow);
 
    // Debug server
-   QCommandLineOption gdb (QStringList() << "gdb" << "gdb",
-   QCoreApplication::translate("main", "Start a gdb server on port <port>."),
+   QCommandLineOption dbs(QStringList() << "ds" << "debug_server",
+   QCoreApplication::translate("main", "Start a debug server on port <port>."),
    QCoreApplication::translate("main", "port"));
-   parser.addOption(gdb);
+   parser.addOption(dbs);
 
 
    parser.process(app);
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
    init._script_to_run = parser.isSet(cslFileOption) ? parser.values(cslFileOption)[0].toUtf8().data() : "";
    init._cart_inserted = parser.isSet(cartOption) ? parser.values(cartOption)[0].toUtf8().data() : "";
    init._no_show = parser.isSet(noShow);
-   init._gdb_server = parser.isSet(gdb)?parser.values(gdb)[0].toUtf8().data() : "";
+   init._dbs_server = parser.isSet(dbs)?parser.values(dbs)[0].toUtf8().data() : "";
    mainWin.RunApp(init);
 
    return app.exec();
