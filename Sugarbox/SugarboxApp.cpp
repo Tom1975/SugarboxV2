@@ -1074,6 +1074,10 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
 
 void SugarboxApp::NotifyStop()
 {
+   if (debugger_link_ != nullptr)
+   {
+      debugger_link_->NotifyStop();
+   }
    // call update for debugger
    debug_.Update();
    for (auto& i: memory_)

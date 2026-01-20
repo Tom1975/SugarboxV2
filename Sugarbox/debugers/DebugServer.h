@@ -4,7 +4,41 @@
 #include <thread>
 #include <atomic>
 
+#include "json.hpp"
+
 #include "Emulation.h"
+
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
+class DebugMessageQueue
+{
+public:
+    void push(std::string msg)
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(std::move(msg));
+        }
+        m_cv.notify_one();
+    }
+
+    std::string pop()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_cv.wait(lock, [&]{ return !m_queue.empty(); });
+
+        std::string msg = std::move(m_queue.front());
+        m_queue.pop();
+        return msg;
+    }
+
+private:
+    std::queue<std::string> m_queue;
+    std::mutex m_mutex;
+    std::condition_variable m_cv;
+};
 
 class DebugServer
 {
@@ -14,16 +48,27 @@ public:
 
    void StartServer();
    void stop();
+   void NotifyStop();
 
 private:
    void serverThread();
+   void networkThread();
    void handleClient(int clientSocket);
+   void SendResponse(nlohmann::json response);
 
    int port_;
    std::atomic<bool> running_{ false };
    std::thread thread_;
+   std::thread thread_send_;
 
+#ifdef _WIN32
    SOCKET serverSocket_;
+   SOCKET clientSocket_;
+#else
+   int serverSocket_;
+   int clientSocket_;
+#endif
 
+   DebugMessageQueue outgoing_queue_;
    Emulation* emulation_;
 };

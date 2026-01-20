@@ -9,7 +9,6 @@ using socklen_t = int;
 #endif
 
 #include "DebugServer.h"
-#include "json.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -39,6 +38,40 @@ void DebugServer::StartServer()
 {
    running_ = true;
    thread_ = std::thread(&DebugServer::serverThread, this);
+   thread_send_ = std::thread(&DebugServer::networkThread, this);
+}
+
+bool sendAll(int s, const char* buf, size_t len)
+{
+    size_t sent = 0;
+    while (sent < len)
+    {
+        int n = send(s, buf + sent, int(len - sent), 0);
+        if (n <= 0)
+            return false;
+        sent += n;
+    }
+    return true;
+}
+
+void DebugServer::networkThread()
+{
+    while (running_)
+    {
+      if ( clientSocket_ != -1)
+      {
+         std::cout << "waiting for something to send...";
+         std::string msg = outgoing_queue_.pop();
+         std::cout << "Trying to send " << msg;
+         sendAll(clientSocket_, msg.c_str(), (int)msg.size());
+         std::cout << "Done !";
+      }
+      else
+      {
+         // sleep
+         sleep(1);
+      }
+    }
 }
 
 void DebugServer::stop()
@@ -50,13 +83,15 @@ void DebugServer::stop()
 #ifdef _WIN32
       closesocket(serverSocket_);
 #else
-      close(m_serverSocket);
+      close(serverSocket_);
 #endif
       serverSocket_ = -1;
    }
 
    if (thread_.joinable())
       thread_.join();
+   if (thread_send_.joinable())
+      thread_send_.join();
 }
 
 void DebugServer::serverThread()
@@ -87,20 +122,36 @@ void DebugServer::serverThread()
    {
       sockaddr_in client{};
       socklen_t len = sizeof(client);
-      int clientSocket = accept(serverSocket_, (sockaddr*)&client, &len);
-      if (clientSocket < 0)
+      clientSocket_ = accept(serverSocket_, (sockaddr*)&client, &len);
+      if (clientSocket_ < 0)
          continue;
 
       std::cout << "Debugger connected\n";
-      handleClient(clientSocket);
+      handleClient(clientSocket_);
 
 #ifdef _WIN32
-      closesocket(clientSocket);
+      closesocket(clientSocket_);
 #else
-      close(clientSocket);
+      close(clientSocket_);
 #endif
       std::cout << "Debugger disconnected\n";
    }
+}
+
+void  DebugServer::NotifyStop()
+{
+   json j;
+   Z80* z80 = emulation_->GetEngine()->GetProc();
+
+   j["type"]  = "event";
+   j["event"]  = "stopped";
+   json body;
+   body["reason"] = "breakpoint";
+   body["threadId"] = 1;
+   body["allThreadsStopped"] = true;
+   j["body"] = body;
+
+   outgoing_queue_.push(j.dump() + "\n");   
 }
 
 void DebugServer::handleClient(int clientSocket)
@@ -132,33 +183,54 @@ void DebugServer::handleClient(int clientSocket)
 
       std::string cmd = request.value("cmd", "");
 
+      std::cout << "Request frame : " << cmd;
+
       if (cmd == "readRegisters")
       {
-         // TODO: brancher sur votre CPU Z80
-         response = {
-             {"AF", 0x1234},
-             {"BC", 0x5678},
-             {"DE", 0x9ABC},
-             {"HL", 0xDEF0},
-             {"SP", 0xFFFF},
-             {"PC", 0x8000}
-         };
+         Z80* z80 = emulation_->GetEngine()->GetProc();
+
+         response["AF"] = z80->af_.w;
+         response["AF'"] = z80->af_p_.w;
+         response["BC"] = z80->bc_.w;
+         response["BC'"] = z80->bc_p_.w;
+         response["DE"] = z80->de_.w;
+         response["DE'"] = z80->de_p_.w;
+         response["HL"] = z80->hl_.w;
+         response["HL'"] = z80->hl_p_.w;
+         response["SP"] = z80->sp_;
+         response["PC"] = z80->pc_;
+         SendResponse(response);
+      }
+      else if (cmd == "getState")
+      {
+         json response;
+         response["state"] =
+            (emulation_->IsRunning()) ? "running" : "stopped";
+         SendResponse(response);
       }
       else if (cmd == "step")
       {
-         // cpu.step();
          response = { {"status", "ok"} };
+         SendResponse(response);
+         emulation_->Step();
       }
       else if (cmd == "continue")
       {
          response = { {"status", "running"} };
+         SendResponse(response);
+         // TODO
       }
       else
       {
          response = { {"error", "unknown command"} };
+         SendResponse(response);
       }
-
-      std::string out = response.dump() + "\n";
-      send(clientSocket, out.c_str(), (int)out.size(), 0);
    }
+}
+
+void DebugServer::SendResponse(json response)
+{      
+   std::string out = response.dump() + "\n";
+   std::cout << "Send response  : " << out;
+   outgoing_queue_.push(out);
 }
