@@ -20,6 +20,9 @@ export class Z80DebugSession extends DebugSession {
         console.log("Z80 Debug Adapter started 2");
         this.setDebuggerLinesStartAt1(true);
         this.setDebuggerColumnsStartAt1(true);
+        this.on("stopped", (reason: string) => {
+            this.sendEvent(new StoppedEvent(reason, 1));
+        });
     }
 
 protected initializeRequest(
@@ -33,7 +36,9 @@ protected initializeRequest(
         supportsEvaluateForHovers: false,
         supportsSetVariable: false,
         supportsStepBack: false,
+        supportsDisassembleRequest: true,
         supportsRestartRequest: false
+        
     };
 
     this.sendResponse(response);
@@ -47,7 +52,6 @@ protected async launchRequest(
     console.log("connection...");
     this.emulator.connect(args.port).then(() => {
         console.log("connected");
-        // Signaler à VSCode que le débogueur est prêt
         this.sendEvent(new InitializedEvent());
         this.sendResponse(response);
     });
@@ -60,7 +64,6 @@ protected configurationDoneRequest(
     console.log("DAP: configurationDone");
     this.sendResponse(response);
 
-    // Stoper la CPU fictive pour que VSCode demande les variables
     this.sendEvent(new StoppedEvent("entry", 1));
 }
 
@@ -108,14 +111,63 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     this.sendResponse(response);
 }
 
-protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments) {
+protected async stackTraceRequest(
+    response: DebugProtocol.StackTraceResponse,
+    args: DebugProtocol.StackTraceArguments
+) {
     console.log("DAP: stackTraceRequest");
-    // Simuler une seule frame au PC initial
-    const frame = new StackFrame(1, "main", new Source("program.asm", "/path/to/program.asm"), 1, 0);
+
+    // Demander le PC à l’émulateur
+    const state = await this.emulator.send({
+        cmd: "getState"
+    });
+    // state = { pc: number }
+
+    const frame: DebugProtocol.StackFrame = {
+        id: 1,
+        name: "Z80",
+        line: 0,
+        column: 0,
+
+        // IMPORTANT : PAS de source → disassembly
+        instructionPointerReference: "MemoryRead:0x" + state.pc.toString(16)
+    };
+
     response.body = {
         stackFrames: [frame],
         totalFrames: 1
     };
+
+    this.sendResponse(response);
+}
+
+protected async disassembleRequest(
+    response: DebugProtocol.DisassembleResponse,
+    args: DebugProtocol.DisassembleArguments
+){
+    const [type, bank] = args.memoryReference.split(":");
+
+    const startAddress = (args.offset ?? 0);
+
+    const count = args.instructionCount ?? 64;
+
+    const reply = await this.emulator.send({
+        cmd: "disassemble",
+        address: startAddress,
+        type:type,
+        bank:bank,
+        count
+    });
+
+    const disasm = reply.body;
+
+    response.body = {
+        instructions: disasm.map((ins: any) => ({
+            address: "0x" + ins.address.toString(16),
+            instruction: ins.instruction
+        }))
+    };
+
     this.sendResponse(response);
 }
 
