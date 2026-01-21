@@ -1072,11 +1072,11 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
 
 }
 
-void SugarboxApp::NotifyStop()
+void SugarboxApp::NotifyStop(IDebugerStopped::Reason reason)
 {
    if (debugger_link_ != nullptr)
    {
-      debugger_link_->NotifyStop();
+      debugger_link_->NotifyStop(reason);
    }
    // call update for debugger
    debug_.Update();

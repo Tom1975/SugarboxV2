@@ -138,7 +138,7 @@ void DebugServer::serverThread()
    }
 }
 
-void  DebugServer::NotifyStop()
+void  DebugServer::NotifyStop(IDebugerStopped::Reason reason)
 {
    json j;
    Z80* z80 = emulation_->GetEngine()->GetProc();
@@ -203,9 +203,17 @@ void DebugServer::handleClient(int clientSocket)
       }
       else if (cmd == "getState")
       {
+         Z80* z80 = emulation_->GetEngine()->GetProc();
          json response;
-         response["state"] =
-            (emulation_->IsRunning()) ? "running" : "stopped";
+
+         // To choose which bank is used
+         // PC : source:address. 
+
+         response["pc"] = z80->pc_;
+         response["sp"] = z80->sp_;
+
+         response["running"] =
+            (emulation_->IsRunning()) ? "true" : "false";
          SendResponse(response);
       }
       else if (cmd == "step")
@@ -219,6 +227,37 @@ void DebugServer::handleClient(int clientSocket)
          response = { {"status", "running"} };
          SendResponse(response);
          // TODO
+      }
+      else if (cmd == "disassemble")
+      {
+         // [
+         // { "address": 7842, "text": "LD A,(HL)" },
+         // { "address": 7843, "text": "INC HL" }
+         // ]      
+         unsigned int pc = request.value("address", 0);
+         unsigned int count = request.value("count", 0);
+         // to use...maybe later !
+         std::string type = request.value("type", "READ");
+         std::string bank = request.value("bank", "0");
+
+         json arr = json::array();
+         for (int i = 0; i < count; i++) 
+         {
+            char out_buffer[128];
+            memset(out_buffer, 0x20, sizeof(out_buffer));
+            int increment = emulation_->Disassemble(pc, out_buffer, 128 - 7);
+            arr.push_back({
+               { "address", pc },
+               { "instruction", out_buffer }
+            }); 
+            pc += increment;
+         }
+         response = {
+         { "type", "response" },
+         { "command", "disassemble" },
+         { "body", arr }
+         };
+         SendResponse(response);
       }
       else
       {

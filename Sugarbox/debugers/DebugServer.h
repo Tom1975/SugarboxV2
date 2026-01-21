@@ -48,7 +48,7 @@ public:
 
    void StartServer();
    void stop();
-   void NotifyStop();
+   void NotifyStop(IDebugerStopped::Reason reason);
 
 private:
    void serverThread();

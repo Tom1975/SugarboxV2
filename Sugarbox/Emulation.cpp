@@ -188,7 +188,7 @@ void Emulation::EmulationLoop()
             // Notify anyone interrested that the code is stopped
             for (auto& it : notifier_dbg_list_)
             {
-               it->NotifyStop();
+               it->NotifyStop(IDebugerStopped::Breakpoint );
             }
          }
 

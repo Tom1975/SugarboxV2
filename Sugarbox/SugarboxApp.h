@@ -58,7 +58,7 @@ public:
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
 
-   virtual void NotifyStop();
+   virtual void NotifyStop(IDebugerStopped::Reason reason);
 
    virtual bool PlusEnabled();
    virtual bool FdcPresent();

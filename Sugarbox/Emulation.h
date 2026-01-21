@@ -32,7 +32,18 @@ public:
 class IDebugerStopped
 {
 public:
-   virtual void NotifyStop() = 0;
+   typedef enum {
+      Breakpoint,
+      Step,
+      Exception,
+      Pause,
+      Entry,
+      Goto,
+      FunctionBreakpoint,
+      DataBreakpoint,
+      InstructionBreakpoint
+   } Reason;
+   virtual void NotifyStop(Reason) = 0;
 };
 
 class Emulation  : public IDirectories, IFdcNotify
