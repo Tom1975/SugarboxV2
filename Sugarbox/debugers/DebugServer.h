@@ -1,3 +1,8 @@
+////////////////////////////////////////////////////////
+// 
+//  DAP Class adapter : This class will communicate with DAP 
+// to provide a way to debug z80 application through Sugarbox
+// 
 #pragma once
 
 #include <string>
@@ -11,6 +16,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+
 
 class DebugMessageQueue
 {

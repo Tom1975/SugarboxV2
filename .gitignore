@@ -1,3 +1,6 @@
 build/**
 .vscode/**
 /bin/**
+
+/Sugarbox/debugers/z80-debug-adapter/node_modules/**
+/Sugarbox/debugers/z80-debug-adapter/out/**

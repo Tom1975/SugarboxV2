@@ -17,7 +17,7 @@ export class Z80DebugSession extends DebugSession {
 
     constructor() {
         super();
-        console.log("Z80 Debug Adapter started 2");
+        console.log("Z80 Debug Adapter started");
         this.setDebuggerLinesStartAt1(true);
         this.setDebuggerColumnsStartAt1(true);
         this.on("stopped", (reason: string) => {
@@ -30,7 +30,7 @@ protected initializeRequest(
     args: DebugProtocol.InitializeRequestArguments
 ): void {
 
-    console.log("DAP: initialize");
+    console.log("DAP: initialization");
     response.body = {
         supportsConfigurationDoneRequest: true,
         supportsEvaluateForHovers: false,
@@ -49,7 +49,7 @@ protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: any
 ) {
-    console.log("connection...");
+    console.log("DAP: Connection...");
     this.emulator.connect(args.port).then(() => {
         console.log("connected");
         this.sendEvent(new InitializedEvent());
@@ -70,6 +70,7 @@ protected configurationDoneRequest(
 protected async continueRequest(
     response: DebugProtocol.ContinueResponse
 ) {
+    console.log("DAP: Continue");
     await this.emulator.send({ cmd: "continue" });
     this.sendResponse(response);
 }
@@ -77,6 +78,7 @@ protected async continueRequest(
 protected async nextRequest(
     response: DebugProtocol.NextResponse
 ) {
+    console.log("DAP: Step");
     await this.emulator.send({ cmd: "step" });
 
     this.sendEvent(new StoppedEvent("step", 1));
@@ -86,6 +88,7 @@ protected async nextRequest(
 protected async pauseRequest(
     response: DebugProtocol.PauseResponse
 ) {
+    console.log("DAP: Halt");
     await this.emulator.send({ cmd: "halt" });
     this.sendEvent(new StoppedEvent("pause", 1));
     this.sendResponse(response);
@@ -151,6 +154,8 @@ protected async disassembleRequest(
 
     const count = args.instructionCount ?? 64;
 
+    console.log("DAP: DisassembleRequest : Bank : " + type + "/" + bank + " - From "+startAddress+" couting "+count );
+
     const reply = await this.emulator.send({
         cmd: "disassemble",
         address: startAddress,
@@ -175,7 +180,7 @@ protected async variablesRequest(
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments
 ) {
-    console.log("variablesRequest");
+    console.log("DAP : variablesRequest");
     if (args.variablesReference === 1) {
         const regs = await this.emulator.send({
             cmd: "readRegisters"
