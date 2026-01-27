@@ -1,6 +1,7 @@
 import {
     InitializedEvent,
-    TerminatedEvent
+    TerminatedEvent,
+    ContinuedEvent,
 } from "vscode-debugadapter";
 
 import { DebugSession } from "vscode-debugadapter";
@@ -67,6 +68,10 @@ protected configurationDoneRequest(
     this.sendEvent(new StoppedEvent("entry", 1));
 }
 
+private onEmulatorConnected() {
+    this.sendEvent(new ContinuedEvent(1, true));
+}
+
 protected async continueRequest(
     response: DebugProtocol.ContinueResponse
 ) {
@@ -86,7 +91,8 @@ protected async nextRequest(
 }
 
 protected async pauseRequest(
-    response: DebugProtocol.PauseResponse
+    response: DebugProtocol.PauseResponse,
+    args: DebugProtocol.PauseArguments
 ) {
     console.log("DAP: Halt");
     await this.emulator.send({ cmd: "halt" });
@@ -114,6 +120,10 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     this.sendResponse(response);
 }
 
+onStopped(reason: string) {
+    this.sendEvent(new StoppedEvent(reason, 1));
+}
+
 protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments
@@ -126,14 +136,15 @@ protected async stackTraceRequest(
     });
     // state = { pc: number }
 
+    const pc = state?.pc ?? 0;
     const frame: DebugProtocol.StackFrame = {
         id: 1,
         name: "Z80",
-        line: 0,
-        column: 0,
+        line: 1,
+        column: 1,
 
         // IMPORTANT : PAS de source → disassembly
-        instructionPointerReference: "MemoryRead:0x" + state.pc.toString(16)
+        instructionPointerReference: "MemoryRead:0x" + pc.toString(16)
     };
 
     response.body = {
@@ -164,8 +175,16 @@ protected async disassembleRequest(
         count
     });
 
-    const disasm = reply.body;
+// Extraire le tableau d'instructions du JSON reçu
+    const disasm = reply.instructions; // doit correspondre à la clé 'body' côté C++
 
+    if (!Array.isArray(disasm)) {
+        response.body = { instructions: [] };
+        this.sendResponse(response);
+        return;
+    }
+
+    // Construire la réponse DAP
     response.body = {
         instructions: disasm.map((ins: any) => ({
             address: "0x" + ins.address.toString(16),

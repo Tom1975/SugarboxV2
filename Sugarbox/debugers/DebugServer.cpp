@@ -60,11 +60,9 @@ void DebugServer::networkThread()
     {
       if ( clientSocket_ != -1)
       {
-         std::cout << "waiting for something to send...";
          std::string msg = outgoing_queue_.pop();
-         std::cout << "Trying to send " << msg;
+         std::cout << "Trying to send " << msg << std::endl;
          sendAll(clientSocket_, msg.c_str(), (int)msg.size());
-         std::cout << "Done !";
       }
       else
       {
@@ -116,7 +114,7 @@ void DebugServer::serverThread()
 
    listen(serverSocket_, 1);
 
-   std::cout << "Z80 Debug server listening on port " << port_ << "\n";
+   std::cout << "Z80 Debug server listening on port " << port_ << std::endl;
 
    while (running_)
    {
@@ -126,7 +124,7 @@ void DebugServer::serverThread()
       if (clientSocket_ < 0)
          continue;
 
-      std::cout << "Debugger connected\n";
+      std::cout << "Debugger connected" << std::endl;
       handleClient(clientSocket_);
 
 #ifdef _WIN32
@@ -134,7 +132,7 @@ void DebugServer::serverThread()
 #else
       close(clientSocket_);
 #endif
-      std::cout << "Debugger disconnected\n";
+      std::cout << "Debugger disconnected" << std::endl;
    }
 }
 
@@ -151,12 +149,16 @@ void  DebugServer::NotifyStop(IDebugerStopped::Reason reason)
    body["allThreadsStopped"] = true;
    j["body"] = body;
 
+   std::cout << "STOP notified : " << j["event"] << std::endl;
    outgoing_queue_.push(j.dump() + "\n");   
 }
 
 void DebugServer::handleClient(int clientSocket)
 {
    char buffer[4096];
+
+   // Break emulation
+   emulation_->Break();
 
    while (running_)
    {
@@ -183,7 +185,7 @@ void DebugServer::handleClient(int clientSocket)
 
       std::string cmd = request.value("cmd", "");
 
-      std::cout << "Request frame : " << cmd;
+      std::cout << "Command : " << cmd << std::endl;
 
       if (cmd == "readRegisters")
       {
@@ -222,6 +224,12 @@ void DebugServer::handleClient(int clientSocket)
          SendResponse(response);
          emulation_->Step();
       }
+      else if (cmd == "halt")
+      {
+         response = { {"status", "ok"} };
+         SendResponse(response);
+         emulation_->Break();
+      }
       else if (cmd == "continue")
       {
          response = { {"status", "running"} };
@@ -255,7 +263,7 @@ void DebugServer::handleClient(int clientSocket)
          response = {
          { "type", "response" },
          { "command", "disassemble" },
-         { "body", arr }
+         { "instructions",  arr },
          };
          SendResponse(response);
       }
@@ -270,6 +278,6 @@ void DebugServer::handleClient(int clientSocket)
 void DebugServer::SendResponse(json response)
 {      
    std::string out = response.dump() + "\n";
-   std::cout << "Send response  : " << out;
+   std::cout << "Send response  : " << out << std::endl;
    outgoing_queue_.push(out);
 }
