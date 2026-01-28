@@ -278,6 +278,5 @@ void DebugServer::handleClient(int clientSocket)
 void DebugServer::SendResponse(json response)
 {      
    std::string out = response.dump() + "\n";
-   std::cout << "Send response  : " << out << std::endl;
    outgoing_queue_.push(out);
 }

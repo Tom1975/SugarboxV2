@@ -24,6 +24,11 @@ export class Z80DebugSession extends DebugSession {
         this.on("stopped", (reason: string) => {
             this.sendEvent(new StoppedEvent(reason, 1));
         });
+        this.emulator.onEvent = evt => {
+            if (evt.event === "stopped") {
+            this.sendEvent(new StoppedEvent(evt.body.reason, 1));
+            }
+        };
     }
 
 protected initializeRequest(
@@ -38,13 +43,15 @@ protected initializeRequest(
         supportsSetVariable: false,
         supportsStepBack: false,
         supportsDisassembleRequest: true,
-        supportsRestartRequest: false
+        supportsRestartRequest: true
         
     };
 
     this.sendResponse(response);
     this.sendEvent(new InitializedEvent());
 }
+
+// TODO disconnectRequest
 
 protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
@@ -72,6 +79,9 @@ private onEmulatorConnected() {
     this.sendEvent(new ContinuedEvent(1, true));
 }
 
+// TODO restartRequest
+// TODO evaluateRequest
+
 protected async continueRequest(
     response: DebugProtocol.ContinueResponse
 ) {
@@ -90,6 +100,9 @@ protected async nextRequest(
     this.sendResponse(response);
 }
 
+// TODO stepInRequest   
+
+
 protected async pauseRequest(
     response: DebugProtocol.PauseResponse,
     args: DebugProtocol.PauseArguments
@@ -100,11 +113,14 @@ protected async pauseRequest(
     this.sendResponse(response);
 }
 
+
 protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
     console.log("DAP: scopesRequest");
     response.body = {
         scopes: [
-            new Scope("Registers", 1, false)
+            // Variables as register, memory. Maybe memory banks ? tape/disks ? cartridge ?
+            new Scope("Registers", 1, false),
+            new Scope("Memory", 2, false)
         ]
     };
     this.sendResponse(response);
@@ -120,7 +136,9 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     this.sendResponse(response);
 }
 
-onStopped(reason: string) {
+onStopped(reason: string) 
+{
+
     this.sendEvent(new StoppedEvent(reason, 1));
 }
 
@@ -154,6 +172,10 @@ protected async stackTraceRequest(
 
     this.sendResponse(response);
 }
+
+// TODO setInstructionBreakpointsRequest
+// TODO readMemoryRequest
+// TODO writeMemoryRequest
 
 protected async disassembleRequest(
     response: DebugProtocol.DisassembleResponse,
@@ -199,7 +221,7 @@ protected async variablesRequest(
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments
 ) {
-    console.log("DAP : variablesRequest");
+    console.log("DAP : variablesRequest " + args.variablesReference);
     if (args.variablesReference === 1) {
         const regs = await this.emulator.send({
             cmd: "readRegisters"
