@@ -24,11 +24,11 @@ export class Z80DebugSession extends DebugSession {
         this.on("stopped", (reason: string) => {
             this.sendEvent(new StoppedEvent(reason, 1));
         });
-        this.emulator.onEvent = evt => {
+        /*this.emulator.onEvent = evt => {
             if (evt.event === "stopped") {
             this.sendEvent(new StoppedEvent(evt.body.reason, 1));
             }
-        };
+        };*/
     }
 
 protected initializeRequest(
