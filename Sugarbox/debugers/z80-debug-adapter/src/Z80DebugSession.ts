@@ -24,12 +24,12 @@ export class Z80DebugSession extends DebugSession {
         this.on("stopped", (reason: string) => {
             this.sendEvent(new StoppedEvent(reason, 1));
         });
-        /*this.emulator.onEvent = evt => {
-            if (evt.event === "stopped") {
-            this.sendEvent(new StoppedEvent(evt.body.reason, 1));
-            }
-        };*/
     }
+
+onStopped(reason: string) 
+{
+    this.sendEvent(new StoppedEvent(reason, 1));
+}
 
 protected initializeRequest(
     response: DebugProtocol.InitializeResponse,
@@ -51,7 +51,6 @@ protected initializeRequest(
     this.sendEvent(new InitializedEvent());
 }
 
-// TODO disconnectRequest
 
 protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
@@ -79,9 +78,6 @@ private onEmulatorConnected() {
     this.sendEvent(new ContinuedEvent(1, true));
 }
 
-// TODO restartRequest
-// TODO evaluateRequest
-
 protected async continueRequest(
     response: DebugProtocol.ContinueResponse
 ) {
@@ -100,9 +96,6 @@ protected async nextRequest(
     this.sendResponse(response);
 }
 
-// TODO stepInRequest   
-
-
 protected async pauseRequest(
     response: DebugProtocol.PauseResponse,
     args: DebugProtocol.PauseArguments
@@ -112,7 +105,6 @@ protected async pauseRequest(
     this.sendEvent(new StoppedEvent("pause", 1));
     this.sendResponse(response);
 }
-
 
 protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
     console.log("DAP: scopesRequest");
@@ -126,7 +118,6 @@ protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProto
     this.sendResponse(response);
 }
 
-
 protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     // Pour l’instant, un seul “CPU Z80” fictif
     console.log("DAP: threadsRequest");
@@ -134,12 +125,6 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
         threads: [new Thread(1, "Z80 CPU")]
     };
     this.sendResponse(response);
-}
-
-onStopped(reason: string) 
-{
-
-    this.sendEvent(new StoppedEvent(reason, 1));
 }
 
 protected async stackTraceRequest(
@@ -173,10 +158,6 @@ protected async stackTraceRequest(
     this.sendResponse(response);
 }
 
-// TODO setInstructionBreakpointsRequest
-// TODO readMemoryRequest
-// TODO writeMemoryRequest
-
 protected async disassembleRequest(
     response: DebugProtocol.DisassembleResponse,
     args: DebugProtocol.DisassembleArguments
@@ -184,9 +165,7 @@ protected async disassembleRequest(
     const [type, bank] = args.memoryReference.split(":");
 
     const startAddress = (args.offset ?? 0);
-
     const count = args.instructionCount ?? 64;
-
     console.log("DAP: DisassembleRequest : Bank : " + type + "/" + bank + " - From "+startAddress+" couting "+count );
 
     const reply = await this.emulator.send({
@@ -197,8 +176,7 @@ protected async disassembleRequest(
         count
     });
 
-// Extraire le tableau d'instructions du JSON reçu
-    const disasm = reply.instructions; // doit correspondre à la clé 'body' côté C++
+    const disasm = reply.instructions;
 
     if (!Array.isArray(disasm)) {
         response.body = { instructions: [] };
@@ -206,7 +184,6 @@ protected async disassembleRequest(
         return;
     }
 
-    // Construire la réponse DAP
     response.body = {
         instructions: disasm.map((ins: any) => ({
             address: "0x" + ins.address.toString(16),
@@ -243,6 +220,65 @@ protected async variablesRequest(
     this.sendResponse(response);
 }
 
+protected async setInstructionBreakpointsRequest(
+    response: DebugProtocol.SetInstructionBreakpointsResponse,
+    args: DebugProtocol.SetInstructionBreakpointsArguments
+) {
+    const bps = args.breakpoints ?? [];
+
+    const breakpoints = bps.map(bp => {
+        const [type, addrHex] = bp.instructionReference.split(":");
+        const address = parseInt(addrHex, 16) + (bp.offset ?? 0);
+        return { type, address };
+    });
+
+    // Send full list to emulator
+    await this.emulator.send({
+        cmd: "setBreakpoints",
+        breakpoints
+    });
+
+    // Answer to VSCode
+    response.body = {
+        breakpoints: breakpoints.map(bp => ({
+            verified: true
+        }))
+    };
+
+    this.sendResponse(response);
+}
+
+protected async stepInRequest(
+    response: DebugProtocol.StepInResponse,
+    args: DebugProtocol.StepInArguments
+){
+    await this.emulator.send({ cmd: "stepIn" });
+    this.sendResponse(response);
+}
+
+protected async evaluateRequest(
+    response: DebugProtocol.EvaluateResponse,
+    args: DebugProtocol.EvaluateArguments
+){
+    const result = await this.emulator.send({
+        cmd: "evaluate",
+        expression: args.expression
+    });
+
+    response.body = {
+        result: result.text,
+        variablesReference: 0
+    };
+
+    this.sendResponse(response);
+}
+
+// TODO variableRequest
+// TODO disconnectRequest
+// TODO restartRequest
+
+// TODO readMemoryRequest
+// TODO writeMemoryRequest
 
 
 }

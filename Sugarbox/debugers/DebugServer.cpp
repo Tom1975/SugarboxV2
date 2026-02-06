@@ -224,6 +224,12 @@ void DebugServer::handleClient(int clientSocket)
          SendResponse(response);
          emulation_->Step();
       }
+      else if (cmd == "stepIn")
+      {
+         response = { {"status", "ok"} };
+         SendResponse(response);
+         emulation_->Step();
+      }
       else if (cmd == "halt")
       {
          response = { {"status", "ok"} };
@@ -235,6 +241,13 @@ void DebugServer::handleClient(int clientSocket)
          response = { {"status", "running"} };
          SendResponse(response);
          // TODO
+      }
+      else if (cmd == "evaluate")
+      {
+         // TODO
+         std::cout << "evaluate :TODO " << std::endl;
+         response = { "TODO" };
+         SendResponse(response);
       }
       else if (cmd == "disassemble")
       {
