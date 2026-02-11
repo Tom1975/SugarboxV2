@@ -242,6 +242,10 @@ void DebugServer::handleClient(int clientSocket)
          SendResponse(response);
          // TODO
       }
+      else if (cmd == "readMemory")
+      {
+         HandleReadMemory (request);
+      }
       else if (cmd == "evaluate")
       {
          // TODO
@@ -286,6 +290,29 @@ void DebugServer::handleClient(int clientSocket)
          SendResponse(response);
       }
    }
+}
+void DebugServer::HandleReadMemory(const nlohmann::json& request)
+{
+    uint16_t address = request.value("address", 0);
+    uint32_t size    = request.value("size", 0);
+
+    json bytes = json::array();
+    unsigned char buf[256];
+    
+    size = (size < sizeof(buf))?size : sizeof(buf);
+
+    emulation_->ReadMemory(address & 0xFFFF, buf, size); // wrap Z80
+
+    for (uint32_t i = 0; i < size; i++) {
+        uint16_t addr = address + i;
+        bytes.push_back(buf[i]);
+    }
+
+    json response = {
+        { "bytes", bytes }
+    };
+
+    SendResponse(response);
 }
 
 void DebugServer::SendResponse(json response)

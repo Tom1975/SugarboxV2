@@ -62,6 +62,9 @@ private:
    void handleClient(int clientSocket);
    void SendResponse(nlohmann::json response);
 
+
+   void HandleReadMemory(const nlohmann::json& request);
+
    int port_;
    std::atomic<bool> running_{ false };
    std::thread thread_;

@@ -11,6 +11,7 @@ import { StoppedEvent } from 'vscode-debugadapter';
 import { Thread } from 'vscode-debugadapter';
 import { StackFrame, Source } from 'vscode-debugadapter';
 import { Scope } from 'vscode-debugadapter';
+import { Variable } from 'vscode-debugadapter';
 
 export class Z80DebugSession extends DebugSession {
 
@@ -112,9 +113,82 @@ protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProto
         scopes: [
             // Variables as register, memory. Maybe memory banks ? tape/disks ? cartridge ?
             new Scope("Registers", 1, false),
-            new Scope("Memory", 2, false)
+            new Scope("Memory", 2, false),
+            new Scope("Stack", 3, false)
         ]
     };
+    this.sendResponse(response);
+}
+
+protected async variablesRequest(
+    response: DebugProtocol.VariablesResponse,
+    args: DebugProtocol.VariablesArguments
+) {
+    // REGISTERS
+    if (args.variablesReference == 1) {
+        const regs = await this.emulator.send({
+            cmd: "readRegisters"
+        }) as Record<string, number>;        
+
+        response.body = {
+            variables: Object.entries(regs).map(([name, val]) => ({
+                name,
+                value: "0x" + val.toString(16).padStart(4, "0"),
+                variablesReference: 0
+            }))
+        };
+    }
+
+    // MEMORY
+    else if (args.variablesReference == 2) {
+        response.body = {
+            variables: [
+                {
+                    name: "0x0000",
+                    value: "<expand>",
+                    variablesReference: 0 // TODO
+                }
+            ]
+        };
+    }
+    // Stack
+    else if (args.variablesReference == 3) {
+        // 1) Get SP
+        const state = await this.emulator.send({ cmd: "getState" });
+        const sp = state.sp as number;
+
+        const WORDS = 16;
+        const BYTES = WORDS * 2;
+
+        // 2) Lire la mémoire
+        const mem = await this.emulator.send({
+            cmd: "readMemory",
+            address: sp,
+            size: BYTES
+        }) as number[]; // tableau de bytes
+
+        // 3) Construire les variables
+        const vars = [];
+
+        for (let i = 0; i < WORDS; i++) {
+            const lo = mem[i * 2];
+            const hi = mem[i * 2 + 1];
+            const value = lo | (hi << 8);
+            const addr = sp + i * 2;
+
+            vars.push({
+                name: `SP+${i * 2}`,
+                value: `0x${value.toString(16).padStart(4, "0")} @0x${addr.toString(16)}`,
+                variablesReference: 0
+            });
+        }
+    }
+    else {
+        response.body = { variables: [] };
+        this.sendResponse(response);
+        return;
+    }
+
     this.sendResponse(response);
 }
 
@@ -194,32 +268,6 @@ protected async disassembleRequest(
     this.sendResponse(response);
 }
 
-protected async variablesRequest(
-    response: DebugProtocol.VariablesResponse,
-    args: DebugProtocol.VariablesArguments
-) {
-    console.log("DAP : variablesRequest " + args.variablesReference);
-    if (args.variablesReference === 1) {
-        const regs = await this.emulator.send({
-            cmd: "readRegisters"
-        }) as Record<string, number>;
-
-        response.body = {
-            variables: Object.keys(regs).map((k) => {
-                const v = regs[k];
-
-                return {
-                    name: k,
-                    value: "0x" + v.toString(16).padStart(4, "0"),
-                    variablesReference: 0
-                };
-            })
-        };
-    }
-
-    this.sendResponse(response);
-}
-
 protected async setInstructionBreakpointsRequest(
     response: DebugProtocol.SetInstructionBreakpointsResponse,
     args: DebugProtocol.SetInstructionBreakpointsArguments
@@ -273,7 +321,6 @@ protected async evaluateRequest(
     this.sendResponse(response);
 }
 
-// TODO variableRequest
 // TODO disconnectRequest
 // TODO restartRequest
 
