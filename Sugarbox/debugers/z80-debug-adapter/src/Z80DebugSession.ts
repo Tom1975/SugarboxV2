@@ -7,15 +7,46 @@ import {
 import { DebugSession } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { EmulatorClient } from "./EmulatorClient";
+import { SymbolTable } from "./SymbolTable";
 import { StoppedEvent } from 'vscode-debugadapter';
 import { Thread } from 'vscode-debugadapter';
 import { StackFrame, Source } from 'vscode-debugadapter';
 import { Scope } from 'vscode-debugadapter';
 import { Variable } from 'vscode-debugadapter';
 
+// One disassembled instruction
+interface DisasmLine {
+    address: number;
+    instruction: string;
+}
+
+// A cached disassembly region (one 4KB page of Z80 address space)
+interface DisasmRegion {
+    sourceRef: number;
+    startAddress: number;
+    lines: DisasmLine[];
+    addressToLine: Map<number, number>; // address → 1-based text line number
+    lineToAddress: Map<number, number>; // text line number → address (instruction lines only)
+    text: string;
+}
+
+// 16-bit register names (for memoryReference)
+const REG16 = new Set(["bc", "de", "hl", "sp", "pc", "ix", "iy", "bc'", "de'", "hl'"]);
+
 export class Z80DebugSession extends DebugSession {
 
     private emulator = new EmulatorClient();
+    private isAttach = false;
+
+    // Disassembly cache: sourceRef → region
+    private disasmCache: Map<number, DisasmRegion> = new Map();
+
+    // Symbol table (optional, loaded from symbolFile arg)
+    private symbolTable: SymbolTable | null = null;
+
+    // Global breakpoint registry: key → list of addresses
+    // "src:<sourceRef>" for source breakpoints, "instr" for instruction breakpoints
+    private bpRegistry: Map<string, number[]> = new Map();
 
     constructor() {
         super();
@@ -27,7 +58,7 @@ export class Z80DebugSession extends DebugSession {
         });
     }
 
-onStopped(reason: string) 
+onStopped(reason: string)
 {
     this.sendEvent(new StoppedEvent(reason, 1));
 }
@@ -40,12 +71,13 @@ protected initializeRequest(
     console.log("DAP: initialization");
     response.body = {
         supportsConfigurationDoneRequest: true,
-        supportsEvaluateForHovers: false,
-        supportsSetVariable: false,
+        supportsEvaluateForHovers: true,
+        supportsSetVariable: true,
         supportsStepBack: false,
         supportsDisassembleRequest: true,
-        supportsRestartRequest: true
-        
+        supportsRestartRequest: true,
+        supportsReadMemoryRequest: true,
+        supportsWriteMemoryRequest: true,
     };
 
     this.sendResponse(response);
@@ -53,26 +85,74 @@ protected initializeRequest(
 }
 
 
+private loadSymbols(args: any): void {
+    if (args.symbolFile) {
+        this.symbolTable = SymbolTable.fromRasm(args.symbolFile);
+    }
+}
+
 protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: any
 ) {
     console.log("DAP: Connection...");
+    this.loadSymbols(args);
     this.emulator.connect(args.port).then(() => {
         console.log("connected");
+
+        // Forward async stop events from the emulator (breakpoints, pause, etc.)
+        this.emulator.onEvent = (evt) => {
+            if (evt.event === "stopped") {
+                const reason = evt.body?.reason ?? "breakpoint";
+                console.log("DAP: async stopped event:", reason);
+                this.sendEvent(new StoppedEvent(reason, 1));
+            }
+        };
+
         this.sendEvent(new InitializedEvent());
         this.sendResponse(response);
     });
 }
 
-protected configurationDoneRequest(
+protected async attachRequest(
+    response: DebugProtocol.AttachResponse,
+    args: any
+) {
+    console.log("DAP: Attach...");
+    this.isAttach = true;
+    this.loadSymbols(args);
+    this.emulator.connect(args.port ?? 1234).then(() => {
+        console.log("attached");
+
+        this.emulator.onEvent = (evt) => {
+            if (evt.event === "stopped") {
+                const reason = evt.body?.reason ?? "breakpoint";
+                console.log("DAP: async stopped event:", reason);
+                this.sendEvent(new StoppedEvent(reason, 1));
+            }
+        };
+
+        this.sendEvent(new InitializedEvent());
+        this.sendResponse(response);
+    });
+}
+
+protected async configurationDoneRequest(
     response: DebugProtocol.ConfigurationDoneResponse,
     args: DebugProtocol.ConfigurationDoneArguments
 ) {
     console.log("DAP: configurationDone");
     this.sendResponse(response);
 
-    this.sendEvent(new StoppedEvent("entry", 1));
+    if (this.isAttach) {
+        // Attach: query state and only send StoppedEvent if already paused
+        const state = await this.emulator.send({ cmd: "getState" });
+        if (!state?.running) {
+            this.sendEvent(new StoppedEvent("pause", 1));
+        }
+    } else {
+        this.sendEvent(new StoppedEvent("entry", 1));
+    }
 }
 
 private onEmulatorConnected() {
@@ -92,9 +172,8 @@ protected async nextRequest(
 ) {
     console.log("DAP: Step");
     await this.emulator.send({ cmd: "step" });
-
-    this.sendEvent(new StoppedEvent("step", 1));
     this.sendResponse(response);
+    // StoppedEvent will be sent by the async onEvent handler
 }
 
 protected async pauseRequest(
@@ -128,14 +207,22 @@ protected async variablesRequest(
     if (args.variablesReference == 1) {
         const regs = await this.emulator.send({
             cmd: "readRegisters"
-        }) as Record<string, number>;        
+        }) as Record<string, number>;
 
         response.body = {
-            variables: Object.entries(regs).map(([name, val]) => ({
-                name,
-                value: "0x" + val.toString(16).padStart(4, "0"),
-                variablesReference: 0
-            }))
+            variables: Object.entries(regs).map(([name, val]) => {
+                const v: DebugProtocol.Variable = {
+                    name,
+                    value: "0x" + val.toString(16).padStart(4, "0"),
+                    variablesReference: 0
+                };
+                // Provide memoryReference for 16-bit registers so VS Code can
+                // open a Disassembly View or Memory View at that address
+                if (REG16.has(name.toLowerCase())) {
+                    (v as any).memoryReference = "0x" + val.toString(16).padStart(4, "0");
+                }
+                return v;
+            })
         };
     }
 
@@ -182,6 +269,7 @@ protected async variablesRequest(
                 variablesReference: 0
             });
         }
+        response.body = { variables: vars };
     }
     else {
         response.body = { variables: [] };
@@ -193,7 +281,7 @@ protected async variablesRequest(
 }
 
 protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
-    // Pour l’instant, un seul “CPU Z80” fictif
+    // Pour l'instant, un seul "CPU Z80" fictif
     console.log("DAP: threadsRequest");
     response.body = {
         threads: [new Thread(1, "Z80 CPU")]
@@ -201,28 +289,109 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
     this.sendResponse(response);
 }
 
+// ─── Disassembly cache helpers ────────────────────────────────────────────────
+
+// Return the sourceReference for the 4KB page containing addr.
+// sourceRef = (addr >> 12) + 1  → values 1..16 for the 16 possible 4KB pages.
+private pageSourceRef(addr: number): number {
+    return (addr >> 12) + 1;
+}
+
+private pageStartAddress(addr: number): number {
+    return addr & 0xF000;
+}
+
+// Fetch and cache the disassembly region for the 4KB page containing addr.
+private async ensureRegion(addr: number): Promise<DisasmRegion> {
+    const sourceRef = this.pageSourceRef(addr);
+    if (this.disasmCache.has(sourceRef)) {
+        return this.disasmCache.get(sourceRef)!;
+    }
+
+    const startAddress = this.pageStartAddress(addr);
+    // 2048 instructions covers ~4KB at average 2 bytes/instruction
+    const reply = await this.emulator.send({
+        cmd: "disassemble",
+        address: startAddress,
+        count: 2048
+    });
+
+    const rawLines: { address: number; instruction: string }[] = reply.instructions ?? [];
+    const addressToLine = new Map<number, number>();
+    // lineToAddress maps text line numbers → address (instruction lines only)
+    const lineToAddress = new Map<number, number>();
+    let text = "";
+    let textLineNo = 0; // 1-based, incremented for every emitted line
+
+    rawLines.forEach((l) => {
+        // Insert label lines before this instruction if symbols exist at this address
+        const labels = this.symbolTable?.getLabelsAt(l.address) ?? [];
+        if (labels.length > 0) {
+            // Blank separator before the label group (skip at very start)
+            if (text.length > 0) {
+                text += "\n";
+                textLineNo++;
+            }
+            for (const label of labels) {
+                text += `${label}:\n`;
+                textLineNo++;
+            }
+        }
+
+        // Instruction line
+        textLineNo++;
+        addressToLine.set(l.address, textLineNo);
+        lineToAddress.set(textLineNo, l.address);
+        const addrHex = "0x" + l.address.toString(16).padStart(4, "0");
+        text += `${addrHex}  ${l.instruction.trimEnd()}\n`;
+    });
+
+    const region: DisasmRegion = {
+        sourceRef,
+        startAddress,
+        lines: rawLines,
+        addressToLine,
+        lineToAddress,
+        text,
+    };
+    this.disasmCache.set(sourceRef, region);
+    return region;
+}
+
+// Invalidate a cached region (e.g., after a reset or memory write)
+private invalidateRegion(addr: number): void {
+    this.disasmCache.delete(this.pageSourceRef(addr));
+}
+
+// ─── Stack trace ──────────────────────────────────────────────────────────────
+
 protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments
 ) {
     console.log("DAP: stackTraceRequest");
 
-    // Demander le PC à l’émulateur
-    const state = await this.emulator.send({
-        cmd: "getState"
-    });
-    // state = { pc: number }
-
+    const state = await this.emulator.send({ cmd: "getState" });
     const pc = state?.pc ?? 0;
+    const pcHex = "0x" + pc.toString(16).padStart(4, "0");
+
+    // Build or retrieve the virtual disassembly source for this 4KB page
+    const region = await this.ensureRegion(pc);
+    const lineNo = region.addressToLine.get(pc) ?? 1;
+
+    const sourceName = `Z80 RAM 0x${region.startAddress.toString(16).padStart(4, "0")}`;
     const frame: DebugProtocol.StackFrame = {
         id: 1,
         name: "Z80",
-        line: 1,
+        line: lineNo,
         column: 1,
-
-        // IMPORTANT : PAS de source → disassembly
-        instructionPointerReference: "MemoryRead:0x" + pc.toString(16)
+        source: {
+            name: sourceName,
+            sourceReference: region.sourceRef,
+        },
+        instructionPointerReference: "MemoryRead:" + pcHex,
     };
+    (frame as any).memoryReference = pcHex;
 
     response.body = {
         stackFrames: [frame],
@@ -231,6 +400,25 @@ protected async stackTraceRequest(
 
     this.sendResponse(response);
 }
+
+// ─── Virtual source content ───────────────────────────────────────────────────
+
+protected async sourceRequest(
+    response: DebugProtocol.SourceResponse,
+    args: DebugProtocol.SourceArguments
+) {
+    console.log("DAP: sourceRequest ref=", args.sourceReference);
+    const region = this.disasmCache.get(args.sourceReference);
+    if (!region) {
+        response.body = { content: "; Region not loaded yet\n" };
+        this.sendResponse(response);
+        return;
+    }
+    response.body = { content: region.text };
+    this.sendResponse(response);
+}
+
+// ─── Disassembly view ─────────────────────────────────────────────────────────
 
 protected async disassembleRequest(
     response: DebugProtocol.DisassembleResponse,
@@ -268,29 +456,90 @@ protected async disassembleRequest(
     this.sendResponse(response);
 }
 
+// ─── Breakpoint management ────────────────────────────────────────────────────
+
+// Merge all registered breakpoints and send the unified list to the emulator.
+private async flushBreakpoints(): Promise<void> {
+    const allAddresses: number[] = [];
+    for (const addrs of this.bpRegistry.values()) {
+        allAddresses.push(...addrs);
+    }
+    // Deduplicate
+    const unique = [...new Set(allAddresses)].map(a => ({ address: a }));
+    await this.emulator.send({ cmd: "setBreakpoints", breakpoints: unique });
+}
+
+// Source breakpoints (virtual disassembly sources)
+protected async setBreakpointsRequest(
+    response: DebugProtocol.SetBreakpointsResponse,
+    args: DebugProtocol.SetBreakpointsArguments
+) {
+    const sourceRef = args.source.sourceReference ?? 0;
+    const bps = args.breakpoints ?? [];
+
+    if (sourceRef === 0) {
+        // Real source file — not supported yet
+        response.body = {
+            breakpoints: bps.map(() => ({ verified: false, message: "Source file mapping not supported" }))
+        };
+        this.sendResponse(response);
+        return;
+    }
+
+    const region = this.disasmCache.get(sourceRef);
+    if (!region) {
+        response.body = {
+            breakpoints: bps.map(() => ({ verified: false, message: "Region not loaded" }))
+        };
+        this.sendResponse(response);
+        return;
+    }
+
+    // Map each requested line to an instruction address.
+    // If the line is a label/blank line, scan forward to find the next instruction line.
+    const resolvedAddresses: number[] = [];
+    const resultBps: DebugProtocol.Breakpoint[] = bps.map(bp => {
+        let line = bp.line;
+        const maxLine = line + region.lines.length; // safety bound
+        while (line <= maxLine) {
+            const addr = region.lineToAddress.get(line);
+            if (addr !== undefined) {
+                resolvedAddresses.push(addr);
+                return {
+                    verified: true,
+                    line,
+                    instructionReference: "0x" + addr.toString(16).padStart(4, "0")
+                };
+            }
+            line++;
+        }
+        return { verified: false, message: "Line out of range" };
+    });
+
+    this.bpRegistry.set(`src:${sourceRef}`, resolvedAddresses);
+    await this.flushBreakpoints();
+
+    response.body = { breakpoints: resultBps };
+    this.sendResponse(response);
+}
+
+// Instruction breakpoints (VS Code Disassembly View)
 protected async setInstructionBreakpointsRequest(
     response: DebugProtocol.SetInstructionBreakpointsResponse,
     args: DebugProtocol.SetInstructionBreakpointsArguments
 ) {
     const bps = args.breakpoints ?? [];
 
-    const breakpoints = bps.map(bp => {
+    const addresses = bps.map(bp => {
         const [type, addrHex] = bp.instructionReference.split(":");
-        const address = parseInt(addrHex, 16) + (bp.offset ?? 0);
-        return { type, address };
+        return parseInt(addrHex, 16) + (bp.offset ?? 0);
     });
 
-    // Send full list to emulator
-    await this.emulator.send({
-        cmd: "setBreakpoints",
-        breakpoints
-    });
+    this.bpRegistry.set("instr", addresses);
+    await this.flushBreakpoints();
 
-    // Answer to VSCode
     response.body = {
-        breakpoints: breakpoints.map(bp => ({
-            verified: true
-        }))
+        breakpoints: addresses.map(() => ({ verified: true }))
     };
 
     this.sendResponse(response);
@@ -302,30 +551,126 @@ protected async stepInRequest(
 ){
     await this.emulator.send({ cmd: "stepIn" });
     this.sendResponse(response);
+    // StoppedEvent will be sent by the async onEvent handler
+}
+
+protected async stepOutRequest(
+    response: DebugProtocol.StepOutResponse,
+    args: DebugProtocol.StepOutArguments
+){
+    await this.emulator.send({ cmd: "stepOut" });
+    this.sendResponse(response);
+    // StoppedEvent will be sent by the async onEvent handler
 }
 
 protected async evaluateRequest(
     response: DebugProtocol.EvaluateResponse,
     args: DebugProtocol.EvaluateArguments
 ){
-    const result = await this.emulator.send({
-        cmd: "evaluate",
-        expression: args.expression
-    });
-
-    response.body = {
-        result: result.text,
-        variablesReference: 0
-    };
-
+    try {
+        const result = await this.emulator.send({
+            cmd: "evaluate",
+            expression: args.expression
+        });
+        response.body = {
+            result: result?.text ?? "?",
+            variablesReference: 0
+        };
+    } catch {
+        response.body = { result: "?", variablesReference: 0 };
+    }
     this.sendResponse(response);
 }
 
-// TODO disconnectRequest
-// TODO restartRequest
+protected async disconnectRequest(
+    response: DebugProtocol.DisconnectResponse,
+    args: DebugProtocol.DisconnectArguments
+) {
+    try {
+        await this.emulator.send({ cmd: "continue" });
+    } catch (_) {}
+    this.emulator.disconnect();
+    this.sendResponse(response);
+}
 
-// TODO readMemoryRequest
-// TODO writeMemoryRequest
+protected async restartRequest(
+    response: DebugProtocol.RestartResponse,
+    args: DebugProtocol.RestartArguments
+) {
+    // Invalidate all disassembly caches (memory may have changed after reset)
+    this.disasmCache.clear();
+    await this.emulator.send({ cmd: "reset" });
+    this.sendResponse(response);
+    this.sendEvent(new StoppedEvent("entry", 1));
+}
+
+protected async readMemoryRequest(
+    response: DebugProtocol.ReadMemoryResponse,
+    args: DebugProtocol.ReadMemoryArguments
+) {
+    // memoryReference: "0x1234" or "MemoryRead:0x1234"
+    const ref = args.memoryReference.includes(':')
+        ? args.memoryReference.split(':')[1]
+        : args.memoryReference;
+    const base = parseInt(ref, 16);
+    const address = (base + (args.offset ?? 0)) & 0xFFFF;
+
+    const reply = await this.emulator.send({
+        cmd: "readMemory",
+        address,
+        size: args.count
+    });
+
+    const bytes: number[] = reply.bytes ?? [];
+    response.body = {
+        address: "0x" + address.toString(16).padStart(4, "0"),
+        data: Buffer.from(bytes).toString("base64")
+    };
+    this.sendResponse(response);
+}
+
+protected async writeMemoryRequest(
+    response: DebugProtocol.WriteMemoryResponse,
+    args: DebugProtocol.WriteMemoryArguments
+) {
+    const ref = args.memoryReference.includes(':')
+        ? args.memoryReference.split(':')[1]
+        : args.memoryReference;
+    const base = parseInt(ref, 16);
+    const address = (base + (args.offset ?? 0)) & 0xFFFF;
+
+    const bytes = Array.from(Buffer.from(args.data, "base64"));
+    await this.emulator.send({ cmd: "writeMemory", address, bytes });
+
+    // Invalidate the disassembly cache for the affected region
+    this.invalidateRegion(address);
+
+    response.body = { offset: 0, bytesWritten: bytes.length };
+    this.sendResponse(response);
+}
+
+protected async setVariableRequest(
+    response: DebugProtocol.SetVariableResponse,
+    args: DebugProtocol.SetVariableArguments
+) {
+    if (args.variablesReference !== 1) {
+        // Only registers scope is editable
+        response.body = { value: args.value, variablesReference: 0 };
+        this.sendResponse(response);
+        return;
+    }
+
+    const val = Number(args.value);  // handles "0x1234" and decimal
+    const key = args.name.toLowerCase();  // AF→af, AF'→af', etc.
+
+    await this.emulator.send({ cmd: "setRegisters", [key]: val });
+
+    response.body = {
+        value: "0x" + (val & 0xFFFF).toString(16).padStart(4, "0"),
+        variablesReference: 0
+    };
+    this.sendResponse(response);
+}
 
 
 }

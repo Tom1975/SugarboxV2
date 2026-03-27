@@ -136,7 +136,10 @@ public :
    std::list< IDebugerStopped*> notifier_dbg_list_;
 
    bool IsRunning();
+   bool IsStepping(); // true while a step/run command is in progress
    void Step();
+   void StepOver();
+   void StepOut();
    void Run( int nb_opcodes = 0);
    void Break();
 
@@ -196,6 +199,13 @@ protected:
    bool pause_;
 
    unsigned nb_opcode_to_run_;
+
+   // Step-over temporary breakpoint
+   bool     step_over_bp_active_ = false;
+   uint16_t step_over_bp_addr_   = 0;
+
+   // Reason for the last stop (used by NotifyStop)
+   IDebugerStopped::Reason stop_reason_ = IDebugerStopped::Breakpoint;
 
 
    std::thread* worker_thread_;

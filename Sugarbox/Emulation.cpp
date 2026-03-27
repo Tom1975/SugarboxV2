@@ -134,6 +134,7 @@ void Emulation::EmulationLoop()
             // - Step : Execute one command (Step in)
             emulator_engine_->RunDebugMode(1);
             emulator_engine_->SetRun(false);
+            stop_reason_ = IDebugerStopped::Step;
             debug_action_ = DBG_BREAK;
             break;
          case DBG_RUN:
@@ -141,6 +142,18 @@ void Emulation::EmulationLoop()
             if (emulator_engine_->RunTimeSlice(false) == 1)
             {
                debug_action_ = DBG_BREAK;
+
+               // Remove temporary step-over breakpoint if active
+               if (step_over_bp_active_)
+               {
+                  emulator_engine_->RemoveBreakpoint(step_over_bp_addr_);
+                  step_over_bp_active_ = false;
+                  stop_reason_ = IDebugerStopped::Step;
+               }
+               else
+               {
+                  stop_reason_ = IDebugerStopped::InstructionBreakpoint;
+               }
 
                // Break notification :
                IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
@@ -159,16 +172,17 @@ void Emulation::EmulationLoop()
          case DBG_RUN_FIXED_OP:
             // xx opcodes run : stop now
             emulator_engine_->RunDebugMode(nb_opcode_to_run_);
+            stop_reason_ = IDebugerStopped::Step;
             debug_action_ = DBG_BREAK;
 
             // Break notification
             for (auto &it : notifier_list_)
             {
-               // Send : Number of opcodes 
+               // Send : Number of opcodes
                it->NotifyBreak(0);
             }
             break;
-            
+
          case DBG_BREAK:
             // - break : Stop emulation until next command
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -177,18 +191,17 @@ void Emulation::EmulationLoop()
          case DBG_SCRIPT:
             // Script running
             ExecuteNextScript();
+            stop_reason_ = IDebugerStopped::Step;
             debug_action_ = DBG_BREAK;
             break;
          }
 
-         if (old_action != debug_action_
-            && (debug_action_ == DBG_BREAK
-            || debug_action_ == DBG_RUN))
+         if (old_action != debug_action_ && debug_action_ == DBG_BREAK)
          {
-            // Notify anyone interrested that the code is stopped
+            // Notify anyone interested that the code is stopped
             for (auto& it : notifier_dbg_list_)
             {
-               it->NotifyStop(IDebugerStopped::Breakpoint );
+               it->NotifyStop(stop_reason_);
             }
          }
 
@@ -526,6 +539,7 @@ void Emulation::TrackChanged(int nb_tracks)
 
 void Emulation::Break()
 {
+   stop_reason_ = IDebugerStopped::Pause;
    debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
 
@@ -709,21 +723,101 @@ void Emulation::Step()
    debug_action_ = DBG_STEP;
 }
 
+void Emulation::StepOver()
+{
+   Z80* z80 = emulator_engine_->GetProc();
+   uint16_t pc = z80->pc_;
+
+   unsigned char opcode[2] = { 0, 0 };
+   emulator_engine_->GetMem()->GetDebugValue(opcode, pc, 2, Memory::MEM_READ);
+
+   const unsigned char op = opcode[0];
+   uint16_t next_pc = 0;
+   bool step_over = false;
+
+   // CALL nn / CALL cc,nn (all 3-byte variants)
+   if (op == 0xCD ||
+       op == 0xC4 || op == 0xCC ||
+       op == 0xD4 || op == 0xDC ||
+       op == 0xE4 || op == 0xEC ||
+       op == 0xF4 || op == 0xFC)
+   {
+      next_pc = pc + 3;
+      step_over = true;
+   }
+   // RST n : 0xC7/CF/D7/DF/E7/EF/F7/FF (1 byte)
+   else if ((op & 0xC7) == 0xC7)
+   {
+      next_pc = pc + 1;
+      step_over = true;
+   }
+   // DJNZ (2 bytes)
+   else if (op == 0x10)
+   {
+      next_pc = pc + 2;
+      step_over = true;
+   }
+   // Block instructions : ED B0/B1/B2/B3/B8/B9/BA/BB (LDIR/LDDR/CPIR/CPDR/INIR/INDR/OTIR/OTDR)
+   else if (op == 0xED && (opcode[1] & 0xF4) == 0xB0)
+   {
+      next_pc = pc + 2;
+      step_over = true;
+   }
+
+   if (step_over)
+   {
+      // Set a temporary breakpoint at the instruction after the call/block.
+      // It will be removed in EmulationLoop once DBG_RUN stops.
+      emulator_engine_->AddBreakpoint(next_pc);
+      step_over_bp_active_ = true;
+      step_over_bp_addr_   = next_pc;
+      debug_action_ = DBG_RUN;
+   }
+   else
+   {
+      debug_action_ = DBG_STEP;
+   }
+}
+
+void Emulation::StepOut()
+{
+   Z80* z80 = emulator_engine_->GetProc();
+   uint16_t sp = z80->sp_;
+
+   // Read the return address from the top of the stack
+   unsigned char ret_bytes[2] = { 0, 0 };
+   emulator_engine_->GetMem()->GetDebugValue(ret_bytes, sp,     1, Memory::MEM_READ);
+   emulator_engine_->GetMem()->GetDebugValue(ret_bytes + 1, sp + 1, 1, Memory::MEM_READ);
+   uint16_t ret_addr = ret_bytes[0] | (static_cast<uint16_t>(ret_bytes[1]) << 8);
+
+   emulator_engine_->SetStepIn(false);  // clear stale step_in_ flag (e.g. from previous stepIn)
+   emulator_engine_->AddBreakpoint(ret_addr);
+   step_over_bp_active_ = true;
+   step_over_bp_addr_   = ret_addr;
+   debug_action_ = DBG_RUN;
+}
+
 bool Emulation::IsRunning()
 {
    return emulator_engine_->IsRunning();
 }
 
-void Emulation::Run(int nb_opcodes )   
+bool Emulation::IsStepping()
+{
+   return debug_action_ != DBG_BREAK;
+}
+
+void Emulation::Run(int nb_opcodes )
 {
    emulator_engine_->SetRun(true);
+   emulator_engine_->SetStepIn(false);  // clear stale step_in_ flag from previous Step()
    if (nb_opcodes == 0)
    {
       debug_action_ = DBG_RUN;
    }
    else
    {
-      debug_action_ = DBG_RUN_FIXED_OP;   
+      debug_action_ = DBG_RUN_FIXED_OP;
       nb_opcode_to_run_ = nb_opcodes;
 
    }

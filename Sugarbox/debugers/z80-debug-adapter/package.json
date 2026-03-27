@@ -38,6 +38,24 @@
                 "type": "number",
                 "default": 1234,
                 "description": "TCP port of the Z80 emulator"
+              },
+              "symbolFile": {
+                "type": "string",
+                "description": "RASM super-symbol file (.rasm) for label display in disassembly"
+              }
+            }
+          },
+          "attach": {
+            "required": [],
+            "properties": {
+              "port": {
+                "type": "number",
+                "default": 1234,
+                "description": "TCP port of the running Z80 emulator"
+              },
+              "symbolFile": {
+                "type": "string",
+                "description": "RASM super-symbol file (.rasm) for label display in disassembly"
               }
             }
           }

@@ -44,6 +44,12 @@ export class EmulatorClient {
         }
     }
 
+    disconnect() {
+        if (this.socket && !this.socket.destroyed) {
+            this.socket.destroy();
+        }
+    }
+
     send(cmd: any): Promise<any> {
         return new Promise((resolve, reject) => {
             if (!this.socket || this.socket.destroyed) {
