@@ -174,7 +174,7 @@ IF(APPLE)
 endif()
 
 target_include_directories(Sugarbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../json/single_include/nlohmann)
-target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
+target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} WIN32_LEAN_AND_MEAN)
 
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_INSTALL_BINDIR})
 set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
