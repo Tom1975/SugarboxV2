@@ -17,6 +17,13 @@
 #include <mutex>
 #include <condition_variable>
 
+#ifdef _WIN32
+   // link with Ws2_32.lib
+   #pragma comment(lib,"Ws2_32.lib")
+
+   #include <winsock2.h>
+   #include <ws2tcpip.h>
+#endif
 
 class DebugMessageQueue
 {
