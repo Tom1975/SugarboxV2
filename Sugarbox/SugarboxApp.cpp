@@ -982,13 +982,14 @@ void SugarboxApp::dropEvent(QDropEvent *event)
             || url_path.extension() == ".Csl"
             || url_path.extension() == ".CSL")
          {
-            // Ok : Load as CSL 
+            // Ok : Load as CSL
             emulation_->AddScript(url_path);
             return;
          }
-
+         // Unrecognized file type
+         continue;
       }
-         
+
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
       list_of_types.push_back(MediaManager::MEDIA_DISK);
@@ -1017,22 +1018,12 @@ void SugarboxApp::dropEvent(QDropEvent *event)
             emulation_->LoadDisk(dnd_container, 0);
          }
          break;
-         // Tape - TODO
       }
       case 4:
-         // TODO : Ask for tape saving ?
-
-         // Load first element of the container
-         //m_pMachine->LoadTape(m_DragFiles[0]);
       {
-         MediaManager mediaMgr(dnd_container);
-         std::vector<MediaManager::MediaType> list_of_types;
-         list_of_types.push_back(MediaManager::MEDIA_TAPE);
          auto list = dnd_container->GetFileList();
-
-
-         emulation_->LoadTape(list[0]);
-         //UpdateStatusBar();
+         if (!list.empty())
+            emulation_->LoadTape(list[0]);
          break;
       }
       case 5:
