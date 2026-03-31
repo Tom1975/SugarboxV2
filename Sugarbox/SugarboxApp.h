@@ -122,6 +122,7 @@ public slots:
    void UpdateMenu();
    virtual void ChangeSettings(MachineSettings*);
    void Display();
+   void LoadDroppedFiles();
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
@@ -217,6 +218,9 @@ protected:
    DebugDialog debug_;
    MemoryDialog memory_[4];
    CRTCDialog crtc_debug_;
+
+   // Pending DnD files (processed after dropEvent returns)
+   QList<QUrl> pending_drop_urls_;
 
    // Flag handler
    FlagHandler flag_handler_;

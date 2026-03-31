@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <QMouseEvent>
+#include <QTimer>
 
 /////////////////////////////////////
 // SugarbonApp
@@ -966,12 +967,24 @@ void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)
 
 void SugarboxApp::dropEvent(QDropEvent *event)
 {
-   QList<QUrl> url_list = event->mimeData()->urls();
+   // Capture URLs and return immediately so OLE DnD completes before any heavy work.
+   // Loading is deferred via QTimer to avoid running inside the OLE mouse hook context,
+   // which would make any crash/assert dialog unclickable on Windows.
+   pending_drop_urls_ = event->mimeData()->urls();
+   event->acceptProposedAction();
+   QTimer::singleShot(0, this, &SugarboxApp::LoadDroppedFiles);
+}
+
+void SugarboxApp::LoadDroppedFiles()
+{
+   QList<QUrl> url_list = pending_drop_urls_;
+   pending_drop_urls_.clear();
+
    foreach(const QUrl &url, url_list)
    {
       QString fileName = url.toLocalFile();
       std::string path = fileName.toUtf8().constData();
-      
+
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)
@@ -1004,7 +1017,6 @@ void SugarboxApp::dropEvent(QDropEvent *event)
 
       switch (media_type)
       {
-         // Test : Is it SNA?
       case 1:
          emulation_->LoadSnapshot(path.c_str());
          break;
