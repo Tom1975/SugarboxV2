@@ -24,7 +24,7 @@ jobs:
     runs-on:  windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
@@ -60,7 +60,7 @@ jobs:
       run: cpack -G 7Z .
       
     - name: Archive zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: SugarboxV2
           path: ${{github.workspace}}\build\*.7z

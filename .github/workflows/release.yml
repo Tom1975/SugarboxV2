@@ -43,19 +43,19 @@ jobs:
           cd release_bin
           
       - name: Download artifact Ubuntu
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         id: art-ubuntu
         with:
           name: SugarboxV2Ubuntu
           
       - name: Download artifact Windows
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         id: art-windows
         with:
           name: SugarboxV2
           
       - name: Download artifact MacOS
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         id: art-macos
         with:
           name: SugarboxV2MacOS
