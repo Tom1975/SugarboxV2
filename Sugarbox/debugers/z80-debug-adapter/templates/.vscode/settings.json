@@ -1,0 +1,34 @@
+{
+  // Copiez ce fichier dans .vscode/settings.json à la racine de votre projet.
+  // Adaptez les valeurs à votre projet.
+
+  // ─── Projet Z80 ─────────────────────────────────────────────────────────
+
+  // Fichier ASM principal (relatif à la racine du workspace).
+  // Utilisé par la tâche "RASM: assemble".
+  "z80debug.entryPoint": "src/main.asm",
+
+  // Nom de base des fichiers générés dans build/.
+  // Ex: "mygame" → build/mygame.dsk, build/mygame.rasm
+  "z80debug.buildName": "main",
+
+  // ─── Chemin de l'émulateur ──────────────────────────────────────────────
+  // Définir SUGARBOX ici évite de le hardcoder dans launch.json et tasks.json.
+  // Chaque développeur peut surcharger cette valeur dans ses settings utilisateur
+  // (~/.config/Code/User/settings.json) sans toucher au dépôt.
+  "terminal.integrated.env.linux": {
+    "SUGARBOX": "/chemin/vers/Sugarbox"
+  },
+  "terminal.integrated.env.osx": {
+    "SUGARBOX": "/chemin/vers/Sugarbox"
+  },
+  "terminal.integrated.env.windows": {
+    "SUGARBOX": "C:\\chemin\\vers\\Sugarbox.exe"
+  },
+
+  // ─── Association des fichiers ────────────────────────────────────────────
+  // Associe les .asm à la syntaxe de l'extension recommandée (extensions.json).
+  "files.associations": {
+    "*.asm": "asm-collection"
+  }
+}

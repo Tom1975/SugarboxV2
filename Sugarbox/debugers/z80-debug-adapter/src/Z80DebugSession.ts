@@ -13,6 +13,11 @@ import { Thread } from 'vscode-debugadapter';
 import { StackFrame, Source } from 'vscode-debugadapter';
 import { Scope } from 'vscode-debugadapter';
 import { Variable } from 'vscode-debugadapter';
+import * as cp from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as nodePath from "path";
+import * as net from "net";
 
 // One disassembled instruction
 interface DisasmLine {
@@ -37,6 +42,7 @@ export class Z80DebugSession extends DebugSession {
 
     private emulator = new EmulatorClient();
     private isAttach = false;
+    private emulatorProcess: cp.ChildProcess | null = null;
 
     // Disassembly cache: sourceRef → region
     private disasmCache: Map<number, DisasmRegion> = new Map();
@@ -95,22 +101,86 @@ protected async launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: any
 ) {
-    console.log("DAP: Connection...");
+    console.log("DAP: Launch...");
     this.loadSymbols(args);
-    this.emulator.connect(args.port).then(() => {
-        console.log("connected");
+    const port = args.port ?? 1234;
 
-        // Forward async stop events from the emulator (breakpoints, pause, etc.)
-        this.emulator.onEvent = (evt) => {
-            if (evt.event === "stopped") {
-                const reason = evt.body?.reason ?? "breakpoint";
-                console.log("DAP: async stopped event:", reason);
-                this.sendEvent(new StoppedEvent(reason, 1));
-            }
-        };
+    // Build a temporary CSL script if any media is specified
+    let cslFile: string | null = null;
+    if (args.disk || args.tape || args.snapshot) {
+        const lines = ["cslversion 2.0"];
+        if (args.snapshot) lines.push(`snapshot_load '${args.snapshot}'`);
+        if (args.disk)     lines.push(`disk_insert 0 '${args.disk}'`);
+        if (args.tape)     lines.push(`tape_insert '${args.tape}'`);
+        cslFile = nodePath.join(os.tmpdir(), `sugarbox_${Date.now()}.csl`);
+        fs.writeFileSync(cslFile, lines.join("\n") + "\n");
+        console.log("DAP: CSL script written to", cslFile);
+    }
 
-        this.sendEvent(new InitializedEvent());
+    // Build Sugarbox arguments
+    const spawnArgs: string[] = ["--debug", "--debug_server", String(port)];
+    if (cslFile)            spawnArgs.push("--csl", cslFile);
+    if (args.hideEmulator)  spawnArgs.push("--hide");
+
+    console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "));
+    this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, { stdio: "ignore" });
+    this.emulatorProcess.on("error", err => {
+        console.error("DAP: Emulator process error:", err.message);
+        this.sendEvent(new TerminatedEvent());
+    });
+    this.emulatorProcess.on("exit", code => {
+        console.log("DAP: Emulator exited with code", code);
+        this.sendEvent(new TerminatedEvent());
+    });
+
+    // Wait for the TCP debug port to open (up to 10 s)
+    try {
+        await this.waitForPort(port, 10000);
+    } catch (e) {
+        response.success = false;
+        (response as any).message = `Emulator did not open port ${port} in time`;
         this.sendResponse(response);
+        return;
+    }
+
+    await this.emulator.connect(port);
+    console.log("DAP: Connected to emulator");
+
+    this.emulator.onEvent = (evt) => {
+        if (evt.event === "stopped") {
+            const reason = evt.body?.reason ?? "breakpoint";
+            console.log("DAP: async stopped event:", reason);
+            this.sendEvent(new StoppedEvent(reason, 1));
+        }
+    };
+
+    this.sendResponse(response);
+    this.sendEvent(new InitializedEvent());
+}
+
+// Poll until the TCP port accepts connections, or timeout.
+private waitForPort(port: number, timeoutMs: number, host = "127.0.0.1"): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const deadline = Date.now() + timeoutMs;
+        const tryConnect = () => {
+            const sock = new net.Socket();
+            sock.setTimeout(300);
+            sock.connect(port, host, () => {
+                sock.destroy();
+                resolve();
+            });
+            sock.on("error", () => {
+                sock.destroy();
+                if (Date.now() < deadline) setTimeout(tryConnect, 250);
+                else reject(new Error(`Port ${port} not available after ${timeoutMs}ms`));
+            });
+            sock.on("timeout", () => {
+                sock.destroy();
+                if (Date.now() < deadline) setTimeout(tryConnect, 250);
+                else reject(new Error(`Port ${port} timed out after ${timeoutMs}ms`));
+            });
+        };
+        tryConnect();
     });
 }
 
@@ -590,6 +660,13 @@ protected async disconnectRequest(
         await this.emulator.send({ cmd: "continue" });
     } catch (_) {}
     this.emulator.disconnect();
+
+    // Kill the emulator process if we spawned it (launch mode only)
+    if (this.emulatorProcess && !this.emulatorProcess.killed) {
+        this.emulatorProcess.kill();
+        this.emulatorProcess = null;
+    }
+
     this.sendResponse(response);
 }
 

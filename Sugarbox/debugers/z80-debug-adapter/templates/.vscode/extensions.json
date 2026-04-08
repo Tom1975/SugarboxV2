@@ -1,0 +1,11 @@
+{
+  // Extensions recommandées pour le développement Amstrad CPC avec VS Code.
+  // VS Code proposera de les installer automatiquement à l'ouverture du projet.
+  "recommendations": [
+    // Syntaxe Z80 / assembleur : coloration, navigation, hover
+    "maziac.asm-code-lens",
+
+    // Debug adapter Z80 (cette extension)
+    "yourname.z80-debug"
+  ]
+}

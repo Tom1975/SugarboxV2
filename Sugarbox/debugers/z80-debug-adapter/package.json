@@ -1,7 +1,7 @@
 {
   "name": "z80-debug",
   "displayName": "Z80 Debug Adapter",
-  "description": "Debug adapter for Z80 emulators (RASM + custom emulator)",
+  "description": "Debug adapter for Z80 emulators (RASM + SugarboxV2)",
   "version": "0.0.1",
   "publisher": "yourname",
   "engines": {
@@ -15,6 +15,21 @@
   ],
   "main": "./out/main.js",
   "contributes": {
+    "configuration": {
+      "title": "Z80 Debug",
+      "properties": {
+        "z80debug.entryPoint": {
+          "type": "string",
+          "default": "src/main.asm",
+          "description": "Main ASM source file to assemble (relative to workspace root). Used by the build task."
+        },
+        "z80debug.buildName": {
+          "type": "string",
+          "default": "main",
+          "description": "Base name for build outputs (e.g. \"mygame\" → build/mygame.dsk, build/mygame.rasm). Used by the build task and launch config."
+        }
+      }
+    },
     "debuggers": [
       {
         "type": "z80",
@@ -24,24 +39,95 @@
         "languages": [
           "asm"
         ],
+        "initialConfigurations": [
+          {
+            "type": "z80",
+            "request": "launch",
+            "name": "Amstrad CPC - Launch",
+            "emulator": "${env:SUGARBOX}",
+            "disk": "${workspaceFolder}/build/${config:z80debug.buildName}.dsk",
+            "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm",
+            "port": 1234,
+            "hideEmulator": false,
+            "preLaunchTask": "RASM: assemble"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Amstrad CPC: Launch with disk (RASM)",
+            "description": "Start Sugarbox, insert a .dsk and break at entry point",
+            "body": {
+              "type": "z80",
+              "request": "launch",
+              "name": "Amstrad CPC - Launch",
+              "emulator": "^\"\\${env:SUGARBOX}\"",
+              "disk": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.dsk\"",
+              "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
+              "port": 1234,
+              "hideEmulator": false,
+              "preLaunchTask": "RASM: assemble"
+            }
+          },
+          {
+            "label": "Amstrad CPC: Launch with snapshot",
+            "description": "Start Sugarbox and load a .sna snapshot",
+            "body": {
+              "type": "z80",
+              "request": "launch",
+              "name": "Amstrad CPC - Snapshot",
+              "emulator": "^\"\\${env:SUGARBOX}\"",
+              "snapshot": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.sna\"",
+              "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
+              "port": 1234
+            }
+          },
+          {
+            "label": "Amstrad CPC: Attach to running emulator",
+            "description": "Attach to a Sugarbox already started with --debug_server 1234",
+            "body": {
+              "type": "z80",
+              "request": "attach",
+              "name": "Amstrad CPC - Attach",
+              "port": 1234,
+              "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\""
+            }
+          }
+        ],
         "configurationAttributes": {
           "launch": {
             "required": [
-              "program"
+              "emulator"
             ],
             "properties": {
-              "program": {
+              "emulator": {
                 "type": "string",
-                "description": "ASM source file"
+                "description": "Path to the Sugarbox emulator binary"
+              },
+              "disk": {
+                "type": "string",
+                "description": "Path to the .dsk disk image to insert in drive A"
+              },
+              "tape": {
+                "type": "string",
+                "description": "Path to the .cdt/.wav tape image to insert"
+              },
+              "snapshot": {
+                "type": "string",
+                "description": "Path to the .sna snapshot to load"
               },
               "port": {
                 "type": "number",
                 "default": 1234,
-                "description": "TCP port of the Z80 emulator"
+                "description": "TCP debug server port (must match --debug_server value)"
               },
               "symbolFile": {
                 "type": "string",
                 "description": "RASM super-symbol file (.rasm) for label display in disassembly"
+              },
+              "hideEmulator": {
+                "type": "boolean",
+                "default": false,
+                "description": "Hide the emulator window (pass --hide to Sugarbox)"
               }
             }
           },
@@ -71,6 +157,7 @@
   "devDependencies": {
     "@types/node": "^20.19.30",
     "@types/vscode": "^1.108.1",
+    "@vscode/vsce": "^2.22.0",
     "typescript": "^5.3.0"
   },
   "dependencies": {
