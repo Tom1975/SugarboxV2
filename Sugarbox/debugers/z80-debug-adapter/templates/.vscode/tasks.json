@@ -35,12 +35,13 @@
     {
       "label": "RASM: assemble",
       "type": "shell",
-      "command": "rasm",
+      "command": "rasm.exe",
       "args": [
         "${workspaceFolder}/${config:z80debug.entryPoint}",
-        "-o",  "${workspaceFolder}/build/${config:z80debug.buildName}",
-        "-sq", "${workspaceFolder}/build/${config:z80debug.buildName}",
-        "-d",  "${workspaceFolder}/build/${config:z80debug.buildName}.dsk"
+        "-o",   "${workspaceFolder}/build/${config:z80debug.buildName}",
+        "-oi",  "${workspaceFolder}/build/${config:z80debug.buildName}.sna",
+        "-rasm",
+        "-sq"
       ],
       "dependsOn": ["Create build dir"],
       "group": {

@@ -2,6 +2,7 @@ import {
     InitializedEvent,
     TerminatedEvent,
     ContinuedEvent,
+    OutputEvent,
 } from "vscode-debugadapter";
 
 import { DebugSession } from "vscode-debugadapter";
@@ -95,6 +96,18 @@ private loadSymbols(args: any): void {
     if (args.symbolFile) {
         this.symbolTable = SymbolTable.fromRasm(args.symbolFile);
     }
+    if (args.snapshot) {
+        const { table, breakpoints } = SymbolTable.fromSnapshotRemu(args.snapshot);
+        if (this.symbolTable) {
+            this.symbolTable.merge(table);
+        } else if (table.size > 0) {
+            this.symbolTable = table;
+        }
+        if (breakpoints.length > 0) {
+            this.bpRegistry.set("snapshot", breakpoints);
+            console.log(`DAP: ${breakpoints.length} breakpoint(s) loaded from snapshot REMU`);
+        }
+    }
 }
 
 protected async launchRequest(
@@ -123,9 +136,18 @@ protected async launchRequest(
     if (args.hideEmulator)  spawnArgs.push("--hide");
 
     console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "));
-    this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, { stdio: "ignore" });
+    this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, {
+        stdio: ["ignore", "ignore", "pipe"],
+        detached: true   // GUI process — survit si le parent Node.js est tué
+    });
+    // Relay emulator stderr to the Debug Console for diagnostics
+    this.emulatorProcess.stderr?.on("data", (data: Buffer) => {
+        this.sendEvent(new OutputEvent(`[Sugarbox] ${data.toString()}`, "stderr"));
+    });
     this.emulatorProcess.on("error", err => {
-        console.error("DAP: Emulator process error:", err.message);
+        const msg = `DAP: Failed to start emulator "${args.emulator}": ${err.message}\n`;
+        console.error(msg);
+        this.sendEvent(new OutputEvent(msg, "stderr"));
         this.sendEvent(new TerminatedEvent());
     });
     this.emulatorProcess.on("exit", code => {
@@ -214,8 +236,12 @@ protected async configurationDoneRequest(
     console.log("DAP: configurationDone");
     this.sendResponse(response);
 
+    // Apply all breakpoints (snapshot BPs + any VS Code BPs set during init)
+    if (this.bpRegistry.size > 0) {
+        await this.flushBreakpoints();
+    }
+
     if (this.isAttach) {
-        // Attach: query state and only send StoppedEvent if already paused
         const state = await this.emulator.send({ cmd: "getState" });
         if (!state?.running) {
             this.sendEvent(new StoppedEvent("pause", 1));

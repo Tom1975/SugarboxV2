@@ -15,6 +15,8 @@ export class SymbolTable {
     private addressToNames: Map<number, string[]> = new Map();
     private symbols: SymbolEntry[] = [];
 
+    get size(): number { return this.symbols.length; }
+
     /** Returns all label names defined at a given address. */
     getLabelsAt(address: number): string[] {
         return this.addressToNames.get(address) ?? [];
@@ -33,6 +35,13 @@ export class SymbolTable {
         const existing = this.addressToNames.get(entry.address) ?? [];
         existing.push(entry.name);
         this.addressToNames.set(entry.address, existing);
+    }
+
+    /** Merge all entries from another SymbolTable into this one. */
+    merge(other: SymbolTable): void {
+        for (const entry of other.symbols) {
+            this.addEntry(entry);
+        }
     }
 
     // ─── RASM loader ────────────────────────────────────────────────────────
@@ -83,6 +92,82 @@ export class SymbolTable {
 
         console.log(`SymbolTable: loaded ${table.symbols.length} symbols from ${filePath}`);
         return table;
+    }
+
+    // ─── Super snapshot (REMU chunk) loader ─────────────────────────────────
+
+    /**
+     * Extract symbols and breakpoint addresses from the REMU chunk of a RASM
+     * super-snapshot (.sna v3).  Returns an empty result if the file cannot be
+     * read or contains no REMU chunk.
+     *
+     * REMU is pure ASCII, semicolon-separated tags:
+     *   brk ADDR BANK          — exec BP in RAM
+     *   rombrk ADDR ROM        — exec BP in ROM (stored but not yet used)
+     *   label NAME ADDR BANK   — RAM symbol
+     *   romlabel NAME ADDR ROM — ROM symbol
+     *   alias NAME VALUE       — constant
+     *   comz / romcomz         — comments, ignored
+     */
+    static fromSnapshotRemu(snapshotPath: string): { table: SymbolTable; breakpoints: number[] } {
+        const empty = { table: new SymbolTable(), breakpoints: [] as number[] };
+        let buf: Buffer;
+        try {
+            buf = fs.readFileSync(snapshotPath);
+        } catch {
+            return empty;
+        }
+
+        // SNA v3: 256-byte header, then chunks of [4-byte id][4-byte LE size][data]
+        let offset = 256;
+        while (offset + 8 <= buf.length) {
+            const chunkId  = buf.toString("ascii", offset, offset + 4);
+            const chunkSize = buf.readUInt32LE(offset + 4);
+            offset += 8;
+            if (offset + chunkSize > buf.length) break;
+
+            if (chunkId === "REMU") {
+                const text = buf.toString("ascii", offset, offset + chunkSize);
+                return SymbolTable._parseRemuText(text);
+            }
+            offset += chunkSize;
+        }
+        return empty;
+    }
+
+    private static _parseRemuText(text: string): { table: SymbolTable; breakpoints: number[] } {
+        const table = new SymbolTable();
+        const breakpoints: number[] = [];
+
+        for (const raw of text.split(";")) {
+            const token = raw.trim();
+            if (!token) continue;
+            const parts = token.split(/\s+/);
+            const tag = parts[0];
+
+            if (tag === "brk" && parts.length >= 2) {
+                const addr = parseInt(parts[1], 10);
+                if (!isNaN(addr)) breakpoints.push(addr);
+
+            } else if (tag === "label" && parts.length >= 3) {
+                const addr = parseInt(parts[2], 10);
+                const bank = parts.length >= 4 ? parseInt(parts[3], 10) : undefined;
+                if (!isNaN(addr)) table.addEntry({ name: parts[1], address: addr, bank });
+
+            } else if (tag === "romlabel" && parts.length >= 3) {
+                const addr = parseInt(parts[2], 10);
+                const bank = parts.length >= 4 ? parseInt(parts[3], 10) : undefined;
+                if (!isNaN(addr)) table.addEntry({ name: parts[1], address: addr, bank });
+
+            } else if (tag === "alias" && parts.length >= 3) {
+                const addr = parseInt(parts[2], 10);
+                if (!isNaN(addr)) table.addEntry({ name: parts[1], address: addr });
+            }
+            // comz, romcomz — ignored
+        }
+
+        console.log(`SymbolTable: REMU — ${table.symbols.length} symbols, ${breakpoints.length} breakpoints`);
+        return { table, breakpoints };
     }
 
     // ─── Future loaders ─────────────────────────────────────────────────────

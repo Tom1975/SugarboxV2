@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    // ─── Snapshot : assemble + lance Sugarbox avec le .sna ──────────────────
+    // Les breakpoints et symboles sont embarqués dans le chunk REMU du snapshot.
+    // Pas besoin de symbolFile séparé.
+    {
+      "type": "z80",
+      "request": "launch",
+      "name": "CPC - Launch (snapshot)",
+      "emulator": "/path/to/Sugarbox",
+      "snapshot": "${workspaceFolder}/build/${config:z80debug.buildName}.sna",
+      "port": 1234,
+      "hideEmulator": false,
+      "preLaunchTask": "RASM: assemble"
+    },
+
+    // ─── Attach : connexion à un Sugarbox déjà lancé ─────────────────────────
+    {
+      "type": "z80",
+      "request": "attach",
+      "name": "CPC - Attach",
+      "port": 1234,
+      "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm"
+    }
+
+  ]
+}

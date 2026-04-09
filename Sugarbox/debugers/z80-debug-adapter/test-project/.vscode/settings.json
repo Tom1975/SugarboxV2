@@ -1,0 +1,13 @@
+{
+  "z80debug.entryPoint": "src/main.asm",
+  "z80debug.buildName": "main",
+
+  "terminal.integrated.env.linux": {
+    "SUGARBOX": "/path/to/Sugarbox",
+    "PATH": "/path/to/rasm:${env:PATH}"
+  },
+
+  "files.associations": {
+    "*.asm": "asm-collection"
+  }
+}
