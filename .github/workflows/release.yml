@@ -99,5 +99,7 @@ jobs:
         with:
           files: |
             ${{ steps.art-ubuntu.outputs.download-path }}/*
+            ${{ steps.art-windows.outputs.download-path }}/*
+            ${{ steps.art-macos.outputs.download-path }}/*
             ${{ steps.art-vsix.outputs.download-path }}/*.vsix
 
