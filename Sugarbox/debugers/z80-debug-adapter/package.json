@@ -3,9 +3,13 @@
   "displayName": "Z80 Debug Adapter",
   "description": "Debug adapter for Z80 emulators (RASM + SugarboxV2)",
   "version": "0.0.1",
-  "publisher": "yourname",
+  "publisher": "thomas-guillemin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tom1975/SugarboxV2"
+  },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.108.0"
   },
   "categories": [
     "Debuggers"
@@ -150,6 +154,7 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
     "watch": "tsc -w",
     "package": "vsce package"

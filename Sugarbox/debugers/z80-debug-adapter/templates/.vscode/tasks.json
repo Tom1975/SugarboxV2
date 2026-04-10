@@ -15,8 +15,10 @@
     {
       "label": "Create build dir",
       "type": "shell",
-      "command": "mkdir",
-      "args": ["-p", "${workspaceFolder}/build"],
+      "command": "mkdir -p '${workspaceFolder}/build'",
+      "windows": {
+        "command": "if not exist '${workspaceFolder}\\build' mkdir '${workspaceFolder}\\build'"
+      },
       "presentation": { "reveal": "never" },
       "problemMatcher": []
     },
@@ -26,16 +28,21 @@
     //   <buildName>.dsk    image disque DSK (Drive A)
     //   <buildName>.rasm   fichier symboles super-symbol pour le debugger
     //
-    // Prérequis : rasm dans le PATH, ou remplacer "rasm" par le chemin complet.
+    // Prérequis : rasm dans le PATH (Linux/Mac: "rasm", Windows: "rasm.exe"),
+    //             ou définir la variable d'env RASM avec le chemin complet.
     //
     // Flags RASM :
     //   -o  <prefix>   préfixe du fichier binaire de sortie
-    //   -sq <prefix>   générer le fichier super-symbol .rasm (labels + adresses)
-    //   -d  <file>     générer l'image DSK
+    //   -oi <file>     générer le snapshot .sna
+    //   -rasm          générer le fichier super-symbol .rasm (labels + adresses)
+    //   -sq            mode silencieux
     {
       "label": "RASM: assemble",
       "type": "shell",
-      "command": "rasm.exe",
+      "command": "${env:RASM:-rasm}",
+      "windows": {
+        "command": "${env:RASM}"
+      },
       "args": [
         "${workspaceFolder}/${config:z80debug.entryPoint}",
         "-o",   "${workspaceFolder}/build/${config:z80debug.buildName}",

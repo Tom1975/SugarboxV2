@@ -12,18 +12,24 @@
   // Ex: "mygame" → build/mygame.dsk, build/mygame.rasm
   "z80debug.buildName": "main",
 
-  // ─── Chemin de l'émulateur ──────────────────────────────────────────────
-  // Définir SUGARBOX ici évite de le hardcoder dans launch.json et tasks.json.
-  // Chaque développeur peut surcharger cette valeur dans ses settings utilisateur
-  // (~/.config/Code/User/settings.json) sans toucher au dépôt.
+  // ─── Chemins des outils ─────────────────────────────────────────────────
+  // Définir SUGARBOX et RASM ici évite de les hardcoder dans launch.json et
+  // tasks.json. Chaque développeur peut surcharger ces valeurs dans ses
+  // settings utilisateur (~/.config/Code/User/settings.json).
+  //
+  // RASM : si rasm est dans votre PATH système, vous pouvez omettre RASM.
+  //        Sinon, indiquez le chemin complet vers le binaire.
   "terminal.integrated.env.linux": {
-    "SUGARBOX": "/chemin/vers/Sugarbox"
+    "SUGARBOX": "/chemin/vers/Sugarbox",
+    "RASM": "/chemin/vers/rasm"
   },
   "terminal.integrated.env.osx": {
-    "SUGARBOX": "/chemin/vers/Sugarbox"
+    "SUGARBOX": "/chemin/vers/Sugarbox",
+    "RASM": "/chemin/vers/rasm"
   },
   "terminal.integrated.env.windows": {
-    "SUGARBOX": "C:\\chemin\\vers\\Sugarbox.exe"
+    "SUGARBOX": "C:\\chemin\\vers\\Sugarbox.exe",
+    "RASM": "C:\\chemin\\vers\\rasm.exe"
   },
 
   // ─── Association des fichiers ────────────────────────────────────────────

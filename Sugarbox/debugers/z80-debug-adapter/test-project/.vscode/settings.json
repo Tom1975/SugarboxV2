@@ -4,7 +4,15 @@
 
   "terminal.integrated.env.linux": {
     "SUGARBOX": "/path/to/Sugarbox",
-    "PATH": "/path/to/rasm:${env:PATH}"
+    "RASM": "/path/to/rasm"
+  },
+  "terminal.integrated.env.osx": {
+    "SUGARBOX": "/path/to/Sugarbox",
+    "RASM": "/path/to/rasm"
+  },
+  "terminal.integrated.env.windows": {
+    "SUGARBOX": "C:\\path\\to\\Sugarbox.exe",
+    "RASM": "C:\\path\\to\\rasm.exe"
   },
 
   "files.associations": {
