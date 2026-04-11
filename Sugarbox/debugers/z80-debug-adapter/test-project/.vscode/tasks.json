@@ -16,10 +16,7 @@
     {
       "label": "RASM: assemble",
       "type": "shell",
-      "command": "${env:RASM:-rasm}",
-      "windows": {
-        "command": "${env:RASM}"
-      },
+      "command": "${config:z80debug.rasm}",
       "args": [
         "${workspaceFolder}/${config:z80debug.entryPoint}",
         "-o",   "${workspaceFolder}/build/${config:z80debug.buildName}",

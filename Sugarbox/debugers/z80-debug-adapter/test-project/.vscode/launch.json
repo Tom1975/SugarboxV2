@@ -9,7 +9,7 @@
       "type": "z80",
       "request": "launch",
       "name": "CPC - Launch (snapshot)",
-      "emulator": "${env:SUGARBOX}",
+      "emulator": "${config:z80debug.sugarbox}",
       "snapshot": "${workspaceFolder}/build/${config:z80debug.buildName}.sna",
       "port": 1234,
       "hideEmulator": false,

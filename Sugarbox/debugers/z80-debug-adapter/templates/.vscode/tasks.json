@@ -1,17 +1,18 @@
 {
   // Copiez ce fichier dans .vscode/tasks.json à la racine de votre projet.
   //
-  // Ce fichier utilise deux réglages VS Code définis dans settings.json :
+  // Ce fichier utilise les réglages VS Code définis dans settings.json :
   //   z80debug.entryPoint  — chemin relatif du fichier ASM principal (ex: "src/main.asm")
   //   z80debug.buildName   — nom de base des fichiers de sortie   (ex: "mygame")
+  //   z80debug.rasm        — chemin vers le binaire RASM
+  //   z80debug.sugarbox    — chemin vers le binaire Sugarbox
   //
-  // Ils sont définis dans .vscode/settings.json (voir le fichier settings.json fourni).
+  // Lancez "Z80 Debug: Configure workspace" (Ctrl+Shift+P) pour renseigner
+  // automatiquement les chemins Sugarbox et RASM.
   "version": "2.0.0",
   "tasks": [
 
     // ─── Créer le dossier build ───────────────────────────────────────────────
-    // Tâche utilitaire dont dépend "RASM: assemble".
-    // Évite l'erreur si le dossier build/ n'existe pas encore.
     {
       "label": "Create build dir",
       "type": "shell",
@@ -24,13 +25,6 @@
     },
 
     // ─── Assemblage RASM ─────────────────────────────────────────────────────
-    // Assemble ${z80debug.entryPoint} et génère dans build/ :
-    //   <buildName>.dsk    image disque DSK (Drive A)
-    //   <buildName>.rasm   fichier symboles super-symbol pour le debugger
-    //
-    // Prérequis : rasm dans le PATH (Linux/Mac: "rasm", Windows: "rasm.exe"),
-    //             ou définir la variable d'env RASM avec le chemin complet.
-    //
     // Flags RASM :
     //   -o  <prefix>   préfixe du fichier binaire de sortie
     //   -oi <file>     générer le snapshot .sna
@@ -39,10 +33,7 @@
     {
       "label": "RASM: assemble",
       "type": "shell",
-      "command": "${env:RASM:-rasm}",
-      "windows": {
-        "command": "${env:RASM}"
-      },
+      "command": "${config:z80debug.rasm}",
       "args": [
         "${workspaceFolder}/${config:z80debug.entryPoint}",
         "-o",   "${workspaceFolder}/build/${config:z80debug.buildName}",
@@ -73,13 +64,11 @@
     },
 
     // ─── Lancer Sugarbox manuellement (pour le mode Attach) ─────────────────
-    // Utile si vous voulez démarrer l'émulateur à la main sans passer par F5.
     // Ouvre Sugarbox avec le serveur de debug activé, en pause au démarrage.
-    // La variable SUGARBOX doit pointer vers le binaire (voir settings.json).
     {
       "label": "Sugarbox: start debug server",
       "type": "shell",
-      "command": "${env:SUGARBOX}",
+      "command": "${config:z80debug.sugarbox}",
       "args": [
         "--debug",
         "--debug_server", "1234"
