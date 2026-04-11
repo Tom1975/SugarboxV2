@@ -18,7 +18,7 @@
       "type": "shell",
       "command": "mkdir -p '${workspaceFolder}/build'",
       "windows": {
-        "command": "if not exist '${workspaceFolder}\\build' mkdir '${workspaceFolder}\\build'"
+        "command": "New-Item -ItemType Directory -Force -Path '${workspaceFolder}\\build' | Out-Null"
       },
       "presentation": { "reveal": "never" },
       "problemMatcher": []
