@@ -14,9 +14,32 @@ using socklen_t = int;
 #include <iostream>
 #include <sstream>
 #include <cstring>
-
+#include <fstream>
+#include <vector>
 
 using json = nlohmann::json;
+
+// ─── Base64 decode ────────────────────────────────────────────────────────────
+static std::vector<uint8_t> Base64Decode(const std::string& in)
+{
+    static const std::string chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::vector<uint8_t> out;
+    out.reserve(in.size() * 3 / 4);
+    int val = 0, bits = -8;
+    for (unsigned char c : in) {
+        if (c == '=') break;
+        auto pos = chars.find(c);
+        if (pos == std::string::npos) continue; // skip whitespace / newlines
+        val = (val << 6) | (int)pos;
+        bits += 6;
+        if (bits >= 0) {
+            out.push_back((val >> bits) & 0xFF);
+            bits -= 8;
+        }
+    }
+    return out;
+}
 
 DebugServer::DebugServer(Emulation* emulation, int port )
    : emulation_(emulation), port_(port)
@@ -396,6 +419,50 @@ void DebugServer::handleClient(int clientSocket)
          }
 
          response = { {"text", text} };
+         SendResponse(response);
+      }
+      else if (cmd == "loadSnapshot")
+      {
+         bool ok = false;
+         std::string errmsg;
+
+         if (request.contains("data"))
+         {
+            // Inline base64 payload — decode to a temp file then load
+            std::string b64 = request.value("data", "");
+            auto bytes = Base64Decode(b64);
+
+            // Write temp file
+            std::string tmpPath;
+#ifdef _WIN32
+            char tmpBuf[MAX_PATH];
+            GetTempPathA(MAX_PATH, tmpBuf);
+            tmpPath = std::string(tmpBuf) + "sugarbox_dap.sna";
+#else
+            tmpPath = "/tmp/sugarbox_dap.sna";
+#endif
+            {
+               std::ofstream f(tmpPath, std::ios::binary | std::ios::trunc);
+               if (f) f.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+               else   errmsg = "cannot write temp file: " + tmpPath;
+            }
+            if (errmsg.empty())
+            {
+               ok = emulation_->LoadSnapshot(tmpPath.c_str());
+               if (!ok) errmsg = "snapshot load failed (from inline data)";
+               std::remove(tmpPath.c_str());
+            }
+         }
+         else
+         {
+            // Legacy path-based load
+            std::string path = request.value("path", "");
+            ok = emulation_->LoadSnapshot(path.c_str());
+            if (!ok) errmsg = "snapshot load failed: " + path;
+         }
+
+         response = { {"status", ok ? "ok" : "error"} };
+         if (!ok) response["message"] = errmsg;
          SendResponse(response);
       }
       else if (cmd == "reset")

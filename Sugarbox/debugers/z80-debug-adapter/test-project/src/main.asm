@@ -2,7 +2,9 @@
 ; Assemblé avec RASM
 ; Lancer avec : CALL &8000
 
+        BANKSET 0       ; nécessaire pour que RASM génère le snapshot CPC
         ORG     #8000
+        RUN     start
 
 ; ─── Point d'entrée ──────────────────────────────────────────────────────────
 start:

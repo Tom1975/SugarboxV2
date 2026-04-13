@@ -293,7 +293,11 @@ bool Emulation::LoadSnapshot(const char* file_path)
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   return emulator_engine_->LoadSnapshot(file_path);
+   // Use LoadSnapshotNow() — loads immediately under the mutex.
+   // The deferred mechanism (LoadSnapshot → sna_to_load_ flag → HandleSnapshots)
+   // never fires in DBG_BREAK state because HandleSnapshots() is only called from
+   // RunFullSpeed / RunTimeSlice, so the snapshot would never actually load.
+   return emulator_engine_->LoadSnapshotNow(file_path);
 }
 
 void Emulation::SaveSnapshot(const char* file_path)

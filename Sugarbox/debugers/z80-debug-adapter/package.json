@@ -64,7 +64,7 @@
               "disk": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.dsk\"",
               "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
               "port": 1234,
-              "hideEmulator": false,
+              "hideEmulator": true,
               "preLaunchTask": "RASM: assemble"
             }
           },
@@ -126,7 +126,7 @@
               },
               "hideEmulator": {
                 "type": "boolean",
-                "default": false,
+                "default": true,
                 "description": "Hide the emulator window (pass --hide to Sugarbox)"
               }
             }

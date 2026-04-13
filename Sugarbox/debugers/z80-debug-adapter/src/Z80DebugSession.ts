@@ -88,7 +88,9 @@ protected initializeRequest(
     };
 
     this.sendResponse(response);
-    this.sendEvent(new InitializedEvent());
+    // InitializedEvent is sent at the end of launchRequest / attachRequest,
+    // after the TCP connection to the emulator is established. Sending it here
+    // would trigger VS Code to send configurationDone before the socket exists.
 }
 
 
@@ -118,13 +120,12 @@ protected async launchRequest(
     this.loadSymbols(args);
     const port = args.port ?? 1234;
 
-    // Build a temporary CSL script if any media is specified
+    // Build a temporary CSL script for disk/tape (snapshot is loaded via DAP command after connect)
     let cslFile: string | null = null;
-    if (args.disk || args.tape || args.snapshot) {
+    if (args.disk || args.tape) {
         const lines = ["cslversion 2.0"];
-        if (args.snapshot) lines.push(`snapshot_load '${args.snapshot}'`);
-        if (args.disk)     lines.push(`disk_insert 0 '${args.disk}'`);
-        if (args.tape)     lines.push(`tape_insert '${args.tape}'`);
+        if (args.disk) lines.push(`disk_insert 0 '${args.disk}'`);
+        if (args.tape) lines.push(`tape_insert '${args.tape}'`);
         cslFile = nodePath.join(os.tmpdir(), `sugarbox_${Date.now()}.csl`);
         fs.writeFileSync(cslFile, lines.join("\n") + "\n");
         console.log("DAP: CSL script written to", cslFile);
@@ -134,6 +135,18 @@ protected async launchRequest(
     const spawnArgs: string[] = ["--debug", "--debug_server", String(port)];
     if (cslFile)            spawnArgs.push("--csl", cslFile);
     if (args.hideEmulator)  spawnArgs.push("--hide");
+
+    // Check if the port is already in use before spawning
+    const portInUse = await this.isPortInUse(port);
+    if (portInUse) {
+        const msg = `Port ${port} is already in use — a previous Sugarbox instance may still be running.\n` +
+                    `Run: fuser ${port}/tcp  or  ss -tlnp | grep ${port}\n`;
+        this.sendEvent(new OutputEvent(msg, "stderr"));
+        response.success = false;
+        (response as any).message = `Port ${port} already in use`;
+        this.sendResponse(response);
+        return;
+    }
 
     console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "));
     this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, {
@@ -168,6 +181,32 @@ protected async launchRequest(
     await this.emulator.connect(port);
     console.log("DAP: Connected to emulator");
 
+    // Load snapshot via DAP command — send file content as base64 to avoid
+    // path-resolution issues (relative paths, remote machines, etc.)
+    if (args.snapshot) {
+        console.log("DAP: Loading snapshot", args.snapshot);
+        let snapshotData: string;
+        try {
+            snapshotData = fs.readFileSync(args.snapshot).toString("base64");
+        } catch (e: any) {
+            const msg = `Cannot read snapshot file "${args.snapshot}": ${e.message}\n`;
+            this.sendEvent(new OutputEvent(msg, "stderr"));
+            response.success = false;
+            (response as any).message = msg.trim();
+            this.sendResponse(response);
+            return;
+        }
+        const r = await this.emulator.send({ cmd: "loadSnapshot", data: snapshotData });
+        if (r?.status !== "ok") {
+            const msg = `Failed to load snapshot: ${r?.message ?? args.snapshot}\n`;
+            this.sendEvent(new OutputEvent(msg, "stderr"));
+            response.success = false;
+            (response as any).message = msg.trim();
+            this.sendResponse(response);
+            return;
+        }
+    }
+
     this.emulator.onEvent = (evt) => {
         if (evt.event === "stopped") {
             const reason = evt.body?.reason ?? "breakpoint";
@@ -178,6 +217,17 @@ protected async launchRequest(
 
     this.sendResponse(response);
     this.sendEvent(new InitializedEvent());
+}
+
+// Check once if a port already accepts connections (residual process).
+private isPortInUse(port: number, host = "127.0.0.1"): Promise<boolean> {
+    return new Promise(resolve => {
+        const sock = new net.Socket();
+        sock.setTimeout(300);
+        sock.connect(port, host, () => { sock.destroy(); resolve(true); });
+        sock.on("error", () => { sock.destroy(); resolve(false); });
+        sock.on("timeout", () => { sock.destroy(); resolve(false); });
+    });
 }
 
 // Poll until the TCP port accepts connections, or timeout.
@@ -387,25 +437,26 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 
 // ─── Disassembly cache helpers ────────────────────────────────────────────────
 
-// Return the sourceReference for the 4KB page containing addr.
-// sourceRef = (addr >> 12) + 1  → values 1..16 for the 16 possible 4KB pages.
-private pageSourceRef(addr: number): number {
-    return (addr >> 12) + 1;
-}
-
-private pageStartAddress(addr: number): number {
-    return addr & 0xF000;
-}
-
-// Fetch and cache the disassembly region for the 4KB page containing addr.
+// Fetch (or reuse) a disassembly region that contains addr at a valid boundary.
+//
+// sourceRef = addr + 1  (unique per starting address, avoids page-sharing bugs
+// where two frames in the same 4 KB page would overwrite each other's cache and
+// produce wrong line numbers / wrong source content in VS Code).
+//
+// Fast path: scan existing regions for one that already has addr mapped.
+// Slow path: disassemble 2048 instructions starting from addr.
 private async ensureRegion(addr: number): Promise<DisasmRegion> {
-    const sourceRef = this.pageSourceRef(addr);
-    if (this.disasmCache.has(sourceRef)) {
-        return this.disasmCache.get(sourceRef)!;
+    // Reuse any cached region that already contains addr
+    for (const region of this.disasmCache.values()) {
+        if (region.addressToLine.has(addr)) {
+            return region;
+        }
     }
 
-    const startAddress = this.pageStartAddress(addr);
-    // 2048 instructions covers ~4KB at average 2 bytes/instruction
+    // Build a new region anchored at addr
+    const sourceRef    = addr + 1;   // unique, positive
+    const startAddress = addr;
+
     const reply = await this.emulator.send({
         cmd: "disassemble",
         address: startAddress,
@@ -414,27 +465,16 @@ private async ensureRegion(addr: number): Promise<DisasmRegion> {
 
     const rawLines: { address: number; instruction: string }[] = reply.instructions ?? [];
     const addressToLine = new Map<number, number>();
-    // lineToAddress maps text line numbers → address (instruction lines only)
     const lineToAddress = new Map<number, number>();
     let text = "";
-    let textLineNo = 0; // 1-based, incremented for every emitted line
+    let textLineNo = 0;
 
     rawLines.forEach((l) => {
-        // Insert label lines before this instruction if symbols exist at this address
         const labels = this.symbolTable?.getLabelsAt(l.address) ?? [];
         if (labels.length > 0) {
-            // Blank separator before the label group (skip at very start)
-            if (text.length > 0) {
-                text += "\n";
-                textLineNo++;
-            }
-            for (const label of labels) {
-                text += `${label}:\n`;
-                textLineNo++;
-            }
+            if (text.length > 0) { text += "\n"; textLineNo++; }
+            for (const label of labels) { text += `${label}:\n`; textLineNo++; }
         }
-
-        // Instruction line
         textLineNo++;
         addressToLine.set(l.address, textLineNo);
         lineToAddress.set(textLineNo, l.address);
@@ -442,24 +482,61 @@ private async ensureRegion(addr: number): Promise<DisasmRegion> {
         text += `${addrHex}  ${l.instruction.trimEnd()}\n`;
     });
 
-    const region: DisasmRegion = {
-        sourceRef,
-        startAddress,
-        lines: rawLines,
-        addressToLine,
-        lineToAddress,
-        text,
-    };
+    const region: DisasmRegion = { sourceRef, startAddress, lines: rawLines, addressToLine, lineToAddress, text };
     this.disasmCache.set(sourceRef, region);
     return region;
 }
 
-// Invalidate a cached region (e.g., after a reset or memory write)
+// Remove all cached regions that contain addr (e.g. after a memory write).
 private invalidateRegion(addr: number): void {
-    this.disasmCache.delete(this.pageSourceRef(addr));
+    for (const [key, region] of this.disasmCache.entries()) {
+        if (region.addressToLine.has(addr)) {
+            this.disasmCache.delete(key);
+        }
+    }
 }
 
 // ─── Stack trace ──────────────────────────────────────────────────────────────
+
+// CALL opcodes (3-byte instructions → return address is pushed as PC+3)
+private static readonly CALL_OPCODES = new Set([
+    0xCD,                                           // CALL nn
+    0xC4, 0xCC, 0xD4, 0xDC, 0xE4, 0xEC, 0xF4, 0xFC // CALL cc,nn
+]);
+// RST opcodes (1-byte instructions → return address is pushed as PC+1)
+private static readonly RST_OPCODES = new Set([
+    0xC7, 0xCF, 0xD7, 0xDF, 0xE7, 0xEF, 0xF7, 0xFF
+]);
+
+// Return true if addr looks like a CALL/RST return address
+// (i.e. addr-3 or addr-1 contains the corresponding opcode).
+private async isReturnAddress(addr: number): Promise<boolean> {
+    if (addr < 3) return false;
+    const mem = await this.emulator.send({ cmd: "readMemory", address: addr - 3, size: 3 });
+    const bytes: number[] = mem?.bytes ?? [];
+    if (bytes.length < 3) return false;
+    return Z80DebugSession.CALL_OPCODES.has(bytes[0])   // CALL at addr-3
+        || Z80DebugSession.RST_OPCODES.has(bytes[2]);   // RST  at addr-1
+}
+
+// Build a single DAP StackFrame for a given PC and its disassembly region.
+private buildStackFrame(id: number, pc: number, region: DisasmRegion): DebugProtocol.StackFrame {
+    const pcHex = "0x" + pc.toString(16).padStart(4, "0");
+    const lineNo = region.addressToLine.get(pc) ?? 1;
+    const labels = this.symbolTable?.getLabelsAt(pc);
+    const name = labels?.length ? labels[0] : (id === 0 ? "PC" : `ret #${pcHex}`);
+    const sourceName = `Z80 0x${region.startAddress.toString(16).padStart(4, "0")}`;
+    const frame: DebugProtocol.StackFrame = {
+        id,
+        name,
+        line: lineNo,
+        column: 1,
+        source: { name: sourceName, sourceReference: region.sourceRef },
+        instructionPointerReference: "MemoryRead:" + pcHex,
+    };
+    (frame as any).memoryReference = pcHex;
+    return frame;
+}
 
 protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
@@ -468,32 +545,26 @@ protected async stackTraceRequest(
     console.log("DAP: stackTraceRequest");
 
     const state = await this.emulator.send({ cmd: "getState" });
-    const pc = state?.pc ?? 0;
-    const pcHex = "0x" + pc.toString(16).padStart(4, "0");
+    const pc  = state?.pc ?? 0;
+    const sp  = state?.sp ?? 0;
 
-    // Build or retrieve the virtual disassembly source for this 4KB page
-    const region = await this.ensureRegion(pc);
-    const lineNo = region.addressToLine.get(pc) ?? 1;
+    // Frame 0 — current PC
+    const region0 = await this.ensureRegion(pc);
+    const frames: DebugProtocol.StackFrame[] = [this.buildStackFrame(0, pc, region0)];
 
-    const sourceName = `Z80 RAM 0x${region.startAddress.toString(16).padStart(4, "0")}`;
-    const frame: DebugProtocol.StackFrame = {
-        id: 1,
-        name: "Z80",
-        line: lineNo,
-        column: 1,
-        source: {
-            name: sourceName,
-            sourceReference: region.sourceRef,
-        },
-        instructionPointerReference: "MemoryRead:" + pcHex,
-    };
-    (frame as any).memoryReference = pcHex;
+    // Walk the Z80 stack: each word is a potential return address pushed by CALL/RST.
+    const MAX_DEPTH = 15;
+    const memReply = await this.emulator.send({ cmd: "readMemory", address: sp, size: MAX_DEPTH * 2 });
+    const bytes: number[] = memReply?.bytes ?? [];
 
-    response.body = {
-        stackFrames: [frame],
-        totalFrames: 1
-    };
+    for (let i = 0; i < MAX_DEPTH && i * 2 + 1 < bytes.length; i++) {
+        const retAddr = (bytes[i * 2] | (bytes[i * 2 + 1] << 8)) & 0xFFFF;
+        if (!await this.isReturnAddress(retAddr)) continue;
+        const region = await this.ensureRegion(retAddr);
+        frames.push(this.buildStackFrame(frames.length, retAddr, region));
+    }
 
+    response.body = { stackFrames: frames, totalFrames: frames.length };
     this.sendResponse(response);
 }
 
