@@ -1,33 +1,29 @@
 {
   // Copiez ce fichier dans .vscode/settings.json à la racine de votre projet.
   // Adaptez les valeurs à votre projet.
+  //
+  // Vous pouvez aussi lancer "Z80 Debug: Configure workspace" (Ctrl+Shift+P)
+  // pour renseigner automatiquement les chemins Sugarbox et RASM.
 
   // ─── Projet Z80 ─────────────────────────────────────────────────────────
 
   // Fichier ASM principal (relatif à la racine du workspace).
-  // Utilisé par la tâche "RASM: assemble".
   "z80debug.entryPoint": "src/main.asm",
 
   // Nom de base des fichiers générés dans build/.
-  // Ex: "mygame" → build/mygame.dsk, build/mygame.rasm
+  // Ex: "mygame" → build/mygame.sna, build/mygame.rasm
   "z80debug.buildName": "main",
 
-  // ─── Chemin de l'émulateur ──────────────────────────────────────────────
-  // Définir SUGARBOX ici évite de le hardcoder dans launch.json et tasks.json.
-  // Chaque développeur peut surcharger cette valeur dans ses settings utilisateur
-  // (~/.config/Code/User/settings.json) sans toucher au dépôt.
-  "terminal.integrated.env.linux": {
-    "SUGARBOX": "/chemin/vers/Sugarbox"
-  },
-  "terminal.integrated.env.osx": {
-    "SUGARBOX": "/chemin/vers/Sugarbox"
-  },
-  "terminal.integrated.env.windows": {
-    "SUGARBOX": "C:\\chemin\\vers\\Sugarbox.exe"
-  },
+  // ─── Chemins des outils ──────────────────────────────────────────────────
+  // Renseignez ces chemins ou lancez "Z80 Debug: Configure workspace".
+
+  // Chemin vers le binaire Sugarbox.
+  "z80debug.sugarbox": "",
+
+  // Chemin vers le binaire RASM (ou juste "rasm" s'il est dans le PATH).
+  "z80debug.rasm": "rasm",
 
   // ─── Association des fichiers ────────────────────────────────────────────
-  // Associe les .asm à la syntaxe de l'extension recommandée (extensions.json).
   "files.associations": {
     "*.asm": "asm-collection"
   }

@@ -2,10 +2,13 @@
   "z80debug.entryPoint": "src/main.asm",
   "z80debug.buildName": "main",
 
-  "terminal.integrated.env.linux": {
-    "SUGARBOX": "/path/to/Sugarbox",
-    "PATH": "/path/to/rasm:${env:PATH}"
-  },
+  // ── Chemins à adapter selon votre installation ────────────────────────────
+  // Linux / macOS
+  // "z80debug.sugarbox": "/path/to/Sugarbox",
+  // "z80debug.rasm":     "/path/to/rasm",
+  // Windows
+  "z80debug.sugarbox": "E:\\BUILDs\\Github\\Sugarboxv2\\install\\Sugarbox.exe",
+  "z80debug.rasm":     "E:\\DEV\\04 - Github\\AmstradWorkspace\\tools\\rasm_w64.exe",
 
   "files.associations": {
     "*.asm": "asm-collection"

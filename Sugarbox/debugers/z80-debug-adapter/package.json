@@ -3,15 +3,20 @@
   "displayName": "Z80 Debug Adapter",
   "description": "Debug adapter for Z80 emulators (RASM + SugarboxV2)",
   "version": "0.0.1",
-  "publisher": "yourname",
+  "publisher": "thomas-guillemin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tom1975/SugarboxV2"
+  },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.108.0"
   },
   "categories": [
     "Debuggers"
   ],
   "activationEvents": [
-    "onDebug"
+    "onDebug",
+    "onStartupFinished"
   ],
   "main": "./out/main.js",
   "contributes": {
@@ -27,9 +32,25 @@
           "type": "string",
           "default": "main",
           "description": "Base name for build outputs (e.g. \"mygame\" → build/mygame.dsk, build/mygame.rasm). Used by the build task and launch config."
+        },
+        "z80debug.sugarbox": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Sugarbox emulator binary (e.g. C:\\\\Tools\\\\Sugarbox.exe or /usr/local/bin/Sugarbox)."
+        },
+        "z80debug.rasm": {
+          "type": "string",
+          "default": "rasm",
+          "description": "Path to the RASM assembler binary (e.g. C:\\\\Tools\\\\rasm_w64.exe or rasm if on PATH)."
         }
       }
     },
+    "commands": [
+      {
+        "command": "z80debug.configure",
+        "title": "Z80 Debug: Configure workspace (Sugarbox & RASM paths)"
+      }
+    ],
     "debuggers": [
       {
         "type": "z80",
@@ -44,7 +65,7 @@
             "type": "z80",
             "request": "launch",
             "name": "Amstrad CPC - Launch",
-            "emulator": "${env:SUGARBOX}",
+            "emulator": "${config:z80debug.sugarbox}",
             "disk": "${workspaceFolder}/build/${config:z80debug.buildName}.dsk",
             "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm",
             "port": 1234,
@@ -60,7 +81,7 @@
               "type": "z80",
               "request": "launch",
               "name": "Amstrad CPC - Launch",
-              "emulator": "^\"\\${env:SUGARBOX}\"",
+              "emulator": "^\"\\${config:z80debug.sugarbox}\"",
               "disk": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.dsk\"",
               "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
               "port": 1234,
@@ -75,7 +96,7 @@
               "type": "z80",
               "request": "launch",
               "name": "Amstrad CPC - Snapshot",
-              "emulator": "^\"\\${env:SUGARBOX}\"",
+              "emulator": "^\"\\${config:z80debug.sugarbox}\"",
               "snapshot": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.sna\"",
               "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
               "port": 1234
@@ -150,6 +171,7 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
     "watch": "tsc -w",
     "package": "vsce package"

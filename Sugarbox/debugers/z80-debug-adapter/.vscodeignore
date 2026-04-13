@@ -1,0 +1,26 @@
+# Config VS Code de développement de l'extension (pas destinée aux utilisateurs)
+.vscode/**
+
+# Source TypeScript (le JS compilé dans out/ suffit)
+src/**
+
+# Tests et projets d'exemple
+test-project/**
+
+# Templates (fournies séparément ou via la doc)
+templates/**
+
+# Config TypeScript et outils de dev
+tsconfig.json
+.eslintrc*
+.prettierrc*
+
+# Node modules de dev (vsce ne prend que les prod deps)
+node_modules/**
+!node_modules/vscode-debugadapter/**
+!node_modules/vscode-debugprotocol/**
+
+# Divers
+.git/**
+.gitignore
+*.vsix

@@ -1,11 +1,8 @@
 {
   // Copiez ce fichier dans .vscode/launch.json à la racine de votre projet.
   //
-  // Les chemins vers le .dsk et le fichier symboles utilisent le réglage
-  // z80debug.buildName défini dans .vscode/settings.json.
-  //
-  // Le binaire Sugarbox est lu depuis la variable d'environnement SUGARBOX.
-  // Voir .vscode/settings.json pour la définir sans modifier ce fichier.
+  // Les chemins utilisent les réglages z80debug.* définis dans .vscode/settings.json.
+  // Lancez "Z80 Debug: Configure workspace" (Ctrl+Shift+P) pour les renseigner.
   "version": "0.2.0",
   "configurations": [
 
@@ -16,7 +13,7 @@
       "type": "z80",
       "request": "launch",
       "name": "Amstrad CPC - Launch (disk)",
-      "emulator": "${env:SUGARBOX}",
+      "emulator": "${config:z80debug.sugarbox}",
       "disk": "${workspaceFolder}/build/${config:z80debug.buildName}.dsk",
       "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm",
       "port": 1234,
@@ -31,7 +28,7 @@
       "type": "z80",
       "request": "launch",
       "name": "Amstrad CPC - Launch (snapshot)",
-      "emulator": "${env:SUGARBOX}",
+      "emulator": "${config:z80debug.sugarbox}",
       "snapshot": "${workspaceFolder}/build/${config:z80debug.buildName}.sna",
       "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm",
       "port": 1234,
@@ -40,7 +37,7 @@
 
     // ─── Mode Attach ────────────────────────────────────────────────────────
     // Se connecte à un Sugarbox déjà lancé avec :
-    //   $SUGARBOX --debug --debug_server 1234
+    //   <sugarbox> --debug --debug_server 1234
     // ou via la tâche "Sugarbox: start debug server".
     {
       "type": "z80",
