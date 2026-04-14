@@ -1,0 +1,37 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Z80 Disassembly",
+    "scopeName": "source.z80disasm",
+    "patterns": [
+        { "include": "#full-comment" },
+        { "include": "#label" },
+        { "include": "#address" },
+        { "include": "#inline-comment" }
+    ],
+    "repository": {
+        "full-comment": {
+            "comment": "Standalone comment or preamble line (starts with optional spaces then ;)",
+            "name": "comment.line.semicolon.z80disasm",
+            "match": "^[ \\t]*;.*$"
+        },
+        "label": {
+            "comment": "Label definition at column 0: 'labelname:' with optional inline comment",
+            "match": "^([A-Za-z_][\\w.]*)(:)(.*)",
+            "captures": {
+                "1": { "name": "entity.name.function.z80disasm" },
+                "2": { "name": "punctuation.definition.tag.z80disasm" },
+                "3": { "name": "comment.line.semicolon.z80disasm" }
+            }
+        },
+        "address": {
+            "comment": "Hex address at the start of an instruction line: 0xNNNN",
+            "name": "constant.numeric.hex.z80disasm",
+            "match": "^0x[0-9A-Fa-f]{4}"
+        },
+        "inline-comment": {
+            "comment": "Hex+ASCII annotation appended to instruction lines as '; XX XX  ..'",
+            "name": "comment.line.semicolon.z80disasm",
+            "match": "[ \\t]+;.*$"
+        }
+    }
+}

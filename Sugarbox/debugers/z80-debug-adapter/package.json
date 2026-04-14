@@ -45,10 +45,53 @@
         }
       }
     },
+    "languages": [
+      {
+        "id": "z80-disasm",
+        "aliases": ["Z80 Disassembly"],
+        "extensions": [".z80disasm"],
+        "mimetypes": ["text/x-z80-disasm"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "z80-disasm",
+        "scopeName": "source.z80disasm",
+        "path": "./syntaxes/z80-disasm.tmGrammar.json"
+      }
+    ],
     "commands": [
       {
         "command": "z80debug.configure",
         "title": "Z80 Debug: Configure workspace (Sugarbox & RASM paths)"
+      },
+      {
+        "command": "z80debug.openDisasmAt",
+        "title": "Z80 Debug: Open Disassembly at Address…",
+        "category": "Z80 Debug"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "z80debug.openDisasmAt",
+          "when": "debugState == 'stopped'",
+          "group": "debug@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "z80debug.openDisasmAt",
+          "when": "debugState == 'stopped'"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "z80debug.openDisasmAt",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+alt+d",
+        "when": "debugState == 'stopped'"
       }
     ],
     "debuggers": [
@@ -145,6 +188,10 @@
                 "type": "string",
                 "description": "RASM super-symbol file (.rasm) for label display in disassembly"
               },
+              "sourceFile": {
+                "type": "string",
+                "description": "Main ASM source file (.asm) — used to enrich disassembly with comments"
+              },
               "hideEmulator": {
                 "type": "boolean",
                 "default": true,
@@ -163,6 +210,10 @@
               "symbolFile": {
                 "type": "string",
                 "description": "RASM super-symbol file (.rasm) for label display in disassembly"
+              },
+              "sourceFile": {
+                "type": "string",
+                "description": "Main ASM source file (.asm) — used to enrich disassembly with comments"
               }
             }
           }

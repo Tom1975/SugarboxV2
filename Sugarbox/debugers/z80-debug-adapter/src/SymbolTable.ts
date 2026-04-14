@@ -68,24 +68,26 @@ export class SymbolTable {
             const token = raw.trim();
             if (!token) continue;
 
-            // romlabel NAME ADDR BANK
-            const romlabelMatch = token.match(/^romlabel\s+(\S+)\s+(\d+)\s+(\d+)$/);
-            if (romlabelMatch) {
-                table.addEntry({
-                    name: romlabelMatch[1],
-                    address: parseInt(romlabelMatch[2], 10),
-                    bank: parseInt(romlabelMatch[3], 10),
-                });
+            const parts = token.split(/\s+/);
+            const tag   = parts[0];
+
+            // label NAME ADDR BANK  — RAM label (regular assembler label)
+            // romlabel NAME ADDR BANK — ROM label
+            if ((tag === "label" || tag === "romlabel") && parts.length >= 3) {
+                const addr = parseInt(parts[2], 10);
+                const bank = parts.length >= 4 ? parseInt(parts[3], 10) : undefined;
+                if (!isNaN(addr)) {
+                    table.addEntry({ name: parts[1], address: addr, bank });
+                }
                 continue;
             }
 
-            // alias NAME ADDR
-            const aliasMatch = token.match(/^alias\s+(\S+)\s+(\d+)$/);
-            if (aliasMatch) {
-                table.addEntry({
-                    name: aliasMatch[1],
-                    address: parseInt(aliasMatch[2], 10),
-                });
+            // alias NAME VALUE — EQU constant
+            if (tag === "alias" && parts.length >= 3) {
+                const addr = parseInt(parts[2], 10);
+                if (!isNaN(addr)) {
+                    table.addEntry({ name: parts[1], address: addr });
+                }
                 continue;
             }
         }
@@ -118,20 +120,32 @@ export class SymbolTable {
             return empty;
         }
 
-        // SNA v3: 256-byte header, then chunks of [4-byte id][4-byte LE size][data]
+        const snaVersion = buf[16];  // byte 16 of SNA header = version (0/1=v1, 2=v2, 3=v3)
+        console.log(`SymbolTable: SNA file size=${buf.length}, header version byte=${snaVersion}`);
+
+        // SNA v3: 256-byte header, then chunks of [4-byte id][4-byte LE size][data].
+        // A v3 SNA can be much smaller than 65792 bytes (no full RAM dump needed),
+        // so do NOT short-circuit on file size — just scan chunks from offset 256.
         let offset = 256;
+        const foundChunks: string[] = [];
         while (offset + 8 <= buf.length) {
-            const chunkId  = buf.toString("ascii", offset, offset + 4);
+            const chunkId   = buf.toString("ascii", offset, offset + 4);
             const chunkSize = buf.readUInt32LE(offset + 4);
+            foundChunks.push(`${chunkId}(${chunkSize})`);
             offset += 8;
-            if (offset + chunkSize > buf.length) break;
+            if (offset + chunkSize > buf.length) {
+                console.log(`SymbolTable: chunk ${chunkId} size=${chunkSize} overflows file — stopping`);
+                break;
+            }
 
             if (chunkId === "REMU") {
                 const text = buf.toString("ascii", offset, offset + chunkSize);
+                console.log(`SymbolTable: found REMU chunk (${chunkSize} bytes)`);
                 return SymbolTable._parseRemuText(text);
             }
             offset += chunkSize;
         }
+        console.log(`SymbolTable: no REMU chunk found. Chunks: ${foundChunks.join(", ")}`);
         return empty;
     }
 

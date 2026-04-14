@@ -9,6 +9,7 @@ import { DebugSession } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { EmulatorClient } from "./EmulatorClient";
 import { SymbolTable } from "./SymbolTable";
+import { SourceAnnotations } from "./SourceAnnotations";
 import { StoppedEvent } from 'vscode-debugadapter';
 import { Thread } from 'vscode-debugadapter';
 import { StackFrame, Source } from 'vscode-debugadapter';
@@ -24,6 +25,44 @@ import * as net from "net";
 interface DisasmLine {
     address: number;
     instruction: string;
+    bytes?: number[];
+}
+
+// Column width for the mnemonic field in the virtual source view
+const COL_INSTR = 20;   // mnemonic + operands, padded to this width
+
+// Maximum Z80 instruction size in bytes (DD CB dd op = 4 bytes)
+const MAX_INSTR_BYTES = 4;
+
+// Width of the hex field: "XX XX XX XX" = 4×2 + 3 spaces = 11 chars
+const HEX_FIELD_WIDTH = MAX_INSTR_BYTES * 3 - 1;   // 11
+
+/**
+ * Format raw bytes for the virtual source view.
+ *
+ * Returns a "; XX XX  .." style inline comment so the TextMate grammar
+ * can colour it as a comment (pale/dim).
+ */
+function fmtHexAsciiComment(bytes: number[] | undefined): string {
+    if (!bytes || bytes.length === 0) return "";
+    const hex   = bytes.map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+    const ascii = bytes.map(b => (b >= 0x20 && b <= 0x7E) ? String.fromCharCode(b) : ".").join("");
+    return `; ${hex.padEnd(HEX_FIELD_WIDTH)}  ${ascii}`;
+}
+
+/**
+ * Format raw bytes for the DAP instructionBytes field.
+ *
+ * VS Code renders that field in a dedicated column with a distinct style
+ * (typically grey/dim) in the Disassembly View.
+ *
+ * Returns "XX XX  .." (hex padded to HEX_FIELD_WIDTH then two spaces then ASCII).
+ */
+function fmtInstructionBytes(bytes: number[] | undefined): string | undefined {
+    if (!bytes || bytes.length === 0) return undefined;
+    const hex   = bytes.map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+    const ascii = bytes.map(b => (b >= 0x20 && b <= 0x7E) ? String.fromCharCode(b) : ".").join("");
+    return `${hex.padEnd(HEX_FIELD_WIDTH)}  ${ascii}`;
 }
 
 // A cached disassembly region (one 4KB page of Z80 address space)
@@ -50,6 +89,9 @@ export class Z80DebugSession extends DebugSession {
 
     // Symbol table (optional, loaded from symbolFile arg)
     private symbolTable: SymbolTable | null = null;
+
+    // Source annotations (optional, loaded from sourceFile arg)
+    private sourceAnnotations: SourceAnnotations | null = null;
 
     // Global breakpoint registry: key → list of addresses
     // "src:<sourceRef>" for source breakpoints, "instr" for instruction breakpoints
@@ -95,8 +137,12 @@ protected initializeRequest(
 
 
 private loadSymbols(args: any): void {
+    console.log(`DAP: loadSymbols — symbolFile=${args.symbolFile ?? "(none)"} sourceFile=${args.sourceFile ?? "(none)"} snapshot=${args.snapshot ?? "(none)"}`);
     if (args.symbolFile) {
         this.symbolTable = SymbolTable.fromRasm(args.symbolFile);
+    }
+    if (args.sourceFile) {
+        this.sourceAnnotations = SourceAnnotations.fromFile(args.sourceFile);
     }
     if (args.snapshot) {
         const { table, breakpoints } = SymbolTable.fromSnapshotRemu(args.snapshot);
@@ -110,6 +156,7 @@ private loadSymbols(args: any): void {
             console.log(`DAP: ${breakpoints.length} breakpoint(s) loaded from snapshot REMU`);
         }
     }
+    console.log(`DAP: loadSymbols done — symbolTable=${this.symbolTable?.size ?? "null"} symbols, sourceAnnotations=${this.sourceAnnotations ? "loaded" : "null"}`);
 }
 
 protected async launchRequest(
@@ -463,7 +510,7 @@ private async ensureRegion(addr: number): Promise<DisasmRegion> {
         count: 2048
     });
 
-    const rawLines: { address: number; instruction: string }[] = reply.instructions ?? [];
+    const rawLines: DisasmLine[] = reply.instructions ?? [];
     const addressToLine = new Map<number, number>();
     const lineToAddress = new Map<number, number>();
     let text = "";
@@ -473,13 +520,31 @@ private async ensureRegion(addr: number): Promise<DisasmRegion> {
         const labels = this.symbolTable?.getLabelsAt(l.address) ?? [];
         if (labels.length > 0) {
             if (text.length > 0) { text += "\n"; textLineNo++; }
-            for (const label of labels) { text += `${label}:\n`; textLineNo++; }
+            for (const label of labels) {
+                const ann = this.sourceAnnotations?.getAnnotation(label);
+
+                // Preamble: comment block from source preceding this label
+                if (ann?.preamble.length) {
+                    for (const pLine of ann.preamble) {
+                        text += `${pLine}\n`;
+                        textLineNo++;
+                    }
+                }
+
+                // Label line, with optional inline comment from source
+                const inlineComment = ann?.comment ? `  ${ann.comment}` : "";
+                text += `${label}:${inlineComment}\n`;
+                textLineNo++;
+            }
         }
         textLineNo++;
         addressToLine.set(l.address, textLineNo);
         lineToAddress.set(textLineNo, l.address);
         const addrHex = "0x" + l.address.toString(16).padStart(4, "0");
-        text += `${addrHex}  ${l.instruction.trimEnd()}\n`;
+        const instrPadded = l.instruction.trimEnd().padEnd(COL_INSTR);
+        const hexAscii = fmtHexAsciiComment(l.bytes);
+        const suffix = hexAscii ? `  ${hexAscii}` : "";
+        text += `${addrHex}  ${instrPadded}${suffix}\n`;
     });
 
     const region: DisasmRegion = { sourceRef, startAddress, lines: rawLines, addressToLine, lineToAddress, text };
@@ -581,8 +646,12 @@ protected async sourceRequest(
         this.sendResponse(response);
         return;
     }
-    response.body = { content: region.text };
+    // text/x-z80-disasm is contributed by this extension in package.json.
+    // The mimeType is only honoured after the extension is (re)loaded; before that
+    // VS Code falls back to plain text automatically, so this is always safe.
+    response.body = { content: region.text, mimeType: "text/x-z80-disasm" };
     this.sendResponse(response);
+    console.log(`DAP: sourceRequest — served ${region.lines.length} instructions, ref=${args.sourceReference}`);
 }
 
 // ─── Disassembly view ─────────────────────────────────────────────────────────
@@ -591,17 +660,21 @@ protected async disassembleRequest(
     response: DebugProtocol.DisassembleResponse,
     args: DebugProtocol.DisassembleArguments
 ){
-    const [type, bank] = args.memoryReference.split(":");
-
-    const startAddress = (args.offset ?? 0);
+    // memoryReference format: "MemoryRead:0xNNNN"
+    // args.offset is a BYTE offset relative to that base (DAP spec).
+    // We must NOT use args.offset alone as the address.
+    const parts = args.memoryReference.split(":");
+    const type   = parts[0];
+    const addrPart = parts.length > 1 ? parts[parts.length - 1] : "0x0000";
+    const base = parseInt(addrPart, 16) || 0;
+    const startAddress = (base + (args.offset ?? 0)) & 0xFFFF;
     const count = args.instructionCount ?? 64;
-    console.log("DAP: DisassembleRequest : Bank : " + type + "/" + bank + " - From "+startAddress+" couting "+count );
+    console.log(`DAP: DisassembleRequest — base=${addrPart} offset=${args.offset ?? 0} → 0x${startAddress.toString(16).padStart(4,"0")} count=${count}`);
 
     const reply = await this.emulator.send({
         cmd: "disassemble",
         address: startAddress,
-        type:type,
-        bank:bank,
+        type,
         count
     });
 
@@ -613,12 +686,46 @@ protected async disassembleRequest(
         return;
     }
 
-    response.body = {
-        instructions: disasm.map((ins: any) => ({
-            address: "0x" + ins.address.toString(16),
-            instruction: ins.instruction
-        }))
-    };
+    const instructions: DebugProtocol.DisassembledInstruction[] = [];
+    for (const ins of disasm) {
+        const addrStr = "0x" + ins.address.toString(16);
+        const labels = this.symbolTable?.getLabelsAt(ins.address) ?? [];
+
+        // Inject preamble comment lines before the first instruction of a labeled section
+        if (labels.length > 0) {
+            for (const label of labels) {
+                const ann = this.sourceAnnotations?.getAnnotation(label);
+                if (ann?.preamble.length) {
+                    for (const pLine of ann.preamble) {
+                        instructions.push({
+                            address: addrStr,
+                            instruction: pLine
+                        });
+                    }
+                }
+            }
+        }
+
+        const entry: DebugProtocol.DisassembledInstruction = {
+            address: addrStr,
+            instruction: (ins.instruction ?? "").trimEnd(),
+            instructionBytes: fmtInstructionBytes(ins.bytes)
+        };
+
+        // First label at this address → show in the symbol column
+        if (labels.length > 0) {
+            const label = labels[0];
+            const ann = this.sourceAnnotations?.getAnnotation(label);
+            // Append inline comment to the label displayed as symbol
+            entry.symbol = ann?.comment
+                ? `${label}  ${ann.comment}`
+                : label;
+        }
+
+        instructions.push(entry);
+    }
+
+    response.body = { instructions };
 
     this.sendResponse(response);
 }
@@ -844,6 +951,27 @@ protected async setVariableRequest(
         variablesReference: 0
     };
     this.sendResponse(response);
+}
+
+// ─── Custom requests (called from extension via session.customRequest) ────────
+
+protected async customRequest(
+    command: string,
+    response: DebugProtocol.Response,
+    args: any
+): Promise<void> {
+    if (command === "getDisasmAt") {
+        try {
+            const addr = (args?.address ?? 0) & 0xFFFF;
+            const region = await this.ensureRegion(addr);
+            response.body = { text: region.text, sourceRef: region.sourceRef };
+            this.sendResponse(response);
+        } catch (e) {
+            this.sendErrorResponse(response, 1234, `Disassembly failed: ${e}`);
+        }
+    } else {
+        this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);
+    }
 }
 
 

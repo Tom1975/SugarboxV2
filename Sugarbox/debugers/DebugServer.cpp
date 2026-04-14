@@ -490,23 +490,33 @@ void DebugServer::handleClient(int clientSocket)
          // { "address": 7842, "text": "LD A,(HL)" },
          // { "address": 7843, "text": "INC HL" }
          // ]      
-         unsigned int pc = request.value("address", 0);
+         // Use uint16_t so the address wraps correctly at 0xFFFF→0x0000
+         uint16_t pc    = static_cast<uint16_t>(request.value("address", 0));
          unsigned int count = request.value("count", 0);
-         // to use...maybe later !
          std::string type = request.value("type", "READ");
-         std::string bank = request.value("bank", "0");
 
          json arr = json::array();
-         for (int i = 0; i < count; i++) 
+         for (unsigned int i = 0; i < count; i++)
          {
             char out_buffer[128];
             memset(out_buffer, 0x20, sizeof(out_buffer));
             int increment = emulation_->Disassemble(pc, out_buffer, 128 - 7);
+            if (increment <= 0) increment = 1;   // guard against invalid opcodes
+
+            // Read raw bytes for hex/ASCII display (max 4 bytes for any Z80 instruction)
+            int byteCount = (increment <= 4) ? increment : 1;
+            unsigned char rawBytes[4] = {0, 0, 0, 0};
+            emulation_->ReadMemory(pc, rawBytes, byteCount);
+            json bytesArr = json::array();
+            for (int b = 0; b < byteCount; b++)
+               bytesArr.push_back(rawBytes[b]);
+
             arr.push_back({
                { "address", pc },
-               { "instruction", out_buffer }
-            }); 
-            pc += increment;
+               { "instruction", out_buffer },
+               { "bytes", bytesArr }
+            });
+            pc += static_cast<uint16_t>(increment);   // wraps at 0xFFFF
          }
          response = {
          { "type", "response" },

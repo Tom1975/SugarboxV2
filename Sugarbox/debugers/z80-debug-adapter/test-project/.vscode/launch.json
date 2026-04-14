@@ -11,6 +11,8 @@
       "name": "CPC - Launch (snapshot)",
       "emulator": "${config:z80debug.sugarbox}",
       "snapshot": "${workspaceFolder}/build/${config:z80debug.buildName}.sna",
+      "symbolFile": "${workspaceFolder}/build/${config:z80debug.buildName}.rasm",
+      "sourceFile": "${workspaceFolder}/${config:z80debug.entryPoint}",
       "port": 1234,
       "hideEmulator": false,
       "preLaunchTask": "RASM: assemble"
