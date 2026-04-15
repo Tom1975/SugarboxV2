@@ -69,6 +69,8 @@ function fmtInstructionBytes(bytes: number[] | undefined): string | undefined {
 interface DisasmRegion {
     sourceRef: number;
     startAddress: number;
+    memType: string;   // "read" | "write" | "ram" | "rom" | "cart"
+    bank: number;      // -1 = lower/mapped bank; ≥0 = specific bank index
     lines: DisasmLine[];
     addressToLine: Map<number, number>; // address → 1-based text line number
     lineToAddress: Map<number, number>; // text line number → address (instruction lines only)
@@ -86,6 +88,9 @@ export class Z80DebugSession extends DebugSession {
 
     // Disassembly cache: sourceRef → region
     private disasmCache: Map<number, DisasmRegion> = new Map();
+    // Reverse index: "memType:bank:startAddr" → sourceRef (avoids duplicate builds)
+    private disasmKeyToRef: Map<string, number> = new Map();
+    private disasmRefCounter: number = 1;
 
     // Symbol table (optional, loaded from symbolFile arg)
     private symbolTable: SymbolTable | null = null;
@@ -195,10 +200,15 @@ protected async launchRequest(
         return;
     }
 
-    console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "));
+    // Set cwd to the emulator's own directory so that Sugarbox finds its
+    // data files (Sugarbox.ini, ROM/, CONF/) relative to itself, regardless
+    // of the VS Code workspace folder.
+    const emulatorDir = nodePath.dirname(args.emulator);
+    console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "), "(cwd:", emulatorDir, ")");
     this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, {
         stdio: ["ignore", "ignore", "pipe"],
-        detached: true   // GUI process — survit si le parent Node.js est tué
+        detached: true,  // GUI process — survit si le parent Node.js est tué
+        cwd: emulatorDir
     });
     // Relay emulator stderr to the Debug Console for diagnostics
     this.emulatorProcess.stderr?.on("data", (data: Buffer) => {
@@ -486,28 +496,27 @@ protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 
 // Fetch (or reuse) a disassembly region that contains addr at a valid boundary.
 //
-// sourceRef = addr + 1  (unique per starting address, avoids page-sharing bugs
-// where two frames in the same 4 KB page would overwrite each other's cache and
-// produce wrong line numbers / wrong source content in VS Code).
-//
-// Fast path: scan existing regions for one that already has addr mapped.
+// Fast path: find a cached region that already covers addr (same memType/bank).
 // Slow path: disassemble 2048 instructions starting from addr.
-private async ensureRegion(addr: number): Promise<DisasmRegion> {
-    // Reuse any cached region that already contains addr
+// memType defaults to "read" (used for stack-trace frames).
+private async ensureRegion(addr: number, memType = "read", bank = -1): Promise<DisasmRegion> {
+    // Reuse any cached region that already contains addr with the same source
     for (const region of this.disasmCache.values()) {
-        if (region.addressToLine.has(addr)) {
+        if (region.memType === memType && region.bank === bank && region.addressToLine.has(addr)) {
             return region;
         }
     }
 
-    // Build a new region anchored at addr
-    const sourceRef    = addr + 1;   // unique, positive
+    // Allocate a new unique sourceRef
+    const sourceRef    = this.disasmRefCounter++;
     const startAddress = addr;
 
     const reply = await this.emulator.send({
         cmd: "disassemble",
         address: startAddress,
-        count: 2048
+        count: 2048,
+        memType,
+        bank
     });
 
     const rawLines: DisasmLine[] = reply.instructions ?? [];
@@ -547,8 +556,9 @@ private async ensureRegion(addr: number): Promise<DisasmRegion> {
         text += `${addrHex}  ${instrPadded}${suffix}\n`;
     });
 
-    const region: DisasmRegion = { sourceRef, startAddress, lines: rawLines, addressToLine, lineToAddress, text };
+    const region: DisasmRegion = { sourceRef, startAddress, memType, bank, lines: rawLines, addressToLine, lineToAddress, text };
     this.disasmCache.set(sourceRef, region);
+    this.disasmKeyToRef.set(`${memType}:${bank}:${startAddress}`, sourceRef);
     return region;
 }
 
@@ -557,6 +567,7 @@ private invalidateRegion(addr: number): void {
     for (const [key, region] of this.disasmCache.entries()) {
         if (region.addressToLine.has(addr)) {
             this.disasmCache.delete(key);
+            this.disasmKeyToRef.delete(`${region.memType}:${region.bank}:${region.startAddress}`);
         }
     }
 }
@@ -962,12 +973,52 @@ protected async customRequest(
 ): Promise<void> {
     if (command === "getDisasmAt") {
         try {
-            const addr = (args?.address ?? 0) & 0xFFFF;
-            const region = await this.ensureRegion(addr);
+            const addr    = (args?.address  ?? 0) & 0xFFFF;
+            const memType = args?.memType   ?? "read";
+            const bank    = args?.bank      ?? -1;
+            const region = await this.ensureRegion(addr, memType, bank);
             response.body = { text: region.text, sourceRef: region.sourceRef };
             this.sendResponse(response);
         } catch (e) {
             this.sendErrorResponse(response, 1234, `Disassembly failed: ${e}`);
+        }
+    } else if (command === "getMemBanks") {
+        try {
+            const result = await this.emulator.send({ cmd: "getMemBanks" });
+            // The emulator may return {"error":"unknown command"} for old binaries —
+            // that is NOT a throw, so we must check explicitly.
+            if (result?.error) {
+                console.log(`DAP: getMemBanks not supported by emulator (${result.error}), using defaults`);
+                response.body = { sources: null };  // signal "not supported"
+            } else {
+                const sources = Array.isArray(result?.sources) ? result.sources : [];
+                console.log(`DAP: getMemBanks returned ${sources.length} source(s): ` +
+                    sources.map((s: any) => s.label).join(", "));
+                response.body = { sources };
+            }
+            this.sendResponse(response);
+        } catch (e) {
+            console.log(`DAP: getMemBanks threw: ${e}`);
+            this.sendErrorResponse(response, 1235, `getMemBanks failed: ${e}`);
+        }
+    } else if (command === "readMemoryEx") {
+        try {
+            const address  = (args?.address  ?? 0) & 0xFFFF;
+            const count    = args?.count    ?? 256;
+            const memType  = args?.memType  ?? "read";
+            const bank     = args?.bank     ?? -1;
+            const reply = await this.emulator.send({
+                cmd: "readMemory",
+                address,
+                size: count,
+                memType,
+                bank
+            });
+            const bytes: number[] = reply?.bytes ?? [];
+            response.body = { address, bytes };
+            this.sendResponse(response);
+        } catch (e) {
+            this.sendErrorResponse(response, 1236, `readMemoryEx failed: ${e}`);
         }
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);

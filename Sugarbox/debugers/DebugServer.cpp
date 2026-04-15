@@ -314,6 +314,10 @@ void DebugServer::handleClient(int clientSocket)
       {
          HandleReadMemory (request);
       }
+      else if (cmd == "getMemBanks")
+      {
+         HandleGetMemBanks();
+      }
       else if (cmd == "writeMemory")
       {
          uint16_t address = request.value("address", 0);
@@ -486,42 +490,86 @@ void DebugServer::handleClient(int clientSocket)
       }
       else if (cmd == "disassemble")
       {
-         // [
-         // { "address": 7842, "text": "LD A,(HL)" },
-         // { "address": 7843, "text": "INC HL" }
-         // ]      
-         // Use uint16_t so the address wraps correctly at 0xFFFF→0x0000
-         uint16_t pc    = static_cast<uint16_t>(request.value("address", 0));
+         uint16_t pc        = static_cast<uint16_t>(request.value("address", 0));
          unsigned int count = request.value("count", 0);
-         std::string type = request.value("type", "READ");
+
+         // Optional source: memType = "read"|"write"|"ram"|"rom"|"cart", bank = int
+         std::string memType = request.value("memType", "read");
+         int         bank    = request.value("bank", -1);
+
+         std::string up = memType;
+         std::transform(up.begin(), up.end(), up.begin(), ::toupper);
+
+         Memory* mem = emulation_->GetEngine()->GetMem();
+
+         // Determine access mode (mirrors HandleReadMemory logic)
+         Memory::DbgMemAccess access = Memory::MEM_READ;
+         if      (up == "WRITE") access = Memory::MEM_WRITE;
+         else if (up == "RAM"  && bank < 0) access = Memory::MEM_RAM_LOWER_BANK;
+         else if (up == "RAM"  )            access = Memory::MEM_RAM_BANK;
+         else if (up == "ROM"  && bank < 0) access = Memory::MEM_LOWER_ROM;
+         else if (up == "ROM"  )            access = Memory::MEM_ROM_BANK;
+         else if (up == "CART" )            access = Memory::MEM_CART_SLOT;
+
+         const bool useDefaultReader = (access == Memory::MEM_READ);
+
+         // For non-READ sources: read the whole address space into a local buffer.
+         // ROM/RAM banks are 0x4000 bytes; READ/WRITE span 0x10000.
+         const uint32_t BUF_SIZE = (access == Memory::MEM_READ || access == Memory::MEM_WRITE
+                                    || access == Memory::MEM_RAM_LOWER_BANK)
+                                   ? 0x10000u : 0x4000u;
+         std::vector<unsigned char> bankBuf;
+         if (!useDefaultReader)
+         {
+            bankBuf.resize(BUF_SIZE, 0);
+            mem->GetDebugValue(bankBuf.data(), 0,
+                               static_cast<uint16_t>(BUF_SIZE),
+                               access,
+                               static_cast<unsigned int>(bank < 0 ? 0 : bank));
+         }
+
+         Z80Desassember* dasm = emulation_->GetDisassembler();
+
+         // Build the byte-reader lambda used for disassembly
+         auto makeReader = [&]() -> Z80Desassember::ReadByteFn {
+            if (useDefaultReader) {
+               return [mem](unsigned short a) -> unsigned char { return mem->Get(a); };
+            } else {
+               return [&bankBuf, BUF_SIZE](unsigned short a) -> unsigned char {
+                  return bankBuf[a % BUF_SIZE];
+               };
+            }
+         };
+         auto readByte = makeReader();
 
          json arr = json::array();
          for (unsigned int i = 0; i < count; i++)
          {
-            char out_buffer[128];
-            memset(out_buffer, 0x20, sizeof(out_buffer));
-            int increment = emulation_->Disassemble(pc, out_buffer, 128 - 7);
-            if (increment <= 0) increment = 1;   // guard against invalid opcodes
+            char mnemonic[16], argument[16];
+            int increment = dasm->DasmMnemonicEx(pc, readByte, mnemonic, argument);
+            if (increment <= 0) increment = 1;
 
-            // Read raw bytes for hex/ASCII display (max 4 bytes for any Z80 instruction)
+            // Format: "MNEMONIC ARGUMENT" in a fixed-width field
+            char out_buffer[128];
+            std::snprintf(out_buffer, sizeof(out_buffer), "%s %s", mnemonic, argument);
+
+            // Raw bytes for hex/ASCII display column
             int byteCount = (increment <= 4) ? increment : 1;
-            unsigned char rawBytes[4] = {0, 0, 0, 0};
-            emulation_->ReadMemory(pc, rawBytes, byteCount);
             json bytesArr = json::array();
             for (int b = 0; b < byteCount; b++)
-               bytesArr.push_back(rawBytes[b]);
+               bytesArr.push_back(readByte(static_cast<uint16_t>(pc + b)));
 
             arr.push_back({
-               { "address", pc },
-               { "instruction", out_buffer },
-               { "bytes", bytesArr }
+               { "address",     pc          },
+               { "instruction", out_buffer  },
+               { "bytes",       bytesArr    }
             });
-            pc += static_cast<uint16_t>(increment);   // wraps at 0xFFFF
+            pc += static_cast<uint16_t>(increment);
          }
          response = {
-         { "type", "response" },
-         { "command", "disassemble" },
-         { "instructions",  arr },
+            { "type",         "response"    },
+            { "command",      "disassemble" },
+            { "instructions", arr           },
          };
          SendResponse(response);
       }
@@ -540,14 +588,101 @@ void DebugServer::HandleReadMemory(const nlohmann::json& request)
     // Cap to Z80 address space
     if (size > 65536) size = 65536;
 
-    std::vector<unsigned char> buf(size);
-    emulation_->ReadMemory(static_cast<uint16_t>(address & 0xFFFF), buf.data(), size);
+    // Optional source selection: type = "read"|"write"|"ram"|"rom"|"cart"
+    // bank = bank/slot index (used by ram/rom/cart)
+    std::string type  = request.value("memType", "read");
+    unsigned int bank = request.value("bank", 0);
+
+    // Normalize to uppercase for comparison
+    std::string up = type;
+    std::transform(up.begin(), up.end(), up.begin(), ::toupper);
+
+    Memory* mem = emulation_->GetEngine()->GetMem();
+    Memory::DbgMemAccess access = Memory::MEM_READ;
+    if      (up == "WRITE") access = Memory::MEM_WRITE;
+    else if (up == "RAM"  && bank == (unsigned int)-1) access = Memory::MEM_RAM_LOWER_BANK;
+    else if (up == "RAM"  ) access = Memory::MEM_RAM_BANK;
+    else if (up == "ROM"  && bank == (unsigned int)-1) access = Memory::MEM_LOWER_ROM;
+    else if (up == "ROM"  ) access = Memory::MEM_ROM_BANK;
+    else if (up == "CART" ) access = Memory::MEM_CART_SLOT;
+
+    std::vector<unsigned char> buf(size, 0);
+    mem->GetDebugValue(buf.data(), static_cast<uint16_t>(address & 0xFFFF), size, access, bank);
 
     json bytes = json::array();
     for (uint32_t i = 0; i < size; i++)
         bytes.push_back(buf[i]);
 
     json response = { { "bytes", bytes } };
+    SendResponse(response);
+}
+
+void DebugServer::HandleGetMemBanks()
+{
+    Memory* mem = emulation_->GetEngine()->GetMem();
+    json sources = json::array();
+
+    // ── Always available ──────────────────────────────────────────────────────
+    sources.push_back({ {"type","read"}, {"bank",-1}, {"label","Memory (Read)"},  {"maxAddr",0xFFFF} });
+    sources.push_back({ {"type","write"},{"bank",-1}, {"label","Memory (Write)"}, {"maxAddr",0xFFFF} });
+    sources.push_back({ {"type","ram"}, {"bank",-1},  {"label","RAM lower bank"}, {"maxAddr",0xFFFF} });
+
+    // ── Extended RAM banks (up to 8) ──────────────────────────────────────────
+    bool* ramAvail = mem->GetAvailableRam();
+    int nbRam = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        if (ramAvail && ramAvail[i])
+        {
+            char label[32];
+            snprintf(label, sizeof(label), "RAM bank %d", i);
+            sources.push_back({ {"type","ram"}, {"bank",i}, {"label",label}, {"maxAddr",0x3FFF} });
+            nbRam++;
+        }
+    }
+
+    // ── Lower ROM ─────────────────────────────────────────────────────────────
+    bool hasLowerRom = mem->IsLowerRomLoaded();
+    std::cout << "[getMemBanks] lower_rom_available=" << hasLowerRom << std::endl;
+    if (hasLowerRom)
+        sources.push_back({ {"type","rom"}, {"bank",-1}, {"label","Lower ROM (OS)"}, {"maxAddr",0x3FFF} });
+
+    // ── Upper ROM banks (0-255) ───────────────────────────────────────────────
+    bool* romAvail = mem->GetAvailableROM();
+    int nbRom = 0;
+    for (int i = 0; i < 256; i++)
+    {
+        if (romAvail && romAvail[i])
+        {
+            char label[32];
+            snprintf(label, sizeof(label), "ROM bank %d", i);
+            sources.push_back({ {"type","rom"}, {"bank",i}, {"label",label}, {"maxAddr",0x3FFF} });
+            std::cout << "[getMemBanks] ROM bank " << i << " available" << std::endl;
+            nbRom++;
+        }
+    }
+
+    // ── Cartridge slots (0-31) ────────────────────────────────────────────────
+    bool* cartAvail = mem->GetAvailableCartridgeSlot();
+    int nbCart = 0;
+    for (int i = 0; i < 32; i++)
+    {
+        if (cartAvail && cartAvail[i])
+        {
+            char label[32];
+            snprintf(label, sizeof(label), "Cart slot %d", i);
+            sources.push_back({ {"type","cart"}, {"bank",i}, {"label",label}, {"maxAddr",0x3FFF} });
+            nbCart++;
+        }
+    }
+
+    std::cout << "[getMemBanks] total: " << sources.size()
+              << " (lowerROM=" << hasLowerRom
+              << " upperROMs=" << nbRom
+              << " extRAMs=" << nbRam
+              << " cart=" << nbCart << ")" << std::endl;
+
+    json response = { {"sources", sources} };
     SendResponse(response);
 }
 

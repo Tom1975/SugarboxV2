@@ -292,12 +292,27 @@ bool Emulation::LoadBin(const char* path_file)
 bool Emulation::LoadSnapshot(const char* file_path)
 {
    command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
-   // Use LoadSnapshotNow() — loads immediately under the mutex.
-   // The deferred mechanism (LoadSnapshot → sna_to_load_ flag → HandleSnapshots)
-   // never fires in DBG_BREAK state because HandleSnapshots() is only called from
-   // RunFullSpeed / RunTimeSlice, so the snapshot would never actually load.
-   return emulator_engine_->LoadSnapshotNow(file_path);
+   bool ok;
+   {
+      const std::lock_guard<std::mutex> lock(command_mutex_);
+      // Use LoadSnapshotNow() — loads immediately under the mutex.
+      // The deferred mechanism (LoadSnapshot → sna_to_load_ flag → HandleSnapshots)
+      // never fires in DBG_BREAK state because HandleSnapshots() is only called from
+      // RunFullSpeed / RunTimeSlice, so the snapshot would never actually load.
+      ok = emulator_engine_->LoadSnapshotNow(file_path);
+   }
+
+   if (ok)
+   {
+      // The emulation loop only fires NotifyStop when it detects a transition to
+      // DBG_BREAK, which never happens here (we load while already stopped).
+      // Force-notify so the debug UI (DebugDialog, MemoryDialog, etc.) refreshes.
+      stop_reason_ = IDebugerStopped::Pause;
+      for (auto& it : notifier_dbg_list_)
+         it->NotifyStop(stop_reason_);
+   }
+
+   return ok;
 }
 
 void Emulation::SaveSnapshot(const char* file_path)

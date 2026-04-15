@@ -69,6 +69,11 @@
         "command": "z80debug.openDisasmAt",
         "title": "Z80 Debug: Open Disassembly at Address…",
         "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.openMemoryAt",
+        "title": "Z80 Debug: Open Memory View at Address…",
+        "category": "Z80 Debug"
       }
     ],
     "menus": {
@@ -76,12 +81,33 @@
         {
           "command": "z80debug.openDisasmAt",
           "when": "debugState == 'stopped'",
-          "group": "debug@1"
+          "group": "z80debug@1"
+        },
+        {
+          "command": "z80debug.openMemoryAt",
+          "when": "debugState == 'stopped'",
+          "group": "z80debug@2"
+        }
+      ],
+      "debug/variables/context": [
+        {
+          "command": "z80debug.openMemoryAt",
+          "when": "debugType == 'z80' && debugState == 'stopped'",
+          "group": "z80debug@1"
+        },
+        {
+          "command": "z80debug.openDisasmAt",
+          "when": "debugType == 'z80' && debugState == 'stopped'",
+          "group": "z80debug@2"
         }
       ],
       "commandPalette": [
         {
           "command": "z80debug.openDisasmAt",
+          "when": "debugState == 'stopped'"
+        },
+        {
+          "command": "z80debug.openMemoryAt",
           "when": "debugState == 'stopped'"
         }
       ]
@@ -91,6 +117,12 @@
         "command": "z80debug.openDisasmAt",
         "key": "ctrl+alt+d",
         "mac": "cmd+alt+d",
+        "when": "debugState == 'stopped'"
+      },
+      {
+        "command": "z80debug.openMemoryAt",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m",
         "when": "debugState == 'stopped'"
       }
     ],
@@ -128,7 +160,7 @@
               "disk": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.dsk\"",
               "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
               "port": 1234,
-              "hideEmulator": true,
+              "hideEmulator": false,
               "preLaunchTask": "RASM: assemble"
             }
           },
@@ -142,7 +174,8 @@
               "emulator": "^\"\\${config:z80debug.sugarbox}\"",
               "snapshot": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.sna\"",
               "symbolFile": "^\"\\${workspaceFolder}/build/\\${config:z80debug.buildName}.rasm\"",
-              "port": 1234
+              "port": 1234,
+              "hideEmulator": false
             }
           },
           {
@@ -194,7 +227,7 @@
               },
               "hideEmulator": {
                 "type": "boolean",
-                "default": true,
+                "default": false,
                 "description": "Hide the emulator window (pass --hide to Sugarbox)"
               }
             }

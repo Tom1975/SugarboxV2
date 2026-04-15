@@ -71,6 +71,7 @@ private:
 
 
    void HandleReadMemory(const nlohmann::json& request);
+   void HandleGetMemBanks();
 
    int port_;
    std::atomic<bool> running_{ false };
