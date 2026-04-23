@@ -13,6 +13,8 @@ export interface SymbolEntry {
 export class SymbolTable {
     // address → list of symbol names (multiple labels can share an address)
     private addressToNames: Map<number, string[]> = new Map();
+    // name → address (reverse lookup for label breakpoints)
+    private nameToAddress: Map<string, number> = new Map();
     private symbols: SymbolEntry[] = [];
 
     get size(): number { return this.symbols.length; }
@@ -20,6 +22,16 @@ export class SymbolTable {
     /** Returns all label names defined at a given address. */
     getLabelsAt(address: number): string[] {
         return this.addressToNames.get(address) ?? [];
+    }
+
+    /** Resolves a label name to its address, or undefined if not found. */
+    resolveLabel(name: string): number | undefined {
+        return this.nameToAddress.get(name);
+    }
+
+    /** Returns all known label names (for completions). */
+    getAllNames(): string[] {
+        return Array.from(this.nameToAddress.keys());
     }
 
     /** True if any label exists in [startAddr, endAddr). */
@@ -35,6 +47,10 @@ export class SymbolTable {
         const existing = this.addressToNames.get(entry.address) ?? [];
         existing.push(entry.name);
         this.addressToNames.set(entry.address, existing);
+        // First definition wins for the reverse map (aliases don't override labels)
+        if (!this.nameToAddress.has(entry.name)) {
+            this.nameToAddress.set(entry.name, entry.address);
+        }
     }
 
     /** Merge all entries from another SymbolTable into this one. */

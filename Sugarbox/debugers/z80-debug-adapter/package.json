@@ -74,6 +74,16 @@
         "command": "z80debug.openMemoryAt",
         "title": "Z80 Debug: Open Memory View at Address…",
         "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.addBreakpointAt",
+        "title": "Z80 Debug: Add Breakpoint at Address or Label…",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.toggleBreakpointAt",
+        "title": "Z80 Debug: Toggle Breakpoint Here",
+        "category": "Z80 Debug"
       }
     ],
     "menus": {
@@ -87,6 +97,16 @@
           "command": "z80debug.openMemoryAt",
           "when": "debugState == 'stopped'",
           "group": "z80debug@2"
+        },
+        {
+          "command": "z80debug.toggleBreakpointAt",
+          "when": "editorLangId == 'z80-disasm' && debugState == 'stopped'",
+          "group": "z80debug@3"
+        },
+        {
+          "command": "z80debug.addBreakpointAt",
+          "when": "debugType == 'z80' && debugState == 'stopped'",
+          "group": "z80debug@4"
         }
       ],
       "debug/variables/context": [
@@ -109,6 +129,14 @@
         {
           "command": "z80debug.openMemoryAt",
           "when": "debugState == 'stopped'"
+        },
+        {
+          "command": "z80debug.addBreakpointAt",
+          "when": "debugState == 'stopped'"
+        },
+        {
+          "command": "z80debug.toggleBreakpointAt",
+          "when": "editorLangId == 'z80-disasm' && debugState == 'stopped'"
         }
       ]
     },
@@ -124,6 +152,17 @@
         "key": "ctrl+alt+m",
         "mac": "cmd+alt+m",
         "when": "debugState == 'stopped'"
+      },
+      {
+        "command": "z80debug.toggleBreakpointAt",
+        "key": "F9",
+        "when": "editorLangId == 'z80-disasm'"
+      },
+      {
+        "command": "z80debug.addBreakpointAt",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b",
+        "when": "debugType == 'z80' && debugState == 'stopped'"
       }
     ],
     "debuggers": [

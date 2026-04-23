@@ -132,7 +132,11 @@ protected initializeRequest(
         supportsRestartRequest: true,
         supportsReadMemoryRequest: true,
         supportsWriteMemoryRequest: true,
+        supportsFunctionBreakpoints: true,
+        supportsCompletionsRequest: true,
     };
+    // supportsInlineBreakpoints not in old typings — add via cast
+    (response.body as any).supportsInlineBreakpoints = true;
 
     this.sendResponse(response);
     // InitializedEvent is sent at the end of launchRequest / attachRequest,
@@ -601,15 +605,24 @@ private buildStackFrame(id: number, pc: number, region: DisasmRegion): DebugProt
     const lineNo = region.addressToLine.get(pc) ?? 1;
     const labels = this.symbolTable?.getLabelsAt(pc);
     const name = labels?.length ? labels[0] : (id === 0 ? "PC" : `ret #${pcHex}`);
+    const hex4 = region.startAddress.toString(16).padStart(4, "0").toUpperCase();
     const sourceName = `Z80 0x${region.startAddress.toString(16).padStart(4, "0")}`;
+    // Use the z80disasm:/ URI as path so VS Code navigates to the already-open
+    // virtual document instead of opening a new one via sourceRequest.
+    const sourcePath = `z80disasm:/${region.memType}/${region.bank}/${hex4}.z80disasm`;
     const frame: DebugProtocol.StackFrame = {
         id,
         name,
         line: lineNo,
         column: 1,
-        source: { name: sourceName, sourceReference: region.sourceRef },
-        instructionPointerReference: "MemoryRead:" + pcHex,
+        source: { name: sourceName, path: sourcePath },
+        // instructionPointerReference intentionally omitted: its presence causes
+        // VS Code to auto-open the native Disassembly View even when a z80disasm:/
+        // virtual document is already shown.  Navigation and the execution cursor
+        // are fully handled via source.path + line above.
     };
+    // memoryReference (non-standard extension) is read by the DebugAdapterTracker
+    // in main.ts to obtain the current PC without an extra customRequest.
     (frame as any).memoryReference = pcHex;
     return frame;
 }
@@ -672,65 +685,92 @@ protected async disassembleRequest(
     args: DebugProtocol.DisassembleArguments
 ){
     // memoryReference format: "MemoryRead:0xNNNN"
-    // args.offset is a BYTE offset relative to that base (DAP spec).
-    // We must NOT use args.offset alone as the address.
     const parts = args.memoryReference.split(":");
-    const type   = parts[0];
+    const type    = parts[0];
     const addrPart = parts.length > 1 ? parts[parts.length - 1] : "0x0000";
-    const base = parseInt(addrPart, 16) || 0;
-    const startAddress = (base + (args.offset ?? 0)) & 0xFFFF;
-    const count = args.instructionCount ?? 64;
-    console.log(`DAP: DisassembleRequest — base=${addrPart} offset=${args.offset ?? 0} → 0x${startAddress.toString(16).padStart(4,"0")} count=${count}`);
+    const base    = parseInt(addrPart, 16) || 0;
+    const instrOffset: number = (args as any).instructionOffset ?? 0;
+    const count   = args.instructionCount ?? 64;
 
-    const reply = await this.emulator.send({
-        cmd: "disassemble",
-        address: startAddress,
-        type,
-        count
-    });
+    // When instrOffset < 0 VS Code wants |instrOffset| instructions BEFORE base (= PC).
+    // Z80 disassembly is forward-only, so naively going back N*2 bytes risks misalignment:
+    // the PC address may end up as the interior of a multi-byte instruction, so it never
+    // appears as an instruction start and the arrow lands at the wrong place.
+    //
+    // Two-pass approach:
+    //   Pass 1 — context before PC: disassemble from (base - byteBack); keep only
+    //            instructions whose address < base; pad with "???" if not enough.
+    //   Pass 2 — from PC onwards: always correct (PC is a known instruction boundary).
+    // Result: PC instruction is always at index |instrOffset|, so VS Code places the
+    //         arrow correctly.
+    //
+    // Preamble comment lines are intentionally NOT injected here: inserting multiple
+    // items at the same address confuses VS Code's Disassembly View (it creates a
+    // visible gap by not requesting enough instructions to fill the viewport).
+    // Labels are shown via the `symbol` field only.
 
-    const disasm = reply.instructions;
+    let rawInstructions: Array<{ address: number; instruction: string; bytes?: number[] }>;
 
-    if (!Array.isArray(disasm)) {
+    if (instrOffset < 0) {
+        const beforeCount = -instrOffset;
+        const afterCount  = Math.max(count - beforeCount, 0);
+        const byteBack    = Math.min(beforeCount * 2, base);
+        const startBefore = (base - byteBack) & 0xFFFF;
+
+        // Pass 1: context before PC (sequential — emulator may not support concurrent)
+        const beforeReply = await this.emulator.send({
+            cmd: "disassemble", address: startBefore, count: beforeCount + 10, type
+        });
+        let beforeRaw: Array<{ address: number; instruction: string; bytes?: number[] }> =
+            (beforeReply.instructions ?? []).filter((i: any) => (i.address as number) < base);
+        beforeRaw = beforeRaw.slice(-beforeCount); // keep closest to PC
+
+        // Pass 2: from PC onwards
+        const afterReply = await this.emulator.send({
+            cmd: "disassemble", address: base, count: afterCount + 1, type
+        });
+        const afterRaw = (afterReply.instructions ?? []).slice(0, afterCount + 1);
+
+        // Pad front with dummy entries if the backward disassembly didn't yield enough
+        const padCount = beforeCount - beforeRaw.length;
+        const padRaw: Array<{ address: number; instruction: string }> = [];
+        for (let i = 0; i < padCount; i++) {
+            const a = beforeRaw.length > 0
+                ? (beforeRaw[0].address - (padCount - i)) & 0xFFFF
+                : (base - beforeCount + i) & 0xFFFF;
+            padRaw.push({ address: a, instruction: "???" });
+        }
+
+        rawInstructions = [...padRaw, ...beforeRaw, ...afterRaw];
+        console.log(`DAP: DisassembleRequest (2-pass) — base=${addrPart} instrOffset=${instrOffset} startBefore=0x${startBefore.toString(16)} before=${beforeRaw.length}(+${padCount} pad) after=${afterRaw.length}`);
+    } else {
+        const startAddress = (base + (args.offset ?? 0)) & 0xFFFF;
+        console.log(`DAP: DisassembleRequest — base=${addrPart} → 0x${startAddress.toString(16).padStart(4,"0")} count=${count}`);
+        const reply = await this.emulator.send({ cmd: "disassemble", address: startAddress, type, count });
+        rawInstructions = reply.instructions ?? [];
+    }
+
+    if (!Array.isArray(rawInstructions)) {
         response.body = { instructions: [] };
         this.sendResponse(response);
         return;
     }
 
     const instructions: DebugProtocol.DisassembledInstruction[] = [];
-    for (const ins of disasm) {
-        const addrStr = "0x" + ins.address.toString(16);
-        const labels = this.symbolTable?.getLabelsAt(ins.address) ?? [];
-
-        // Inject preamble comment lines before the first instruction of a labeled section
-        if (labels.length > 0) {
-            for (const label of labels) {
-                const ann = this.sourceAnnotations?.getAnnotation(label);
-                if (ann?.preamble.length) {
-                    for (const pLine of ann.preamble) {
-                        instructions.push({
-                            address: addrStr,
-                            instruction: pLine
-                        });
-                    }
-                }
-            }
-        }
+    for (const ins of rawInstructions) {
+        const addrStr = "0x" + (ins.address as number).toString(16);
+        const labels  = this.symbolTable?.getLabelsAt(ins.address as number) ?? [];
 
         const entry: DebugProtocol.DisassembledInstruction = {
             address: addrStr,
             instruction: (ins.instruction ?? "").trimEnd(),
-            instructionBytes: fmtInstructionBytes(ins.bytes)
+            instructionBytes: fmtInstructionBytes((ins as any).bytes)
         };
 
-        // First label at this address → show in the symbol column
         if (labels.length > 0) {
             const label = labels[0];
-            const ann = this.sourceAnnotations?.getAnnotation(label);
-            // Append inline comment to the label displayed as symbol
-            entry.symbol = ann?.comment
-                ? `${label}  ${ann.comment}`
-                : label;
+            const ann   = this.sourceAnnotations?.getAnnotation(label);
+            entry.symbol = ann?.comment ? `${label}  ${ann.comment}` : label;
         }
 
         instructions.push(entry);
@@ -742,6 +782,57 @@ protected async disassembleRequest(
 }
 
 // ─── Breakpoint management ────────────────────────────────────────────────────
+
+// Map a set of DAP source breakpoints to instruction addresses using a region.
+// Reads the "0xNNNN" address prefix directly from the region text lines, scanning
+// forward from bp.line until an instruction line is found.  This avoids any
+// line-number ↔ address mapping skew caused by label/blank lines or VS Code
+// remapping the source to a different sourceReference.
+private resolveBpsInRegion(
+    region: DisasmRegion,
+    bps: DebugProtocol.SourceBreakpoint[]
+): { addresses: number[]; results: DebugProtocol.Breakpoint[] } {
+    const textLines = region.text.split('\n');
+    const addresses: number[] = [];
+    const results: DebugProtocol.Breakpoint[] = bps.map(bp => {
+        // bp.line is 1-based; textLines is 0-based
+        for (let li = bp.line - 1; li < textLines.length; li++) {
+            const m = textLines[li].match(/^0x([0-9a-fA-F]{4})/i);
+            if (m) {
+                const addr = parseInt(m[1], 16);
+                addresses.push(addr);
+                return {
+                    verified: true,
+                    line: li + 1,
+                    instructionReference: "0x" + addr.toString(16).padStart(4, "0")
+                };
+            }
+        }
+        return { verified: false, message: "Line out of range" };
+    });
+    return { addresses, results };
+}
+
+// Resolve a z80disasm:/ URI path to the matching cached DisasmRegion (if any).
+// Handles both full URIs ("z80disasm:/TYPE/BANK/NNNN.z80disasm") and bare fsPath
+// variants ("/TYPE/BANK/NNNN.z80disasm") that VS Code may pass for virtual documents.
+private regionFromDisasmPath(path: string): DisasmRegion | undefined {
+    // Full URI with scheme — new 3-part format
+    let m = path.match(/z80disasm:\/([^/]+)\/(-?\d+)\/([0-9a-fA-F]+)\.z80disasm/i);
+    if (!m) m = path.match(/z80disasm:\/([0-9a-fA-F]+)\.z80disasm/i);  // full URI compat
+    if (!m) m = path.match(/^\/([^/]+)\/(-?\d+)\/([0-9a-fA-F]+)\.z80disasm$/i); // fsPath 3-part
+    if (!m) m = path.match(/^\/([0-9a-fA-F]+)\.z80disasm$/i);                  // fsPath compat
+    if (!m) return undefined;
+
+    let memType: string, bank: number, startAddr: number;
+    if (m.length >= 4) {
+        memType = m[1]; bank = parseInt(m[2], 10); startAddr = parseInt(m[3], 16);
+    } else {
+        memType = "read"; bank = -1; startAddr = parseInt(m[1], 16);
+    }
+    const ref = this.disasmKeyToRef.get(`${memType}:${bank}:${startAddr}`);
+    return ref !== undefined ? this.disasmCache.get(ref) : undefined;
+}
 
 // Merge all registered breakpoints and send the unified list to the emulator.
 private async flushBreakpoints(): Promise<void> {
@@ -761,9 +852,21 @@ protected async setBreakpointsRequest(
 ) {
     const sourceRef = args.source.sourceReference ?? 0;
     const bps = args.breakpoints ?? [];
+    console.log(`DAP: setBreakpointsRequest — sourceRef=${sourceRef} path=${JSON.stringify(args.source.path)} name=${JSON.stringify(args.source.name)} bps=${JSON.stringify(bps.map(b => ({line: b.line, col: b.column})))}`);
 
     if (sourceRef === 0) {
-        // Real source file — not supported yet
+        // Check if this is a z80disasm:/ virtual document — resolve via URI
+        const srcPath = args.source.path ?? "";
+        const region = this.regionFromDisasmPath(srcPath);
+        if (region) {
+            const { addresses, results } = this.resolveBpsInRegion(region, bps);
+            this.bpRegistry.set(`disasm:${region.startAddress}`, addresses);
+            await this.flushBreakpoints();
+            response.body = { breakpoints: results };
+            this.sendResponse(response);
+            return;
+        }
+        // Real source file — not supported
         response.body = {
             breakpoints: bps.map(() => ({ verified: false, message: "Source file mapping not supported" }))
         };
@@ -780,31 +883,11 @@ protected async setBreakpointsRequest(
         return;
     }
 
-    // Map each requested line to an instruction address.
-    // If the line is a label/blank line, scan forward to find the next instruction line.
-    const resolvedAddresses: number[] = [];
-    const resultBps: DebugProtocol.Breakpoint[] = bps.map(bp => {
-        let line = bp.line;
-        const maxLine = line + region.lines.length; // safety bound
-        while (line <= maxLine) {
-            const addr = region.lineToAddress.get(line);
-            if (addr !== undefined) {
-                resolvedAddresses.push(addr);
-                return {
-                    verified: true,
-                    line,
-                    instructionReference: "0x" + addr.toString(16).padStart(4, "0")
-                };
-            }
-            line++;
-        }
-        return { verified: false, message: "Line out of range" };
-    });
-
-    this.bpRegistry.set(`src:${sourceRef}`, resolvedAddresses);
+    const { addresses, results } = this.resolveBpsInRegion(region, bps);
+    this.bpRegistry.set(`src:${sourceRef}`, addresses);
     await this.flushBreakpoints();
 
-    response.body = { breakpoints: resultBps };
+    response.body = { breakpoints: results };
     this.sendResponse(response);
 }
 
@@ -827,6 +910,65 @@ protected async setInstructionBreakpointsRequest(
         breakpoints: addresses.map(() => ({ verified: true }))
     };
 
+    this.sendResponse(response);
+}
+
+// Parse a Z80 address from a string: "0xBB5A", "$BB5A", "BB5A", "47962".
+// Pure-digit strings are treated as decimal; strings with hex letters as hex.
+private static parseAddress(s: string): number | undefined {
+    const t = s.trim();
+    let m = t.match(/^(?:0x|\$|#)([0-9a-fA-F]{1,4})$/i);
+    if (m) { const n = parseInt(m[1], 16); return n <= 0xFFFF ? n : undefined; }
+    if (/^[0-9a-fA-F]{1,4}$/.test(t) && /[a-fA-F]/.test(t)) {
+        const n = parseInt(t, 16); return n <= 0xFFFF ? n : undefined;
+    }
+    if (/^\d{1,5}$/.test(t)) { const n = parseInt(t, 10); return n <= 0xFFFF ? n : undefined; }
+    return undefined;
+}
+
+// Label breakpoints — VS Code "function breakpoints" panel, adapted for Z80 assembly labels.
+// Also accepts raw addresses: "0xBB5A", "$BB5A", "BB5A", "47962".
+protected async setFunctionBreakpointsRequest(
+    response: DebugProtocol.SetFunctionBreakpointsResponse,
+    args: DebugProtocol.SetFunctionBreakpointsArguments
+) {
+    const bps = args.breakpoints ?? [];
+    console.log(`DAP: setFunctionBreakpointsRequest — ${bps.length} bp(s): ${JSON.stringify(bps.map(b => b.name))}`);
+
+    const resolved: DebugProtocol.Breakpoint[] = bps.map(bp => {
+        const addr = this.symbolTable?.resolveLabel(bp.name) ?? Z80DebugSession.parseAddress(bp.name);
+        if (addr === undefined) {
+            return { verified: false, message: `Label or address "${bp.name}" not found` };
+        }
+        return {
+            verified: true,
+            instructionReference: "0x" + addr.toString(16).padStart(4, "0"),
+            message: `0x${addr.toString(16).padStart(4, "0")}`
+        };
+    });
+
+    const addresses = resolved
+        .filter(bp => bp.verified && bp.instructionReference)
+        .map(bp => parseInt(bp.instructionReference!.replace("0x", ""), 16));
+
+    this.bpRegistry.set("func", addresses);
+    await this.flushBreakpoints();
+
+    response.body = { breakpoints: resolved };
+    this.sendResponse(response);
+}
+
+protected completionsRequest(
+    response: DebugProtocol.CompletionsResponse,
+    args: DebugProtocol.CompletionsArguments
+): void {
+    const prefix = (args.text ?? "").slice(0, (args.column ?? args.text?.length ?? 0) - 1);
+    const names = this.symbolTable?.getAllNames() ?? [];
+    const lower = prefix.toLowerCase();
+    const items: DebugProtocol.CompletionItem[] = names
+        .filter(n => n.toLowerCase().startsWith(lower))
+        .map(n => ({ label: n, type: "function" as DebugProtocol.CompletionItemType }));
+    response.body = { targets: items };
     this.sendResponse(response);
 }
 
@@ -1020,6 +1162,27 @@ protected async customRequest(
         } catch (e) {
             this.sendErrorResponse(response, 1236, `readMemoryEx failed: ${e}`);
         }
+    } else if (command === "z80bp") {
+        // Accept either a numeric address or a label/address string (from addBreakpointAt)
+        let addr: number;
+        if (args?.name !== undefined) {
+            const resolved = this.symbolTable?.resolveLabel(args.name) ?? Z80DebugSession.parseAddress(args.name);
+            if (resolved === undefined) {
+                this.sendErrorResponse(response, 1237, `z80bp: unknown label or address: ${args.name}`);
+                return;
+            }
+            addr = resolved & 0xFFFF;
+        } else {
+            addr = (args?.address ?? 0) & 0xFFFF;
+        }
+        const enable = args?.enable !== false;
+        const current = new Set<number>(this.bpRegistry.get("direct") ?? []);
+        if (enable) current.add(addr); else current.delete(addr);
+        this.bpRegistry.set("direct", [...current]);
+        await this.flushBreakpoints();
+        console.log(`DAP: z80bp addr=0x${addr.toString(16).padStart(4,"0")} enable=${enable} → direct set size=${current.size}`);
+        response.body = { address: addr, enabled: enable };
+        this.sendResponse(response);
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);
     }

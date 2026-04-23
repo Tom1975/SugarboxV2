@@ -50,7 +50,167 @@ class Z80DisasmProvider implements vscode.TextDocumentContentProvider {
     }
 }
 
+// ─── Gutter / line decorations for z80disasm:/ documents ─────────────────────
+// BP and PC decorations are managed manually because FunctionBreakpoints don't
+// appear in the editor gutter natively, and the PC arrow must reflect across
+// ALL open z80disasm:/ windows (not just the "main" one VS Code navigates to).
+
+let bpDecoration: vscode.TextEditorDecorationType;
+let pcDecoration: vscode.TextEditorDecorationType;
+
+// Local set of active breakpoint addresses (bypasses vscode.debug.addBreakpoints
+// which is not forwarded to inline adapters in Remote-WSL).
+const bpAddresses = new Set<number>();
+
+// Current PC address when the debugger is stopped (undefined while running).
+let currentPcAddress: number | undefined;
+
+function refreshZ80BpDecorations() {
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document.languageId !== 'z80-disasm') continue;
+        const ranges: vscode.Range[] = [];
+        for (let l = 0; l < editor.document.lineCount; l++) {
+            const m = editor.document.lineAt(l).text.match(/^0x([0-9a-fA-F]{4})/i);
+            if (m && bpAddresses.has(parseInt(m[1], 16))) {
+                ranges.push(new vscode.Range(l, 0, l, 0));
+            }
+        }
+        editor.setDecorations(bpDecoration, ranges);
+    }
+}
+
+// Apply the PC-arrow decoration to every visible z80disasm:/ editor that
+// contains the current PC address in its text.  The "main" window (first
+// opened, navigated by VS Code via the DAP stack frame) also gets the
+// decoration; it visually overlaps with VS Code's built-in frame highlight
+// using the same theme colour, so there is no visual artefact.
+function refreshPcDecoration() {
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document.languageId !== 'z80-disasm') continue;
+        const ranges: vscode.Range[] = [];
+        if (currentPcAddress !== undefined) {
+            for (let l = 0; l < editor.document.lineCount; l++) {
+                const m = editor.document.lineAt(l).text.match(/^0x([0-9a-fA-F]{4})/i);
+                if (m && parseInt(m[1], 16) === currentPcAddress) {
+                    ranges.push(new vscode.Range(l, 0, l, 0));
+                    break; // at most one PC per editor
+                }
+            }
+        }
+        editor.setDecorations(pcDecoration, ranges);
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
+
+    bpDecoration = vscode.window.createTextEditorDecorationType({
+        gutterIconPath: vscode.Uri.joinPath(context.extensionUri, 'images', 'breakpoint.svg'),
+        gutterIconSize: 'contain'
+    });
+    context.subscriptions.push(bpDecoration);
+
+    // PC-arrow decoration: same background colour as VS Code's native frame
+    // highlight so it looks consistent in the main window and in secondary ones.
+    pcDecoration = vscode.window.createTextEditorDecorationType({
+        isWholeLine: true,
+        backgroundColor: new vscode.ThemeColor('editor.stackFrameHighlightBackground'),
+        overviewRulerColor: new vscode.ThemeColor('editorOverviewRuler.stackFrameForeground'),
+        overviewRulerLane: vscode.OverviewRulerLane.Left
+    });
+    context.subscriptions.push(pcDecoration);
+
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor(() => { refreshZ80BpDecorations(); refreshPcDecoration(); }),
+        vscode.window.onDidChangeVisibleTextEditors(() => { refreshZ80BpDecorations(); refreshPcDecoration(); })
+    );
+
+    // Ensure z80disasm:/ documents opened via stack frame navigation (not by
+    // openDisasmAt) get the correct language ID so gutter decorations and
+    // syntax highlighting work correctly.
+    context.subscriptions.push(
+        vscode.workspace.onDidOpenTextDocument(doc => {
+            if (doc.uri.scheme === "z80disasm" && doc.languageId !== "z80-disasm") {
+                vscode.languages.setTextDocumentLanguage(doc, "z80-disasm").then(
+                    () => { refreshZ80BpDecorations(); refreshPcDecoration(); },
+                    () => {}
+                );
+            }
+        })
+    );
+
+    // ── DebugAdapterTracker ───────────────────────────────────────────────────
+    // Responsibilities:
+    //   1. Extract the current PC from the stackTrace response (via the non-standard
+    //      memoryReference field set by buildStackFrame) and refresh PC decorations.
+    //   2. Ensure the frame's z80disasm:/ source document is visible: if it is not
+    //      already shown in any editor, open it in the same column as the first
+    //      existing z80disasm:/ editor (so it "replaces" the previous view rather
+    //      than appearing in a random column or as the native Disassembly view).
+    //      Note: instructionPointerReference has been removed from frames to
+    //      prevent VS Code from auto-opening the native Disassembly view.
+    context.subscriptions.push(
+        vscode.debug.registerDebugAdapterTrackerFactory("z80", {
+            createDebugAdapterTracker(_session: vscode.DebugSession) {
+                return {
+                    onDidSendMessage(message: any) {
+                        if (message.type === "response" && message.command === "stackTrace") {
+                            const frame0 = message.body?.stackFrames?.[0];
+
+                            // PC comes from the custom memoryReference field on the frame
+                            // (instructionPointerReference was removed to suppress the
+                            // native Disassembly view).
+                            const memRef: string | undefined = frame0?.memoryReference;
+                            if (memRef) {
+                                const addr = parseInt(memRef.replace(/^0x/i, ""), 16);
+                                if (!isNaN(addr)) {
+                                    currentPcAddress = addr & 0xFFFF;
+                                    refreshPcDecoration();
+                                }
+                            }
+
+                            // Ensure the frame's z80disasm:/ source is visible.
+                            // If it is not already open in any editor, open it in
+                            // the same column as any existing z80disasm:/ editor so
+                            // the "main" window is updated in-place rather than a
+                            // new tab appearing in an unrelated column.
+                            const framePath: string | undefined = frame0?.source?.path;
+                            if (framePath?.startsWith("z80disasm:")) {
+                                const frameUri    = vscode.Uri.parse(framePath);
+                                const frameUriStr = frameUri.toString();
+
+                                const frameVisible = vscode.window.visibleTextEditors.some(
+                                    e => e.document.uri.toString() === frameUriStr
+                                );
+
+                                if (!frameVisible) {
+                                    // Prefer the column of the first z80disasm:/ editor
+                                    const existingCol = vscode.window.visibleTextEditors.find(
+                                        e => e.document.uri.scheme === "z80disasm"
+                                    )?.viewColumn ?? vscode.ViewColumn.Active;
+
+                                    vscode.workspace.openTextDocument(frameUri)
+                                        .then(doc => Promise.resolve(
+                                            vscode.window.showTextDocument(doc, {
+                                                viewColumn: existingCol,
+                                                preview:    false
+                                            })
+                                        ), () => {});
+                                }
+                                // If already visible: VS Code's own frame navigation
+                                // scrolls it to frame.line automatically.
+                            }
+                        } else if (
+                            message.type === "event" &&
+                            (message.event === "continued" || message.event === "terminated")
+                        ) {
+                            currentPcAddress = undefined;
+                            refreshPcDecoration();
+                        }
+                    }
+                };
+            }
+        })
+    );
 
     // ── Register debug adapter ────────────────────────────────────────────────
     context.subscriptions.push(
@@ -162,6 +322,71 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             MemoryViewPanel.createOrShow(addr);
+        })
+    );
+
+    // ── Command: add breakpoint by address or label ───────────────────────────
+    context.subscriptions.push(
+        vscode.commands.registerCommand("z80debug.addBreakpointAt", async () => {
+            const session = vscode.debug.activeDebugSession;
+            if (!session) {
+                vscode.window.showWarningMessage("Z80 Debug: no active debug session.");
+                return;
+            }
+            const input = await vscode.window.showInputBox({
+                title: "Ajouter un breakpoint",
+                prompt: "Adresse Z80 16 bits ou label assembleur",
+                placeHolder: "0xBB5A  ou  BB5A  ou  47962  ou  monLabel",
+            });
+            if (input === undefined || input.trim() === "") return;
+            // Resolve label or address via the adapter (labels need symbolTable)
+            try {
+                const result = await session.customRequest("z80bp", { name: input.trim(), enable: true });
+                if (result?.address !== undefined) {
+                    bpAddresses.add(result.address & 0xFFFF);
+                    refreshZ80BpDecorations();
+                }
+            } catch (e) {
+                vscode.window.showWarningMessage(`Z80 Debug: breakpoint non ajouté — ${e}`);
+            }
+        })
+    );
+
+    // ── Command: toggle breakpoint on the current line of a z80disasm:/ editor ─
+    context.subscriptions.push(
+        vscode.commands.registerCommand("z80debug.toggleBreakpointAt", async () => {
+            const session = vscode.debug.activeDebugSession;
+            if (!session) {
+                vscode.window.showWarningMessage("Z80 Debug: no active debug session.");
+                return;
+            }
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+            const lineText = editor.document.lineAt(editor.selection.active.line).text;
+            const m = lineText.match(/^0x([0-9a-fA-F]{4})/i);
+            if (!m) {
+                vscode.window.showWarningMessage("Z80 Debug: aucune adresse sur cette ligne.");
+                return;
+            }
+            const addr   = parseInt(m[1], 16);
+            const enable = !bpAddresses.has(addr);
+            try {
+                await session.customRequest("z80bp", { address: addr, enable });
+                if (enable) bpAddresses.add(addr); else bpAddresses.delete(addr);
+                refreshZ80BpDecorations();
+            } catch (e) {
+                vscode.window.showWarningMessage(`Z80 Debug: impossible de modifier le breakpoint — ${e}`);
+            }
+        })
+    );
+
+    // ── Clear local BP/PC state when session ends ─────────────────────────────
+    context.subscriptions.push(
+        vscode.debug.onDidTerminateDebugSession(() => {
+            bpAddresses.clear();
+            currentPcAddress = undefined;
+            refreshZ80BpDecorations();
+            refreshPcDecoration();
         })
     );
 
