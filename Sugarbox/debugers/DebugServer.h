@@ -72,6 +72,12 @@ private:
 
    void HandleReadMemory(const nlohmann::json& request);
    void HandleGetMemBanks();
+   void HandleGetCrtcState();
+   void HandleGetGateArrayState();
+   void HandleGetPsgState();
+   void HandleGetPpiState();
+   void HandleGetFdcState();
+   void HandleGetTapeState();
 
    int port_;
    std::atomic<bool> running_{ false };

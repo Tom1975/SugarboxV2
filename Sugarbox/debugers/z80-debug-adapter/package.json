@@ -84,8 +84,47 @@
         "command": "z80debug.toggleBreakpointAt",
         "title": "Z80 Debug: Toggle Breakpoint Here",
         "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showCrtcPanel",
+        "title": "Show CRTC / ASIC Panel",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showGateArrayPanel",
+        "title": "Show Gate Array Panel",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showPsgPanel",
+        "title": "Show PSG (AY-3-8912) Panel",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showFdcPanel",
+        "title": "Show FDC Panel",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showPpiPanel",
+        "title": "Show PPI (8255) Panel",
+        "category": "Z80 Debug"
+      },
+      {
+        "command": "z80debug.showTapePanel",
+        "title": "Show Cassette Panel",
+        "category": "Z80 Debug"
       }
     ],
+    "views": {
+      "debug": [
+        {
+          "id": "z80debug.hardwarePanels",
+          "name": "CPC Hardware",
+          "when": "debugType == 'z80'"
+        }
+      ]
+    },
     "menus": {
       "editor/context": [
         {

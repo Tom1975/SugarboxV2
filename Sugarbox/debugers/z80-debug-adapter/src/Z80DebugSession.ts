@@ -77,8 +77,10 @@ interface DisasmRegion {
     text: string;
 }
 
-// 16-bit register names (for memoryReference)
-const REG16 = new Set(["bc", "de", "hl", "sp", "pc", "ix", "iy", "bc'", "de'", "hl'"]);
+// 16-bit register names (for memoryReference and 4-digit hex formatting)
+const REG16 = new Set(["bc", "de", "hl", "sp", "pc", "ix", "iy", "bc'", "de'", "hl'", "af", "af'"]);
+// 8-bit register names (2-digit hex)
+const REG8  = new Set(["i", "r"]);
 
 export class Z80DebugSession extends DebugSession {
 
@@ -418,15 +420,19 @@ protected async variablesRequest(
 
         response.body = {
             variables: Object.entries(regs).map(([name, val]) => {
+                const nameLower = name.toLowerCase();
+                const is8  = REG8.has(nameLower);
+                const is16 = REG16.has(nameLower);
+                const hex  = is8
+                    ? "0x" + (val & 0xFF).toString(16).padStart(2, "0").toUpperCase()
+                    : "0x" + (val & 0xFFFF).toString(16).padStart(4, "0").toUpperCase();
                 const v: DebugProtocol.Variable = {
                     name,
-                    value: "0x" + val.toString(16).padStart(4, "0"),
+                    value: hex,
                     variablesReference: 0
                 };
-                // Provide memoryReference for 16-bit registers so VS Code can
-                // open a Disassembly View or Memory View at that address
-                if (REG16.has(name.toLowerCase())) {
-                    (v as any).memoryReference = "0x" + val.toString(16).padStart(4, "0");
+                if (is16) {
+                    (v as any).memoryReference = hex;
                 }
                 return v;
             })
@@ -1108,6 +1114,20 @@ protected async setVariableRequest(
 
 // ─── Custom requests (called from extension via session.customRequest) ────────
 
+private async _forwardHardwareRequest(
+    response: DebugProtocol.Response,
+    cmd: string,
+    errCode: number
+): Promise<void> {
+    try {
+        const result = await this.emulator.send({ cmd });
+        response.body = result?.error ? { error: result.error } : result;
+        this.sendResponse(response);
+    } catch (e) {
+        this.sendErrorResponse(response, errCode, `${cmd} failed: ${e}`);
+    }
+}
+
 protected async customRequest(
     command: string,
     response: DebugProtocol.Response,
@@ -1183,6 +1203,18 @@ protected async customRequest(
         console.log(`DAP: z80bp addr=0x${addr.toString(16).padStart(4,"0")} enable=${enable} → direct set size=${current.size}`);
         response.body = { address: addr, enabled: enable };
         this.sendResponse(response);
+    } else if (command === "getCrtcState") {
+        await this._forwardHardwareRequest(response, "getCrtcState", 1240);
+    } else if (command === "getGateArrayState") {
+        await this._forwardHardwareRequest(response, "getGateArrayState", 1241);
+    } else if (command === "getPsgState") {
+        await this._forwardHardwareRequest(response, "getPsgState", 1242);
+    } else if (command === "getPpiState") {
+        await this._forwardHardwareRequest(response, "getPpiState", 1243);
+    } else if (command === "getFdcState") {
+        await this._forwardHardwareRequest(response, "getFdcState", 1244);
+    } else if (command === "getTapeState") {
+        await this._forwardHardwareRequest(response, "getTapeState", 1245);
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);
     }

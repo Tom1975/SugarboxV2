@@ -226,16 +226,20 @@ void DebugServer::handleClient(int clientSocket)
       {
          Z80* z80 = emulation_->GetEngine()->GetProc();
 
-         response["AF"] = z80->af_.w;
+         response["AF"]  = z80->af_.w;
          response["AF'"] = z80->af_p_.w;
-         response["BC"] = z80->bc_.w;
+         response["BC"]  = z80->bc_.w;
          response["BC'"] = z80->bc_p_.w;
-         response["DE"] = z80->de_.w;
+         response["DE"]  = z80->de_.w;
          response["DE'"] = z80->de_p_.w;
-         response["HL"] = z80->hl_.w;
+         response["HL"]  = z80->hl_.w;
          response["HL'"] = z80->hl_p_.w;
-         response["SP"] = z80->sp_;
-         response["PC"] = z80->new_instruction_ ? z80->pc_ : z80->GetPC();
+         response["IX"]  = z80->ix_.w;
+         response["IY"]  = z80->iy_.w;
+         response["SP"]  = z80->sp_;
+         response["PC"]  = z80->new_instruction_ ? z80->pc_ : z80->GetPC();
+         response["I"]   = z80->ir_.b.h;
+         response["R"]   = z80->ir_.b.l;
          SendResponse(response);
       }
       else if (cmd == "getState")
@@ -573,6 +577,30 @@ void DebugServer::handleClient(int clientSocket)
          };
          SendResponse(response);
       }
+      else if (cmd == "getCrtcState")
+      {
+         HandleGetCrtcState();
+      }
+      else if (cmd == "getGateArrayState")
+      {
+         HandleGetGateArrayState();
+      }
+      else if (cmd == "getPsgState")
+      {
+         HandleGetPsgState();
+      }
+      else if (cmd == "getPpiState")
+      {
+         HandleGetPpiState();
+      }
+      else if (cmd == "getFdcState")
+      {
+         HandleGetFdcState();
+      }
+      else if (cmd == "getTapeState")
+      {
+         HandleGetTapeState();
+      }
       else
       {
          response = { {"error", "unknown command"} };
@@ -687,7 +715,153 @@ void DebugServer::HandleGetMemBanks()
 }
 
 void DebugServer::SendResponse(json response)
-{      
+{
    std::string out = response.dump() + "\n";
    outgoing_queue_.push(out);
+}
+
+// ─── Hardware state handlers ──────────────────────────────────────────────────
+
+void DebugServer::HandleGetCrtcState()
+{
+    CRTC* crtc = emulation_->GetEngine()->GetCRTC();
+    bool  isPlus = emulation_->GetEngine()->IsPLUS();
+
+    json regs  = json::array();
+    json masks = json::array();
+    for (int i = 0; i < 18; i++) {
+        regs.push_back(crtc->registers_list_[i]);
+        masks.push_back(crtc->registers_mask_[i]);
+    }
+
+    json resp;
+    resp["registers"]   = regs;
+    resp["masks"]       = masks;
+    resp["crtcType"]    = static_cast<int>(crtc->type_crtc_);
+    resp["isPlus"]      = isPlus;
+    resp["addrReg"]     = crtc->adddress_register_;
+    resp["statusReg"]   = crtc->status_register_;
+    resp["hcc"]         = crtc->hcc_;
+    resp["vlc"]         = crtc->vlc_;
+    resp["vcc"]         = crtc->vcc_;
+    resp["vertAdj"]     = crtc->vertical_adjust_counter_;
+    resp["ma"]          = crtc->ma_;
+    resp["hPulse"]      = crtc->horinzontal_pulse_;
+    resp["vertPulse"]   = crtc->scanline_vbl_;
+    resp["r52"]         = emulation_->GetEngine()->GetVGA()->interrupt_counter_;
+    resp["beamX"]       = emulation_->GetEngine()->GetMonitor()->GetX();
+    resp["beamY"]       = emulation_->GetEngine()->GetMonitor()->GetY();
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetGateArrayState()
+{
+    GateArray* ga = emulation_->GetEngine()->GetVGA();
+
+    json inks = json::array();
+    for (int i = 0; i < 16; i++)
+        inks.push_back(ga->ink_list_[i]);
+
+    json resp;
+    resp["mode"]             = ga->screen_mode_;
+    resp["pen"]              = ga->pen_r_;
+    resp["inks"]             = inks;
+    resp["border"]           = ga->video_border_[0];
+    resp["interruptCounter"] = ga->interrupt_counter_;
+    resp["interruptRaised"]  = ga->interrupt_raised_;
+    resp["asicLocked"]       = (ga->unlocked_ == false);
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetPsgState()
+{
+    Ay8912* psg = emulation_->GetEngine()->GetPSG();
+    const unsigned char* rawRegs = psg->GetRegisters();
+
+    json regs = json::array();
+    for (int i = 0; i < 16; i++)
+        regs.push_back(rawRegs[i]);
+
+    json resp;
+    resp["registers"] = regs;
+    resp["chanAFreq"] = psg->GetChanAFreq();
+    resp["chanBFreq"] = psg->GetChanBFreq();
+    resp["chanCFreq"] = psg->GetChanCFreq();
+    resp["noiseFreq"] = psg->GetNoiseFreq();
+    resp["mixer"]     = psg->GetMixer();
+    resp["chanAVol"]  = psg->GetChanAVol();
+    resp["chanBVol"]  = psg->GetChanBVol();
+    resp["chanCVol"]  = psg->GetChanCVol();
+    resp["envFreq"]   = psg->GetEnvFreq();
+    resp["envShape"]  = psg->GetEnvShape();
+    resp["portA"]     = psg->GetPortA();
+    resp["portB"]     = psg->GetPortB();
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetPpiState()
+{
+    PPI8255* ppi = emulation_->GetEngine()->GetPPI();
+
+    json resp;
+    resp["portA"]        = ppi->port_a_;
+    resp["portB"]        = ppi->port_b_;
+    resp["portC"]        = ppi->port_c_;
+    resp["controlWord"]  = ppi->control_word_.byte;
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetFdcState()
+{
+    FDC* fdc = emulation_->GetEngine()->GetFDC();
+
+    json resp;
+    resp["mainStatus"]  = fdc->GetMainStatus();
+    resp["status0"]     = fdc->GetDebugStatus0();
+    resp["status1"]     = fdc->GetDebugStatus1();
+    resp["status2"]     = fdc->GetDebugStatus2();
+    resp["status3"]     = fdc->GetDebugStatus3();
+    resp["currentDrive"] = fdc->GetCurrentDrive();
+    resp["motorOn"]     = fdc->IsMotorOn();
+
+    json drives = json::array();
+    for (int d = 0; d < 2; d++) {
+        json drv;
+        drv["present"]       = fdc->IsDiskPresent(d);
+        drv["writeProtected"] = fdc->IsDiskWriteProtected(d);
+        drv["track"]         = fdc->GetCurrentTrack(d);
+        drv["sector"]        = fdc->GetCurrentSector(d);
+        drv["side"]          = fdc->GetCurrentSide(d);
+        const char* path = fdc->GetDiskPath(d);
+        drv["path"]          = path ? path : "";
+        drives.push_back(drv);
+    }
+    resp["drives"] = drives;
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetTapeState()
+{
+    CTape* tape = emulation_->GetEngine()->GetTape();
+
+    json blocks = json::array();
+    int nbBlocks = tape->GetNbBlocks();
+    for (int i = 0; i < nbBlocks; i++) {
+        json blk;
+        blk["index"]    = i;
+        blk["position"] = tape->GetBlockPosition(i);
+        const char* txt = tape->GetTextBlock(i);
+        blk["text"]     = txt ? txt : "";
+        blocks.push_back(blk);
+    }
+
+    const char* path = tape->GetTapePath();
+    json resp;
+    resp["path"]      = path ? path : "";
+    resp["inserted"]  = tape->IsTapeInserted();
+    resp["motor"]     = tape->GetMotor();
+    resp["counter"]   = tape->GetCounter();
+    resp["length"]    = tape->LengthOfTape();
+    resp["blocks"]    = blocks;
+    SendResponse(resp);
 }

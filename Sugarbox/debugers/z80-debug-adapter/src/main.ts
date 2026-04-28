@@ -2,6 +2,11 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import { Z80DebugSession } from "./Z80DebugSession";
 import { MemoryViewPanel } from "./MemoryViewPanel";
+import { HardwarePanel } from "./HardwarePanel";
+import { CrtcAsicPanel } from "./CrtcAsicPanel";
+import { GateArrayPanel } from "./GateArrayPanel";
+import { PsgPanel } from "./PsgPanel";
+import { HardwarePanelTreeProvider } from "./HardwarePanelTreeProvider";
 
 // ─── Disassembly virtual document provider ────────────────────────────────────
 // URI scheme (new):  z80disasm:/TYPE/BANK/NNNN.z80disasm
@@ -201,6 +206,11 @@ export function activate(context: vscode.ExtensionContext) {
                             }
                         } else if (
                             message.type === "event" &&
+                            message.event === "stopped"
+                        ) {
+                            HardwarePanel.refreshAll().catch(() => {});
+                        } else if (
+                            message.type === "event" &&
                             (message.event === "continued" || message.event === "terminated")
                         ) {
                             currentPcAddress = undefined;
@@ -227,6 +237,25 @@ export function activate(context: vscode.ExtensionContext) {
     const disasmProvider = new Z80DisasmProvider();
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider("z80disasm", disasmProvider)
+    );
+
+    // ── Hardware panels TreeView ──────────────────────────────────────────────
+    const hwTree = new HardwarePanelTreeProvider();
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider("z80debug.hardwarePanels", hwTree)
+    );
+
+    // ── Commands: hardware panels ─────────────────────────────────────────────
+    const notReady = (name: string) => () =>
+        vscode.window.showInformationMessage(`Z80 Debug: ${name} panel — coming soon.`);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("z80debug.showCrtcPanel",     () => CrtcAsicPanel.createOrShow()),
+        vscode.commands.registerCommand("z80debug.showGateArrayPanel", () => GateArrayPanel.createOrShow()),
+        vscode.commands.registerCommand("z80debug.showPsgPanel",      () => PsgPanel.createOrShow()),
+        vscode.commands.registerCommand("z80debug.showFdcPanel",      notReady("FDC")),
+        vscode.commands.registerCommand("z80debug.showPpiPanel",      notReady("PPI")),
+        vscode.commands.registerCommand("z80debug.showTapePanel",     notReady("Cassette")),
     );
 
     // ── Command: open disassembly at address ──────────────────────────────────
