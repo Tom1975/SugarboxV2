@@ -6,6 +6,7 @@ import { HardwarePanel } from "./HardwarePanel";
 import { CrtcAsicPanel } from "./CrtcAsicPanel";
 import { GateArrayPanel } from "./GateArrayPanel";
 import { PsgPanel } from "./PsgPanel";
+import { PpiPanel } from "./PpiPanel";
 import { HardwarePanelTreeProvider } from "./HardwarePanelTreeProvider";
 
 // ─── Disassembly virtual document provider ────────────────────────────────────
@@ -254,7 +255,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand("z80debug.showGateArrayPanel", () => GateArrayPanel.createOrShow()),
         vscode.commands.registerCommand("z80debug.showPsgPanel",      () => PsgPanel.createOrShow()),
         vscode.commands.registerCommand("z80debug.showFdcPanel",      notReady("FDC")),
-        vscode.commands.registerCommand("z80debug.showPpiPanel",      notReady("PPI")),
+        vscode.commands.registerCommand("z80debug.showPpiPanel",      () => PpiPanel.createOrShow()),
         vscode.commands.registerCommand("z80debug.showTapePanel",     notReady("Cassette")),
     );
 

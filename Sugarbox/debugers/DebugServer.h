@@ -78,6 +78,7 @@ private:
    void HandleGetPpiState();
    void HandleGetFdcState();
    void HandleGetTapeState();
+   void HandleGetAsicState();
 
    int port_;
    std::atomic<bool> running_{ false };

@@ -1215,6 +1215,8 @@ protected async customRequest(
         await this._forwardHardwareRequest(response, "getFdcState", 1244);
     } else if (command === "getTapeState") {
         await this._forwardHardwareRequest(response, "getTapeState", 1245);
+    } else if (command === "getAsicState") {
+        await this._forwardHardwareRequest(response, "getAsicState", 1246);
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);
     }

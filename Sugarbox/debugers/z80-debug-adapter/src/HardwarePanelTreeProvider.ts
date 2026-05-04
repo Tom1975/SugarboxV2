@@ -11,7 +11,7 @@ const PANELS: PanelEntry[] = [
     { label: "Gate Array",       command: "z80debug.showGateArrayPanel", ready: true  },
     { label: "PSG (AY-3-8912)", command: "z80debug.showPsgPanel",      ready: true  },
     { label: "FDC (µPD765)",    command: "z80debug.showFdcPanel",      ready: false },
-    { label: "PPI (8255)",       command: "z80debug.showPpiPanel",      ready: false },
+    { label: "PPI (8255)",       command: "z80debug.showPpiPanel",      ready: true  },
     { label: "Cassette",         command: "z80debug.showTapePanel",     ready: false },
 ];
 

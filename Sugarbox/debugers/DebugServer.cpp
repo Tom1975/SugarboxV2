@@ -601,6 +601,10 @@ void DebugServer::handleClient(int clientSocket)
       {
          HandleGetTapeState();
       }
+      else if (cmd == "getAsicState")
+      {
+         HandleGetAsicState();
+      }
       else
       {
          response = { {"error", "unknown command"} };
@@ -863,5 +867,65 @@ void DebugServer::HandleGetTapeState()
     resp["counter"]   = tape->GetCounter();
     resp["length"]    = tape->LengthOfTape();
     resp["blocks"]    = blocks;
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetAsicState()
+{
+    GateArray* ga = emulation_->GetEngine()->GetVGA();
+    Memory*    mem = emulation_->GetEngine()->GetMem();
+
+    json resp;
+    resp["isPlus"] = ga->plus_;
+
+    // Sprite palette (16 colors, 0xFFRRGGBB — same encoding as ink_list_)
+    json spritePalette = json::array();
+    for (int i = 0; i < 16; i++)
+        spritePalette.push_back(ga->sprite_ink_list_[i]);
+    resp["spritePalette"] = spritePalette;
+
+    // 16 sprites: position, zoom, visibility, pixel data
+    json sprites = json::array();
+    for (int i = 0; i < 16; i++) {
+        Memory::TSpriteInfo* info = mem->GetSpriteInfo(i);
+        unsigned char*       data = mem->GetSprite(i);
+
+        json pixels = json::array();
+        for (int p = 0; p < 256; p++)
+            pixels.push_back(data[p] & 0xF);
+
+        json spr;
+        spr["x"]         = info->x;
+        spr["y"]         = info->y;
+        spr["zoomx"]     = info->zoomx;
+        spr["zoomy"]     = info->zoomy;
+        spr["displayed"] = info->displayed;
+        spr["pixels"]    = pixels;
+        sprites.push_back(spr);
+    }
+    resp["sprites"] = sprites;
+
+    // ASIC control registers
+    resp["pri"]  = mem->GetPRI();
+    resp["splt"] = mem->GetSPLT();
+    resp["ssa"]  = ga->GetSSA();
+    resp["sscr"] = mem->GetSSCR();
+    resp["ivr"]  = mem->GetIVR();
+    resp["dcsr"] = mem->GetDCSR();
+
+    // DMA channels (0-2)
+    json dmaChannels = json::array();
+    for (int c = 0; c < 3; c++) {
+        DMA* dma = emulation_->GetEngine()->GetDMA(c);
+        json ch;
+        ch["sar"]          = mem->GetDMAAdress(c);
+        ch["ppr"]          = mem->GetDMAPrescaler(c);
+        ch["currentInstr"] = dma->curent_instr_;
+        ch["paused"]       = (dma->dma_cycle_ == DMA::PAUSE);
+        ch["interrupt"]    = dma->interrupt_on_;
+        dmaChannels.push_back(ch);
+    }
+    resp["dma"] = dmaChannels;
+
     SendResponse(resp);
 }
