@@ -605,6 +605,14 @@ void DebugServer::handleClient(int clientSocket)
       {
          HandleGetAsicState();
       }
+      else if (cmd == "getTrackRaw")
+      {
+         HandleGetTrackRaw(request);
+      }
+      else if (cmd == "getTapeSignal")
+      {
+         HandleGetTapeSignal();
+      }
       else
       {
          response = { {"error", "unknown command"} };
@@ -820,24 +828,60 @@ void DebugServer::HandleGetFdcState()
     FDC* fdc = emulation_->GetEngine()->GetFDC();
 
     json resp;
-    resp["mainStatus"]  = fdc->GetMainStatus();
-    resp["status0"]     = fdc->GetDebugStatus0();
-    resp["status1"]     = fdc->GetDebugStatus1();
-    resp["status2"]     = fdc->GetDebugStatus2();
-    resp["status3"]     = fdc->GetDebugStatus3();
+    resp["mainStatus"]   = fdc->GetMainStatus();
+    resp["status0"]      = fdc->GetDebugStatus0();
+    resp["status1"]      = fdc->GetDebugStatus1();
+    resp["status2"]      = fdc->GetDebugStatus2();
+    resp["status3"]      = fdc->GetDebugStatus3();
     resp["currentDrive"] = fdc->GetCurrentDrive();
-    resp["motorOn"]     = fdc->IsMotorOn();
+    resp["motorOn"]      = fdc->IsMotorOn();
 
     json drives = json::array();
     for (int d = 0; d < 2; d++) {
         json drv;
-        drv["present"]       = fdc->IsDiskPresent(d);
+        int  track = fdc->GetCurrentTrack(d);
+        int  side  = fdc->GetCurrentSide(d);
+        drv["present"]        = fdc->IsDiskPresent(d);
         drv["writeProtected"] = fdc->IsDiskWriteProtected(d);
-        drv["track"]         = fdc->GetCurrentTrack(d);
-        drv["sector"]        = fdc->GetCurrentSector(d);
-        drv["side"]          = fdc->GetCurrentSide(d);
+        drv["track"]          = track;
+        drv["sector"]         = fdc->GetCurrentSector(d);
+        drv["side"]           = side;
+        drv["nbTracks"]       = fdc->GetNbTracks(d, 0);
         const char* path = fdc->GetDiskPath(d);
-        drv["path"]          = path ? path : "";
+        drv["path"]           = path ? path : "";
+
+        // Track analysis for current track
+        IDisk* disk = fdc->GetIDisk(d);
+        if (disk && fdc->IsDiskPresent(d)) {
+            IDisk::Track trackBuf;
+            disk->GetTrackInfo(side, track, &trackBuf);
+
+            json sectors = json::array();
+            for (const auto& s : trackBuf.list_sector_) {
+                json sec;
+                sec["c"]       = s.c;
+                sec["h"]       = s.h;
+                sec["r"]       = s.r;
+                sec["n"]       = s.n;
+                sec["size"]    = s.real_size;
+                sec["hdrCrc"]  = s.chrn_crc_ok;
+                sec["dataCrc"] = s.data_crc_ok;
+                sec["st1"]     = s.status1;
+                sec["st2"]     = s.status2;
+                sec["deleted"] = !!(s.status2 & 0x40);
+                sectors.push_back(sec);
+            }
+            drv["sectors"]   = sectors;
+            drv["trackSize"] = trackBuf.full_size_;
+            drv["gap3"]      = trackBuf.gap3_size_;
+            drv["nbSides"]   = disk->GetNumberOfSide();
+        } else {
+            drv["sectors"]   = json::array();
+            drv["trackSize"] = 0;
+            drv["gap3"]      = 0;
+            drv["nbSides"]   = 0;
+        }
+
         drives.push_back(drv);
     }
     resp["drives"] = drives;
@@ -861,12 +905,58 @@ void DebugServer::HandleGetTapeState()
 
     const char* path = tape->GetTapePath();
     json resp;
-    resp["path"]      = path ? path : "";
-    resp["inserted"]  = tape->IsTapeInserted();
-    resp["motor"]     = tape->GetMotor();
-    resp["counter"]   = tape->GetCounter();
-    resp["length"]    = tape->LengthOfTape();
-    resp["blocks"]    = blocks;
+    resp["path"]             = path ? path : "";
+    resp["inserted"]         = tape->IsTapeInserted();
+    resp["motor"]            = tape->GetMotor();
+    resp["play"]             = tape->IsPlayOn();
+    resp["record"]           = tape->IsRecordOn();
+    resp["counter"]          = tape->GetCounter();
+    resp["length"]           = tape->LengthOfTape();
+    resp["currentBlock"]     = tape->GetCurrentBlock();
+    resp["currentBlockType"] = tape->GetCurrentBlockType();
+    resp["tapePos"]          = tape->GetTapePosition();
+    resp["nbInversions"]     = tape->GetNbInversions();
+    resp["blocks"]           = blocks;
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetTapeSignal()
+{
+    CTape* tape = emulation_->GetEngine()->GetTape();
+
+    json resp;
+    if (!tape->IsTapeInserted() || tape->GetNbInversions() == 0) {
+        resp["error"] = "No tape signal";
+        SendResponse(resp);
+        return;
+    }
+
+    unsigned int pos   = tape->GetTapePosition();
+    unsigned int total = tape->GetNbInversions();
+
+    // Window: 800 pulses before, 1200 after current position
+    unsigned int from = (pos > 800)  ? pos - 800  : 0;
+    unsigned int to   = std::min(pos + 1200, total);
+
+    json pulses = json::array();
+    for (unsigned int i = from; i < to; i++) {
+        CTape::DebugFlux f;
+        if (!tape->GetFlux(i, f)) break;
+        json p;
+        p["len"]  = f.length;
+        p["at"]   = f.place;
+        p["bt"]   = f.blockType;
+        p["hi"]   = f.high;
+        p["bn"]   = f.blockNumber;
+        pulses.push_back(p);
+    }
+
+    CTape::DebugFlux cur;
+    resp["tapePos"]    = pos;
+    resp["fromIdx"]    = from;
+    resp["total"]      = total;
+    resp["currentAt"]  = (tape->GetFlux(pos, cur)) ? (uint64_t)cur.place : 0ULL;
+    resp["pulses"]     = pulses;
     SendResponse(resp);
 }
 
@@ -927,5 +1017,99 @@ void DebugServer::HandleGetAsicState()
     }
     resp["dma"] = dmaChannels;
 
+    SendResponse(resp);
+}
+
+void DebugServer::HandleGetTrackRaw(const json& request)
+{
+    int drive = request.value("drive", 0);
+    int side  = request.value("side",  0);
+    int track = request.value("track", 0);
+
+    FDC* fdc = emulation_->GetEngine()->GetFDC();
+    IDisk* disk = fdc->GetIDisk(drive);
+
+    json resp;
+    if (!disk || !fdc->IsDiskPresent(drive)) {
+        resp["error"] = "No disk in drive";
+        SendResponse(resp);
+        return;
+    }
+    if (side  >= disk->GetNumberOfSide()   ||
+        track >= (int)disk->GetNumberOfTracks(side)) {
+        resp["error"] = "Invalid side/track";
+        SendResponse(resp);
+        return;
+    }
+
+    IDisk::MFMTrack* mfm = &disk->side_[side].tracks[track];
+    unsigned int bitSize = mfm->size;
+    if (!mfm->bitfield || bitSize == 0) {
+        resp["error"] = "Track not loaded";
+        SendResponse(resp);
+        return;
+    }
+
+    // Pack bitfield: 8 raw chars (each 0/1) → 1 hex byte, MSB first
+    static const char HEX[] = "0123456789ABCDEF";
+    unsigned int byteSize = (bitSize + 7) / 8;
+    std::string packed(byteSize * 2, '0');
+    for (unsigned int b = 0; b < byteSize; b++) {
+        unsigned char byte = 0;
+        for (int bit = 0; bit < 8; bit++) {
+            unsigned int idx = b * 8 + bit;
+            if (idx < bitSize && mfm->bitfield[idx])
+                byte |= (0x80u >> bit);
+        }
+        packed[b * 2]     = HEX[(byte >> 4) & 0xF];
+        packed[b * 2 + 1] = HEX[ byte       & 0xF];
+    }
+
+    // Weak bits: XOR of revolutions 0 and 1 (copy-protection detection)
+    bool hasWeak = (mfm->nb_revolutions >= 2 && mfm->revolution != nullptr);
+    std::string weakPacked;
+    if (hasWeak) {
+        weakPacked.assign(byteSize * 2, '0');
+        for (unsigned int b = 0; b < byteSize; b++) {
+            unsigned char w = 0;
+            for (int bit = 0; bit < 8; bit++) {
+                unsigned int idx = b * 8 + bit;
+                if (idx < bitSize && idx < mfm->revolution[0].size &&
+                    idx < mfm->revolution[1].size) {
+                    if (mfm->revolution[0].bitfield[idx] !=
+                        mfm->revolution[1].bitfield[idx])
+                        w |= (0x80u >> bit);
+                }
+            }
+            weakPacked[b * 2]     = HEX[(w >> 4) & 0xF];
+            weakPacked[b * 2 + 1] = HEX[ w       & 0xF];
+        }
+    }
+
+    // Sector annotations with bit-level offsets
+    IDisk::Track trackBuf;
+    disk->GetTrackInfo(side, track, &trackBuf);
+    json sectors = json::array();
+    for (const auto& s : trackBuf.list_sector_) {
+        json sec;
+        sec["c"]          = s.c;
+        sec["h"]          = s.h;
+        sec["r"]          = s.r;
+        sec["n"]          = s.n;
+        sec["realSize"]   = s.real_size;
+        sec["hdrCrc"]     = s.chrn_crc_ok;
+        sec["dataCrc"]    = s.data_crc_ok;
+        sec["deleted"]    = !!(s.status2 & 0x40);
+        sec["idamOffset"] = s.idam_offset;      // bit offset of IDAM sync start
+        sec["damOffset"]  = s.dam_offset;       // bit offset of DAM sync start
+        sec["indexEnd"]   = s.index_end;        // bit offset of sector end
+        sectors.push_back(sec);
+    }
+
+    resp["bits"]    = packed;
+    resp["bitSize"] = bitSize;
+    resp["nbRevs"]  = mfm->nb_revolutions;
+    resp["sectors"] = sectors;
+    if (hasWeak) resp["weakBits"] = weakPacked;
     SendResponse(resp);
 }

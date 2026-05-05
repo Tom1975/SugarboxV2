@@ -79,6 +79,8 @@ private:
    void HandleGetFdcState();
    void HandleGetTapeState();
    void HandleGetAsicState();
+   void HandleGetTrackRaw(const nlohmann::json& request);
+   void HandleGetTapeSignal();
 
    int port_;
    std::atomic<bool> running_{ false };

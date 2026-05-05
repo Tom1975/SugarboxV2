@@ -1217,6 +1217,16 @@ protected async customRequest(
         await this._forwardHardwareRequest(response, "getTapeState", 1245);
     } else if (command === "getAsicState") {
         await this._forwardHardwareRequest(response, "getAsicState", 1246);
+    } else if (command === "getTapeSignal") {
+        await this._forwardHardwareRequest(response, "getTapeSignal", 1248);
+    } else if (command === "getTrackRaw") {
+        try {
+            const result = await this.emulator.send({ cmd: "getTrackRaw", ...args });
+            response.body = result?.error ? { error: result.error } : result;
+            this.sendResponse(response);
+        } catch (e) {
+            this.sendErrorResponse(response, 1247, `getTrackRaw failed: ${e}`);
+        }
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);
     }

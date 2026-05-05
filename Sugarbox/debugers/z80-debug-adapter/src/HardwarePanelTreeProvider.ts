@@ -10,9 +10,9 @@ const PANELS: PanelEntry[] = [
     { label: "CRTC / ASIC",     command: "z80debug.showCrtcPanel",     ready: true  },
     { label: "Gate Array",       command: "z80debug.showGateArrayPanel", ready: true  },
     { label: "PSG (AY-3-8912)", command: "z80debug.showPsgPanel",      ready: true  },
-    { label: "FDC (µPD765)",    command: "z80debug.showFdcPanel",      ready: false },
+    { label: "FDC (µPD765)",    command: "z80debug.showFdcPanel",      ready: true  },
     { label: "PPI (8255)",       command: "z80debug.showPpiPanel",      ready: true  },
-    { label: "Cassette",         command: "z80debug.showTapePanel",     ready: false },
+    { label: "Cassette",         command: "z80debug.showTapePanel",     ready: true  },
 ];
 
 export class HardwarePanelItem extends vscode.TreeItem {
