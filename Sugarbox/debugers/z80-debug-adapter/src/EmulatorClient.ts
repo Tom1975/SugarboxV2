@@ -18,8 +18,12 @@ export class EmulatorClient {
                 resolve();
             });
             this.socket.on("data", data => this.onData(data));
-            this.socket.on("error", reject);
-            this.socket.on("close", () => console.log("Emulator socket closed"));
+            this.socket.on("error", err => {
+                // Reject only if the connection was never established (pre-connect error).
+                // Post-connect errors are non-fatal: the emulator may have exited normally.
+                reject(err);
+            });
+            this.socket.on("close", () => console.log(`EmulatorClient: socket closed (port ${port})`));
         });
     }
 

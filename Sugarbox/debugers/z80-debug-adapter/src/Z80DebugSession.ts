@@ -178,12 +178,31 @@ protected async launchRequest(
     this.loadSymbols(args);
     const port = args.port ?? 1234;
 
+    // ── Pre-flight: validate emulator path ────────────────────────────────────
+    if (!args.emulator) {
+        const msg = "Emulator path not set — configure 'emulator' in launch.json or run Z80 Debug: Configure workspace.\n";
+        this.sendEvent(new OutputEvent(msg, "stderr"));
+        response.success = false;
+        (response as any).message = "Emulator path not configured";
+        this.sendResponse(response);
+        return;
+    }
+    if (!fs.existsSync(args.emulator)) {
+        const msg = `Emulator binary not found: "${args.emulator}"\nCheck the 'emulator' field in launch.json or the z80debug.sugarbox setting.\n`;
+        this.sendEvent(new OutputEvent(msg, "stderr"));
+        response.success = false;
+        (response as any).message = `Emulator not found: ${args.emulator}`;
+        this.sendResponse(response);
+        return;
+    }
+
     // Build a temporary CSL script for disk/tape (snapshot is loaded via DAP command after connect)
     let cslFile: string | null = null;
-    if (args.disk || args.tape) {
+    if (args.disk || args.diskB || args.tape) {
         const lines = ["cslversion 2.0"];
-        if (args.disk) lines.push(`disk_insert 0 '${args.disk}'`);
-        if (args.tape) lines.push(`tape_insert '${args.tape}'`);
+        if (args.disk)  lines.push(`disk_insert 0 '${args.disk}'`);
+        if (args.diskB) lines.push(`disk_insert 1 '${args.diskB}'`);
+        if (args.tape)  lines.push(`tape_insert '${args.tape}'`);
         cslFile = nodePath.join(os.tmpdir(), `sugarbox_${Date.now()}.csl`);
         fs.writeFileSync(cslFile, lines.join("\n") + "\n");
         console.log("DAP: CSL script written to", cslFile);
@@ -191,8 +210,10 @@ protected async launchRequest(
 
     // Build Sugarbox arguments
     const spawnArgs: string[] = ["--debug", "--debug_server", String(port)];
-    if (cslFile)            spawnArgs.push("--csl", cslFile);
-    if (args.hideEmulator)  spawnArgs.push("--hide");
+    if (cslFile)              spawnArgs.push("--csl", cslFile);
+    if (args.cartridge)       spawnArgs.push("--cart", args.cartridge);
+    if (args.configuration)   spawnArgs.push("--cfg", args.configuration);
+    if (args.hideEmulator)    spawnArgs.push("--hide");
 
     // Check if the port is already in use before spawning
     const portInUse = await this.isPortInUse(port);
@@ -211,6 +232,11 @@ protected async launchRequest(
     // of the VS Code workspace folder.
     const emulatorDir = nodePath.dirname(args.emulator);
     console.log("DAP: Spawning emulator:", args.emulator, spawnArgs.join(" "), "(cwd:", emulatorDir, ")");
+
+    // Track early exit so we can give a more actionable error message.
+    let emulatorExitCode: number | null = null;
+    let spawnError: string | null = null;
+
     this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, {
         stdio: ["ignore", "ignore", "pipe"],
         detached: true,  // GUI process — survit si le parent Node.js est tué
@@ -221,12 +247,14 @@ protected async launchRequest(
         this.sendEvent(new OutputEvent(`[Sugarbox] ${data.toString()}`, "stderr"));
     });
     this.emulatorProcess.on("error", err => {
-        const msg = `DAP: Failed to start emulator "${args.emulator}": ${err.message}\n`;
+        spawnError = err.message;
+        const msg = `Failed to start emulator "${args.emulator}": ${err.message}\n`;
         console.error(msg);
         this.sendEvent(new OutputEvent(msg, "stderr"));
         this.sendEvent(new TerminatedEvent());
     });
     this.emulatorProcess.on("exit", code => {
+        emulatorExitCode = code ?? -1;
         console.log("DAP: Emulator exited with code", code);
         this.sendEvent(new TerminatedEvent());
     });
@@ -235,13 +263,33 @@ protected async launchRequest(
     try {
         await this.waitForPort(port, 10000);
     } catch (e) {
+        // Build a diagnostic message based on what we observed
+        let reason: string;
+        if (spawnError) {
+            reason = `Emulator failed to start: ${spawnError}`;
+        } else if (emulatorExitCode !== null) {
+            reason = `Emulator exited immediately (code ${emulatorExitCode}) — check the binary and its arguments`;
+        } else {
+            reason = `Emulator did not open port ${port} within 10 s — check that Sugarbox supports --debug_server`;
+        }
+        const msg = `Launch failed: ${reason}\nCommand: ${args.emulator} ${spawnArgs.join(" ")}\n`;
+        this.sendEvent(new OutputEvent(msg, "stderr"));
         response.success = false;
-        (response as any).message = `Emulator did not open port ${port} in time`;
+        (response as any).message = reason;
         this.sendResponse(response);
         return;
     }
 
-    await this.emulator.connect(port);
+    try {
+        await this.emulator.connect(port);
+    } catch (e) {
+        const msg = `Emulator port ${port} closed unexpectedly after opening — emulator may have crashed.\n`;
+        this.sendEvent(new OutputEvent(msg, "stderr"));
+        response.success = false;
+        (response as any).message = `Connection to port ${port} failed: ${e}`;
+        this.sendResponse(response);
+        return;
+    }
     console.log("DAP: Connected to emulator");
 
     // Load snapshot via DAP command — send file content as base64 to avoid
@@ -326,20 +374,30 @@ protected async attachRequest(
     console.log("DAP: Attach...");
     this.isAttach = true;
     this.loadSymbols(args);
-    this.emulator.connect(args.port ?? 1234).then(() => {
-        console.log("attached");
-
-        this.emulator.onEvent = (evt) => {
-            if (evt.event === "stopped") {
-                const reason = evt.body?.reason ?? "breakpoint";
-                console.log("DAP: async stopped event:", reason);
-                this.sendEvent(new StoppedEvent(reason, 1));
-            }
-        };
-
-        this.sendEvent(new InitializedEvent());
+    const port = args.port ?? 1234;
+    try {
+        await this.emulator.connect(port);
+    } catch (e) {
+        const msg = `Cannot attach: no emulator listening on port ${port}.\n` +
+                    `Start Sugarbox with: --debug_server ${port}\n`;
+        this.sendEvent(new OutputEvent(msg, "stderr"));
+        response.success = false;
+        (response as any).message = `No emulator on port ${port}`;
         this.sendResponse(response);
-    });
+        return;
+    }
+    console.log("DAP: Attached");
+
+    this.emulator.onEvent = (evt) => {
+        if (evt.event === "stopped") {
+            const reason = evt.body?.reason ?? "breakpoint";
+            console.log("DAP: async stopped event:", reason);
+            this.sendEvent(new StoppedEvent(reason, 1));
+        }
+    };
+
+    this.sendEvent(new InitializedEvent());
+    this.sendResponse(response);
 }
 
 protected async configurationDoneRequest(
