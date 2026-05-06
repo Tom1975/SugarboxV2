@@ -6,25 +6,83 @@ export type EmulatorEvent = {
     body?: any;
 };
 
+interface QueueEntry {
+    msg:     string;
+    resolve: (v: any)    => void;
+    reject:  (e: Error)  => void;
+}
+
+/**
+ * TCP client for the Sugarbox debug server.
+ *
+ * Commands are serialised through an internal queue: only one command is
+ * in-flight at a time.  This prevents the earlier single-pendingResolve
+ * design from misfiring when several callers (e.g. hardware-panel refresh)
+ * issue concurrent send() calls.
+ *
+ * Emulator events (type === "event") are dispatched independently via
+ * onEvent and never go through the queue.
+ */
 export class EmulatorClient {
     private socket!: net.Socket;
-    private buffer = "";
-    private pendingResolve: ((msg: any) => void) | null = null;
-    public onEvent?: (evt: EmulatorEvent) => void;
+    private buffer  = "";
+    private queue: QueueEntry[] = [];
+    private inflight: ((msg: any) => void) | null = null;
+    public  onEvent?: (evt: EmulatorEvent) => void;
 
     connect(port = 1234, host = "127.0.0.1") {
         return new Promise<void>((resolve, reject) => {
-            this.socket = net.createConnection(port, host, () => {
-                resolve();
-            });
-            this.socket.on("data", data => this.onData(data));
-            this.socket.on("error", err => {
-                // Reject only if the connection was never established (pre-connect error).
-                // Post-connect errors are non-fatal: the emulator may have exited normally.
-                reject(err);
-            });
-            this.socket.on("close", () => console.log(`EmulatorClient: socket closed (port ${port})`));
+            this.socket = net.createConnection(port, host, () => { resolve(); });
+            this.socket.on("data",  data => this.onData(data));
+            this.socket.on("error", err  => { reject(err); });
+            this.socket.on("close", ()   => console.log(`EmulatorClient: socket closed (port ${port})`));
         });
+    }
+
+    disconnect() {
+        if (this.socket && !this.socket.destroyed) {
+            this.socket.destroy();
+        }
+    }
+
+    send(cmd: any): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            if (!this.socket || this.socket.destroyed) {
+                reject(new Error("Socket not connected"));
+                return;
+            }
+            this.queue.push({ msg: JSON.stringify(cmd) + "\n", resolve, reject });
+            this.flush();
+        });
+    }
+
+    // ── Internal ─────────────────────────────────────────────────────────────
+
+    private flush(): void {
+        if (this.inflight || this.queue.length === 0) return;
+
+        const { msg, resolve, reject } = this.queue.shift()!;
+
+        let settled = false;
+
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled         = true;
+            this.inflight   = null;
+            reject(new Error("Emulator did not respond in time"));
+            this.flush();   // continue with next queued command
+        }, 10_000);
+
+        this.inflight = (response: any) => {
+            if (settled) return;
+            settled       = true;
+            clearTimeout(timer);
+            this.inflight = null;
+            resolve(response);
+            this.flush();   // continue with next queued command
+        };
+
+        this.socket.write(msg);
     }
 
     private onData(data: Buffer) {
@@ -38,38 +96,14 @@ export class EmulatorClient {
                 const msg = JSON.parse(line);
                 if (msg.type === "event") {
                     this.onEvent?.(msg);
-                } else if (this.pendingResolve) {
-                    this.pendingResolve(msg);
-                    this.pendingResolve = null;
+                } else if (this.inflight) {
+                    this.inflight(msg);
+                } else {
+                    console.warn("EmulatorClient: received response with no pending command:", line);
                 }
             } catch (e) {
-                console.error("Invalid JSON from emulator:", line);
+                console.error("EmulatorClient: invalid JSON from emulator:", line);
             }
         }
-    }
-
-    disconnect() {
-        if (this.socket && !this.socket.destroyed) {
-            this.socket.destroy();
-        }
-    }
-
-    send(cmd: any): Promise<any> {
-        return new Promise((resolve, reject) => {
-            if (!this.socket || this.socket.destroyed) {
-                reject(new Error("Socket not connected"));
-                return;
-            }
-            this.pendingResolve = resolve;
-            const msg = JSON.stringify(cmd) + "\n";
-            this.socket.write(msg);
-            // Timeout de sécurité
-            setTimeout(() => {
-                if (this.pendingResolve) {
-                    this.pendingResolve = null;
-                    reject(new Error("Emulator did not respond in time"));
-                }
-            }, 1000);
-        });
     }
 }
