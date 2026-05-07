@@ -506,6 +506,7 @@ void Emulation::ItemLoaded(const char* disk_path, int load_ok, int drive_number)
 
    // Suppervisor should be advised of it
    notifier_->DiskLoaded();
+   notifier_->DiskInserted(drive_number);
 
    // Autoload ?
    // todo : skip startup disk inserted ?
@@ -539,6 +540,7 @@ void Emulation::DiskEject()
 {
    // Play "disk ejection" sound
    sound_mixer_->PlayWav(SND_EJECT_DISK);
+   notifier_->DiskEjected();
 }
 
 void Emulation::DiskRunning(bool on)

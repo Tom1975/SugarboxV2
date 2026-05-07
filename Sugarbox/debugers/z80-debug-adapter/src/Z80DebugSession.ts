@@ -323,6 +323,8 @@ protected async launchRequest(
             const reason = evt.body?.reason ?? "breakpoint";
             console.log("DAP: async stopped event:", reason);
             this.sendEvent(new StoppedEvent(reason, 1));
+        } else if (evt.event === "mediaChanged") {
+            this.sendEvent({ type: "event", event: "mediaChanged", seq: 0, body: evt.body } as DebugProtocol.Event);
         }
     };
 
@@ -393,6 +395,8 @@ protected async attachRequest(
             const reason = evt.body?.reason ?? "breakpoint";
             console.log("DAP: async stopped event:", reason);
             this.sendEvent(new StoppedEvent(reason, 1));
+        } else if (evt.event === "mediaChanged") {
+            this.sendEvent({ type: "event", event: "mediaChanged", seq: 0, body: evt.body } as DebugProtocol.Event);
         }
     };
 

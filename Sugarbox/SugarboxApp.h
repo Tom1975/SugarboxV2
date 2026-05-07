@@ -91,8 +91,10 @@ public:
    virtual void OpenMemory(int memory_index);
    virtual void OpenCrtc();
 
-   // INotifier 
+   // INotifier
    virtual void DiskLoaded();
+   virtual void DiskInserted(int drive);
+   virtual void DiskEjected();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);

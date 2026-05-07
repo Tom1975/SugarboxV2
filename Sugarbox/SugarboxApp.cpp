@@ -1062,8 +1062,20 @@ void SugarboxApp::dragLeaveEvent(QDragLeaveEvent *event)
 
 void SugarboxApp::DiskLoaded()
 {
-   // Signal an update 
+   // Signal an update
    emit MenuChanged();
+}
+
+void SugarboxApp::DiskInserted(int drive)
+{
+   if (debugger_link_ != nullptr)
+      debugger_link_->NotifyMediaChanged(drive, true);
+}
+
+void SugarboxApp::DiskEjected()
+{
+   if (debugger_link_ != nullptr)
+      debugger_link_->NotifyMediaChanged(-1, false);
 }
 
 void SugarboxApp::ChangeSettings(MachineSettings* settings)

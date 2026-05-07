@@ -62,6 +62,7 @@ public:
    void StartServer();
    void stop();
    void NotifyStop(IDebugerStopped::Reason reason);
+   void NotifyMediaChanged(int drive, bool inserted);
 
 private:
    void serverThread();

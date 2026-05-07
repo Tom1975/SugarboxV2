@@ -188,6 +188,18 @@ void  DebugServer::NotifyStop(IDebugerStopped::Reason reason)
    outgoing_queue_.push(j.dump() + "\n");
 }
 
+void DebugServer::NotifyMediaChanged(int drive, bool inserted)
+{
+   json j;
+   j["type"]  = "event";
+   j["event"] = "mediaChanged";
+   json body;
+   body["drive"]    = drive;
+   body["inserted"] = inserted;
+   j["body"] = body;
+   outgoing_queue_.push(j.dump() + "\n");
+}
+
 void DebugServer::handleClient(int clientSocket)
 {
    char buffer[4096];

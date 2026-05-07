@@ -177,6 +177,11 @@ export function activate(context: vscode.ExtensionContext) {
                             HardwarePanel.refreshAll().catch(() => {});
                         } else if (
                             message.type === "event" &&
+                            message.event === "mediaChanged"
+                        ) {
+                            FdcPanel.currentPanel?.refresh().catch(() => {});
+                        } else if (
+                            message.type === "event" &&
                             (message.event === "continued" || message.event === "terminated")
                         ) {
                             currentPcAddress = undefined;

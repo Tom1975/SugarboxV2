@@ -250,9 +250,10 @@ const ST2_BITS = ${st2Bits};
 
 // ── Globals ───────────────────────────────────────────────────────────────────
 
-let currentTab = 'hex';
-let rawData    = null;   // last loaded raw track
-let bitOffset  = 0;
+let currentTab   = 'hex';
+let rawData      = null;   // last loaded raw track
+let bitOffset    = 0;
+let drivePresent = [false, false];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -606,11 +607,17 @@ function applyFdcState(state) {
         grid.appendChild(buildDriveCard(drv, i, state.currentDrive ?? 0, state.motorOn ?? false))
     );
     // Sync raw viewer drive selector defaults to current drive
-    document.getElementById('rawDrive').value = String(state.currentDrive ?? 0);
-    const d = (state.drives ?? [])[state.currentDrive ?? 0];
+    drivePresent = (state.drives ?? []).map(drv => !!drv.present);
+    const curDrive = state.currentDrive ?? 0;
+    document.getElementById('rawDrive').value = String(curDrive);
+    const d = (state.drives ?? [])[curDrive];
     if (d) {
         document.getElementById('rawTrack').value = String(d.track);
         document.getElementById('rawSide').value  = String(d.side);
+    }
+    if (!drivePresent[curDrive]) {
+        document.getElementById('rawStatus').textContent =
+            \`No disk in drive \${String.fromCharCode(65 + curDrive)}\`;
     }
 }
 
@@ -630,10 +637,24 @@ function applyRawTrack(data) {
 
 document.getElementById('btnRefresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
 
+document.getElementById('rawDrive').addEventListener('change', function() {
+    const drive = parseInt(this.value, 10);
+    if (!drivePresent[drive])
+        document.getElementById('rawStatus').textContent =
+            \`No disk in drive \${String.fromCharCode(65 + drive)}\`;
+    else if (document.getElementById('rawStatus').textContent.startsWith('No disk'))
+        document.getElementById('rawStatus').textContent = '';
+});
+
 document.getElementById('btnLoadRaw').addEventListener('click', () => {
     const drive = parseInt(document.getElementById('rawDrive').value, 10);
     const track = parseInt(document.getElementById('rawTrack').value, 10);
     const side  = parseInt(document.getElementById('rawSide').value,  10);
+    if (!drivePresent[drive]) {
+        document.getElementById('rawStatus').textContent =
+            \`No disk in drive \${String.fromCharCode(65 + drive)}\`;
+        return;
+    }
     document.getElementById('rawStatus').textContent = 'Loading…';
     vscode.postMessage({ type: 'loadRaw', drive, side, track });
 });

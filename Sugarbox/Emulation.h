@@ -20,6 +20,8 @@ class INotifier
 {
 public:
    virtual void DiskLoaded() = 0;
+   virtual void DiskInserted(int drive) = 0;
+   virtual void DiskEjected() = 0;
 };
 
 class IBeakpointNotifier
