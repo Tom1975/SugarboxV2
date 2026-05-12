@@ -40,20 +40,24 @@ jobs:
   build-vsix:
     runs-on: ubuntu-latest
     needs: extract-version
+    defaults:
+      run:
+        working-directory: Sugarbox/debugers/z80-debug-adapter
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: Sugarbox/debugers/z80-debug-adapter/package-lock.json
       - name: Install dependencies
-        working-directory: Sugarbox/debugers/z80-debug-adapter
         run: npm ci
+      - name: Compile TypeScript
+        run: npm run compile
       - name: Package VSIX
-        working-directory: Sugarbox/debugers/z80-debug-adapter
         run: |
           VERSION="${{ needs.extract-version.outputs.Sugarbox_version }}"
-          VERSION="${VERSION#v}"
-          npx vsce package "$VERSION" --no-git-tag-version
+          python3 make_vsix.py --no-compile --version "${VERSION#v}"
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:

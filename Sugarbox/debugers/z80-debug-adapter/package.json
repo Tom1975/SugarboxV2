@@ -2,7 +2,7 @@
   "name": "z80-debug",
   "displayName": "Z80 Debug Adapter",
   "description": "Debug adapter for Z80 emulators (RASM + SugarboxV2)",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "publisher": "thomas-guillemin",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "onDebug",
     "onStartupFinished"
   ],
-  "main": "./out/main.js",
+  "main": "./dist/main.js",
   "contributes": {
     "configuration": {
       "title": "%cfg.title%",
@@ -48,9 +48,15 @@
     "languages": [
       {
         "id": "z80-disasm",
-        "aliases": ["Z80 Disassembly"],
-        "extensions": [".z80disasm"],
-        "mimetypes": ["text/x-z80-disasm"]
+        "aliases": [
+          "Z80 Disassembly"
+        ],
+        "extensions": [
+          ".z80disasm"
+        ],
+        "mimetypes": [
+          "text/x-z80-disasm"
+        ]
       }
     ],
     "grammars": [
@@ -133,17 +139,24 @@
         "contents": "%view.launcher.welcome%"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "z80-debug-sidebar",
+          "title": "Z80 Debug",
+          "icon": "images/activity-bar.svg"
+        }
+      ]
+    },
     "views": {
-      "debug": [
+      "z80-debug-sidebar": [
         {
           "id": "z80debug.launcher",
-          "name": "%view.launcher%",
-          "when": "true"
+          "name": "%view.launcher%"
         },
         {
           "id": "z80debug.hardwarePanels",
-          "name": "%view.hardware%",
-          "when": "debugType == 'z80'"
+          "name": "%view.hardware%"
         }
       ]
     },
@@ -440,16 +453,18 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p .",
+    "bundle": "npm run compile && webpack --config webpack.config.js",
     "watch": "tsc -w",
     "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.19.30",
     "@types/vscode": "^1.108.1",
-    "@vscode/vsce": "^2.22.0",
-    "typescript": "^5.3.0"
+    "@vscode/vsce": "^2.15.0",
+    "typescript": "^5.3.0",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
   },
   "dependencies": {
     "vscode-debugadapter": "^1.51.0",
