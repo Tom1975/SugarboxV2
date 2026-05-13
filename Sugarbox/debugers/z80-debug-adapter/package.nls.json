@@ -1,7 +1,7 @@
 {
     "cmd.newProject":         "New CPC Project...",
     "cmd.quickLaunch":        "Launch CPC...",
-    "cmd.configure":          "Configure workspace (Sugarbox & RASM paths)",
+    "cmd.configure":          "Configure Z80 Debug",
     "cmd.openDisasmAt":       "Open Disassembly at Address…",
     "cmd.openMemoryAt":       "Open Memory View at Address…",
     "cmd.addBreakpointAt":    "Add Breakpoint at Address or Label…",
@@ -15,7 +15,7 @@
 
     "view.launcher": "Amstrad CPC",
     "view.hardware": "CPC Hardware",
-    "view.launcher.welcome": "[$(add) New CPC Project...](command:z80debug.newProject)\n[$(run) Launch CPC...](command:z80debug.quickLaunch)\n[$(tools) Configure paths](command:z80debug.configure)",
+    "view.launcher.welcome": "[$(add) New CPC Project...](command:z80debug.newProject)\n[$(run) Launch CPC...](command:z80debug.quickLaunch)\n[$(tools) Configure](command:z80debug.configure)",
 
     "dbg.label": "Z80 Emulator",
 
@@ -24,6 +24,7 @@
     "cfg.buildName.desc":  "Base name for build outputs (e.g. \"mygame\" → build/mygame.dsk, build/mygame.rasm). Used by the build task and launch config.",
     "cfg.sugarbox.desc":   "Path to the Sugarbox emulator binary (e.g. C:\\\\Tools\\\\Sugarbox.exe or /usr/local/bin/Sugarbox).",
     "cfg.rasm.desc":       "Path to the RASM assembler binary (e.g. C:\\\\Tools\\\\rasm_w64.exe or rasm if on PATH).",
+    "cfg.hideEmulator.desc": "Hide the emulator window when launching a debug session (can be overridden per launch config).",
 
     "snippet.diskRasm.label":       "Amstrad CPC: Launch with disk (RASM)",
     "snippet.diskRasm.desc":        "Start Sugarbox, insert a .dsk and break at entry point",

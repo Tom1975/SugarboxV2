@@ -1,7 +1,7 @@
 {
     "cmd.newProject":         "Nouveau projet CPC...",
     "cmd.quickLaunch":        "Lancer le CPC...",
-    "cmd.configure":          "Configurer le workspace (chemins Sugarbox & RASM)",
+    "cmd.configure":          "Configurer Z80 Debug",
     "cmd.openDisasmAt":       "Ouvrir le désassemblage à l'adresse…",
     "cmd.openMemoryAt":       "Ouvrir la vue mémoire à l'adresse…",
     "cmd.addBreakpointAt":    "Ajouter un breakpoint à l'adresse ou au label…",
@@ -15,7 +15,7 @@
 
     "view.launcher": "Amstrad CPC",
     "view.hardware": "Matériel CPC",
-    "view.launcher.welcome": "[$(add) Nouveau projet CPC...](command:z80debug.newProject)\n[$(run) Lancer le CPC...](command:z80debug.quickLaunch)\n[$(tools) Configurer les chemins](command:z80debug.configure)",
+    "view.launcher.welcome": "[$(add) Nouveau projet CPC...](command:z80debug.newProject)\n[$(run) Lancer le CPC...](command:z80debug.quickLaunch)\n[$(tools) Configurer](command:z80debug.configure)",
 
     "dbg.label": "Émulateur Z80",
 
@@ -24,6 +24,7 @@
     "cfg.buildName.desc":  "Nom de base pour les sorties de build (ex : \"mygame\" → build/mygame.dsk, build/mygame.rasm). Utilisé par la tâche de build et la configuration de lancement.",
     "cfg.sugarbox.desc":   "Chemin vers le binaire de l'émulateur Sugarbox.",
     "cfg.rasm.desc":       "Chemin vers le binaire de l'assembleur RASM.",
+    "cfg.hideEmulator.desc": "Masquer la fenêtre de l'émulateur au lancement d'une session de debug.",
 
     "snippet.diskRasm.label":       "Amstrad CPC : Lancer avec disquette (RASM)",
     "snippet.diskRasm.desc":        "Démarre Sugarbox, insère un .dsk et s'arrête au point d'entrée",

@@ -54,6 +54,8 @@ export class FdcPanel extends HardwarePanel {
                 await this.refresh();
             } else if (msg.type === "loadRaw") {
                 await this._loadRaw(msg.drive, msg.side, msg.track);
+            } else if (msg.type === "insertDisk") {
+                await this._insertDisk(msg.drive);
             }
         });
     }
@@ -74,6 +76,33 @@ export class FdcPanel extends HardwarePanel {
                 this._panel.webview.postMessage({ type: "fdcState", state: result });
         } catch (e) {
             this._panel.webview.postMessage({ type: "error", message: String(e) });
+        }
+    }
+
+    private async _insertDisk(drive: number): Promise<void> {
+        const session = vscode.debug.activeDebugSession;
+        if (!session) {
+            this._panel.webview.postMessage({ type: "insertResult", error: "No active debug session" });
+            return;
+        }
+        const driveLetter = drive === 0 ? "A" : "B";
+        const picked = await vscode.window.showOpenDialog({
+            title: `Insert disk in drive ${driveLetter}`,
+            canSelectMany: false,
+            filters: { "Disk images": ["dsk", "DSK"] }
+        });
+        if (!picked) return;
+        const path = picked[0].fsPath;
+        try {
+            const result = await session.customRequest("insertDisk", { drive, path });
+            if (result?.error) {
+                this._panel.webview.postMessage({ type: "insertResult", error: result.error });
+            } else {
+                this._panel.webview.postMessage({ type: "insertResult", drive, path });
+                await this.refresh();
+            }
+        } catch (e) {
+            this._panel.webview.postMessage({ type: "insertResult", error: String(e) });
         }
     }
 
@@ -167,16 +196,22 @@ ${HardwarePanel.commonCss()}
   .hb { display:inline-block; padding:0 1px; border-radius:1px; cursor:default; }
   /* region colors */
   .h-gap1  { color:#4e9a06; }
-  .h-gap0  { color:#444; }
+  .h-pre0  { color:#6a7fb0; }
   .h-sync  { color:#4fc3f7; font-weight:bold; }
   .h-idam  { color:#f6d32d; font-weight:bold; }
   .h-chrn  { color:#ff9800; }
   .h-hcrc  { color:#ce93d8; }
-  .h-dam   { color:#ffab40; font-weight:bold; }
-  .h-data  { color:var(--fg); }
-  .h-dcrc  { color:#ce93d8; }
-  .h-weak  { background:rgba(246,211,45,.18); text-decoration:underline dotted #f6d32d; }
-  .h-crcerr { text-decoration:underline wavy #e01b24; }
+  .h-dam    { color:#ffab40; font-weight:bold; }
+  .h-dam-del{ color:#ff7043; font-weight:bold; }
+  .h-data   { color:var(--fg); }
+  .h-dcrc   { color:#ce93d8; }
+  .h-crcerr { color:#e01b24; font-weight:bold; }
+  .h-weak   { background:rgba(246,211,45,.18); text-decoration:underline dotted #f6d32d; }
+
+  /* Hex legend */
+  .hex-legend { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:6px; font-size:.75em; }
+  .hex-leg-item { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+  .hex-leg-dot  { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
 
   /* MFM canvas */
   .mfm-wrap { overflow:auto; max-height:600px; background:var(--bg);
@@ -200,6 +235,11 @@ ${HardwarePanel.commonCss()}
 
 <div class="section-title">Drives</div>
 <div id="drivesGrid" class="drives-grid"></div>
+<div style="display:flex;gap:8px;margin-top:6px;">
+  <button id="btnInsertA">&#x1F4BE; Insert disk → A</button>
+  <button id="btnInsertB">&#x1F4BE; Insert disk → B</button>
+</div>
+<div id="insertStatus" style="font-size:.8em;color:var(--fg-dim);margin-top:4px;min-height:1.2em;"></div>
 
 <!-- Raw track viewer -->
 <div class="raw-viewer">
@@ -227,17 +267,33 @@ ${HardwarePanel.commonCss()}
     </label>
   </div>
   <div id="hexView"  class="hex-view" style="display:block"></div>
+  <div id="hexLegend" class="hex-legend" style="display:flex">
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#4e9a06"></div><span style="color:#4e9a06">GAP 4E</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#6a7fb0"></div><span style="color:#6a7fb0">Sync 00</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#4fc3f7"></div><span style="color:#4fc3f7">Sync</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#f6d32d"></div><span style="color:#f6d32d">IDAM</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#ff9800"></div><span style="color:#ff9800">CHRN</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#ce93d8"></div><span style="color:#ce93d8">CRC</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#ffab40"></div><span style="color:#ffab40">DAM FB</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#ff7043"></div><span style="color:#ff7043">DAM F8</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:#e01b24"></div><span style="color:#e01b24">CRC erreur</span></div>
+    <div class="hex-leg-item"><div class="hex-leg-dot" style="background:rgba(246,211,45,.4)"></div><span style="color:#f6d32d">Weak</span></div>
+  </div>
   <div id="mfmView"  style="display:none">
     <div class="mfm-wrap"><canvas id="mfmCanvas" width="768" height="4"></canvas></div>
     <div class="mfm-legend">
-      <div class="leg-item"><div class="leg-swatch" style="background:#ff3030"></div> MFM violation (11)</div>
       <div class="leg-item"><div class="leg-swatch" style="background:#ffcc00"></div> Weak bit</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#4fc3f7"></div> Sync region</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#f6d32d"></div> IDAM / DAM</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#ff9800"></div> CHRN / Data CRC</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#dddddd"></div> Data 1</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#555555"></div> Clock 1</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:#1e1e1e"></div> 0</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#ff3030"></div> Violation (11)</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#55aa22;border:1px solid #0e1a0e"></div> GAP 4E</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#4466bb;border:1px solid #0c1022"></div> Sync 00</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#22aaee;border:1px solid #082238"></div> Sync</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#eebb22;border:1px solid #382804"></div> IDAM</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#dd8818;border:1px solid #301a04"></div> CHRN</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#aa55dd;border:1px solid #220e2e"></div> CRC</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#ddaa22;border:1px solid #302204"></div> DAM FB</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#dd6618;border:1px solid #381406"></div> DAM F8</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#ee2222;border:1px solid #3a0808"></div> CRC erreur</div>
+      <div class="leg-item"><div class="leg-swatch" style="background:#bbbbbb;border:1px solid #161616"></div> Data</div>
     </div>
   </div>
 </div>
@@ -398,85 +454,120 @@ function decodeByte(bits, startOff, bitSize) {
     return result;
 }
 
-// Build region annotation array (one entry per decoded byte)
-// Regions: 0=none 1=gap1(4E) 2=gap0(00) 3=sync 4=idam 5=chrn 6=hcrc 7=dam 8=data 9=dcrc
-function buildRegionMap(bitSize, bitOff, sectors) {
+// CRC-CCITT (poly 0x1021, init 0xFFFF) — used by 765 FDC
+function crc16(bytes) {
+    let crc = 0xFFFF;
+    for (const b of bytes) {
+        crc ^= (b << 8);
+        for (let j = 0; j < 8; j++)
+            crc = (crc & 0x8000) ? (((crc << 1) ^ 0x1021) & 0xFFFF) : ((crc << 1) & 0xFFFF);
+    }
+    return crc;
+}
+
+function decodeBytesAt(bits, startBit, count, bitSize) {
+    const out = new Uint8Array(count);
+    for (let i = 0; i < count; i++)
+        out[i] = decodeByte(bits, (startBit + i * 16) % bitSize, bitSize);
+    return out;
+}
+
+// Full region map — one entry per decoded MFM byte.
+// Pass 1: classify by decoded value — 0x4E=GAP4E(1), 0x00=sync-preamble(2), A1/C2=sync(3).
+// Pass 2: overlay sector structure from Sugarbox offsets (takes priority).
+// Pass 3: compute CRC-CCITT ourselves; mark CRC bytes as error (10) when wrong.
+// Pass 4: fill remaining unknowns in inter-sector gap areas.
+function buildFullRegionMap(bits, bitSize, bitOff, sectors) {
     const nbBytes = Math.floor(bitSize / 16);
     const map = new Uint8Array(nbBytes);
 
+    // setRange: exclusive end — exactly Math.ceil(lenBits/16) bytes marked
     function setRange(startBit, lenBits, code) {
-        // startBit is absolute bit position in bitfield
-        let adjStart = ((startBit - bitOff) % bitSize + bitSize) % bitSize;
-        const byteStart = Math.floor(adjStart / 16);
-        const byteEnd   = Math.min(byteStart + Math.ceil(lenBits / 16), nbBytes - 1);
-        for (let b = byteStart; b <= byteEnd; b++) map[b] = code;
+        const adj = ((startBit - bitOff) % bitSize + bitSize) % bitSize;
+        const b0 = Math.floor(adj / 16);
+        const b1 = Math.min(b0 + Math.ceil(lenBits / 16), nbBytes);
+        for (let b = b0; b < b1; b++) map[b] = code;
+    }
+    function fillGap(startBit, lenBits) {
+        const adj = ((startBit - bitOff) % bitSize + bitSize) % bitSize;
+        const b0 = Math.floor(adj / 16);
+        const b1 = Math.min(b0 + Math.ceil(lenBits / 16), nbBytes);
+        for (let b = b0; b < b1; b++) if (map[b] === 0) map[b] = 1;
     }
 
-    for (const s of sectors) {
-        // IDAM: A1 A1 A1 (48 bits) + FE (16 bits) + CHRN (64 bits) + hdr CRC (32 bits)
-        setRange(s.idamOffset,       48, 3); // sync A1 A1 A1
-        setRange(s.idamOffset + 48,  16, 4); // FE  mark
-        setRange(s.idamOffset + 64,  64, 5); // CHRN
-        setRange(s.idamOffset + 128, 32, 6); // header CRC
-        // DAM: A1 A1 A1 (48 bits) + FB/F8 (16 bits) + data + data CRC
-        setRange(s.damOffset,        48, 3); // sync A1 A1 A1
-        setRange(s.damOffset + 48,   16, 7); // DAM mark (FB or F8)
-        setRange(s.damOffset + 64,   s.realSize * 16, 8); // data
-        setRange(s.damOffset + 64 + s.realSize * 16, 32, 9); // data CRC
+    // Pass 1: classify bytes by decoded MFM value
+    for (let i = 0; i < nbBytes; i++) {
+        const val = decodeByte(bits, (bitOff + i * 16) % bitSize, bitSize);
+        if      (val === 0x4E)                   map[i] = 1; // GAP 4E
+        else if (val === 0x00)                   map[i] = 2; // sync preamble 00
+        else if (val === 0xA1 || val === 0xC2)   map[i] = 3; // sync mark
     }
+
+    // Pass 2: sector structure (overrides pass 1)
+    for (const s of (sectors || [])) {
+        setRange(s.idamOffset,                        48,              3); // sync A1×3
+        setRange(s.idamOffset + 48,                   16,              4); // IDAM FE
+        setRange(s.idamOffset + 64,                   64,              5); // CHRN
+        setRange(s.idamOffset + 128,                  32,              6); // hdr CRC
+        setRange(s.damOffset,                         48,              3); // sync A1×3
+        setRange(s.damOffset  + 48,                   16,              s.deleted ? 11 : 7); // DAM FB/F8
+        setRange(s.damOffset  + 64,                   s.realSize * 16, 8); // data
+        setRange(s.damOffset  + 64 + s.realSize * 16, 32,              9); // data CRC
+    }
+
+    // Pass 3: compute CRC ourselves — mark CRC bytes red if mismatch
+    for (const s of (sectors || [])) {
+        // Header CRC: covers A1 A1 A1 FE C H R N (8 bytes)
+        const hdrData    = decodeBytesAt(bits, s.idamOffset, 8, bitSize);
+        const hdrCrcBytes = decodeBytesAt(bits, s.idamOffset + 128, 2, bitSize);
+        if (crc16(hdrData) !== ((hdrCrcBytes[0] << 8) | hdrCrcBytes[1]))
+            setRange(s.idamOffset + 128, 32, 10);
+        // Data CRC: covers A1 A1 A1 DAM + all data bytes (4 + realSize bytes)
+        const dataBytes   = decodeBytesAt(bits, s.damOffset, 4 + s.realSize, bitSize);
+        const dataCrcBytes = decodeBytesAt(bits, s.damOffset + 64 + s.realSize * 16, 2, bitSize);
+        if (crc16(dataBytes) !== ((dataCrcBytes[0] << 8) | dataCrcBytes[1]))
+            setRange(s.damOffset + 64 + s.realSize * 16, 32, 10);
+    }
+
+    // Pass 4: fill unknown bytes in inter-sector gaps
+    const sorted = [...(sectors || [])].sort((a, b) => a.idamOffset - b.idamOffset);
+    if (sorted.length > 0) fillGap(0, sorted[0].idamOffset);
+    for (let i = 0; i < sorted.length; i++) {
+        const gapStart = sorted[i].indexEnd ?? (sorted[i].damOffset + 64 + sorted[i].realSize * 16 + 32);
+        const gapEnd   = i + 1 < sorted.length ? sorted[i + 1].idamOffset : bitSize;
+        if (gapEnd > gapStart) fillGap(gapStart, gapEnd - gapStart);
+    }
+
     return map;
 }
 
 // ── Hex view renderer ─────────────────────────────────────────────────────────
 
-const REGION_CLASS = ['','h-gap1','h-gap0','h-sync','h-idam','h-chrn','h-hcrc','h-dam','h-data','h-dcrc'];
-const REGION_TOOLTIP = ['','GAP 4E','GAP 00','Sync A1/C2','IDAM (FE)','CHRN','Hdr CRC','DAM (FB/F8)','Data','Data CRC'];
-
-function byteClass(val) {
-    if (val === 0x4E) return 'h-gap1';
-    if (val === 0x00) return 'h-gap0';
-    if (val === 0xA1 || val === 0xC2) return 'h-sync';
-    if (val === 0xFE) return 'h-idam';
-    if (val === 0xFB || val === 0xF8) return 'h-dam';
-    return '';
-}
+// 0=unknown 1=GAP4E 2=sync-preamble(00) 3=sync 4=IDAM 5=CHRN 6=hdrCRC
+// 7=DAM(FB) 8=data 9=dataCRC 10=CRCerr 11=DAM(F8,deleted)
+const REGION_CLASS   = ['','h-gap1','h-pre0','h-sync','h-idam','h-chrn','h-hcrc','h-dam','h-data','h-dcrc','h-crcerr','h-dam-del'];
+const REGION_TOOLTIP = ['','GAP 4E','Sync 00','Sync A1/C2','IDAM (FE)','CHRN','Hdr CRC','DAM (FB)','Data','Data CRC','CRC Error','DAM (F8) Deleted'];
 
 function renderHexView(data, bitOff) {
-    const bits    = unpackBits(data.bits, data.bitSize);
+    const bits     = unpackBits(data.bits, data.bitSize);
     const weakBits = data.weakBits ? unpackBits(data.weakBits, data.bitSize) : null;
-    const nbBytes = Math.floor(data.bitSize / 16);
-    const regMap  = buildRegionMap(data.bitSize, bitOff, data.sectors || []);
-    const COLS    = 16;
+    const nbBytes  = Math.floor(data.bitSize / 16);
+    const regMap   = buildFullRegionMap(bits, data.bitSize, bitOff, data.sectors);
+    const COLS     = 16;
 
-    // Also build weak byte map: if any of the 16 bits for byte i contains a weak bit
+    // Weak byte map: byte is weak if any of its 16 MFM bits is a weak bit
     let weakByteMap = null;
     if (weakBits) {
         weakByteMap = new Uint8Array(nbBytes);
         for (let i = 0; i < nbBytes; i++) {
-            let base = (bitOff + i * 16) % data.bitSize;
+            const base = (bitOff + i * 16) % data.bitSize;
             for (let k = 0; k < 16; k++) {
                 if (weakBits[(base + k) % data.bitSize]) { weakByteMap[i] = 1; break; }
             }
         }
     }
 
-    // Build CRC error byte map: bytes inside a sector whose CRC is wrong
-    const crcErrMap = new Uint8Array(nbBytes);
-    for (const s of (data.sectors || [])) {
-        if (!s.hdrCrc) {
-            let adj = ((s.idamOffset - bitOff) % data.bitSize + data.bitSize) % data.bitSize;
-            const b = Math.floor(adj / 16);
-            for (let k = b; k < Math.min(b + 10, nbBytes); k++) crcErrMap[k] = 1;
-        }
-        if (!s.dataCrc) {
-            let adj = ((s.damOffset + 64 - bitOff) % data.bitSize + data.bitSize) % data.bitSize;
-            const b = Math.floor(adj / 16);
-            for (let k = b; k < Math.min(b + s.realSize + 2, nbBytes); k++) crcErrMap[k] = 1;
-        }
-    }
-
     const container = document.getElementById('hexView');
-    // Build HTML in chunks for performance
     const chunks = [];
     for (let row = 0; row < Math.ceil(nbBytes / COLS); row++) {
         const bitPos = (bitOff + row * COLS * 16) % data.bitSize;
@@ -485,12 +576,11 @@ function renderHexView(data, bitOff) {
             const i = row * COLS + col;
             if (i >= nbBytes) break;
             const val  = decodeByte(bits, (bitOff + i * 16) % data.bitSize, data.bitSize);
-            const rCls = regMap[i] ? REGION_CLASS[regMap[i]] : byteClass(val);
+            const rCls = REGION_CLASS[regMap[i]] || '';
             const wCls = (weakByteMap && weakByteMap[i]) ? ' h-weak' : '';
-            const eCls = (crcErrMap[i] && regMap[i] >= 8) ? ' h-crcerr' : '';
-            const tip  = regMap[i] ? REGION_TOOLTIP[regMap[i]] : '';
+            const tip  = REGION_TOOLTIP[regMap[i]] || '';
             const sp   = (col === 7) ? ' &nbsp;' : '';
-            chunks.push(\`<span class="hb \${rCls}\${wCls}\${eCls}" title="\${tip}">\${hex2(val)}</span>\${sp} \`);
+            chunks.push(\`<span class="hb \${rCls}\${wCls}" title="\${tip}">\${hex2(val)}</span>\${sp} \`);
         }
         chunks.push('</span></div>');
     }
@@ -499,37 +589,50 @@ function renderHexView(data, bitOff) {
 
 // ── MFM canvas renderer ───────────────────────────────────────────────────────
 
-// Colors (as CSS strings for typed array → we use pre-computed RGBA)
-const C_ZERO     = [0x1e, 0x1e, 0x1e, 0xff];  // 0 bit
-const C_CLK1     = [0x55, 0x55, 0x55, 0xff];  // clock 1
-const C_DATA1    = [0xdd, 0xdd, 0xdd, 0xff];  // data 1
-const C_VIOL     = [0xff, 0x30, 0x30, 0xff];  // MFM violation
-const C_WEAK     = [0xff, 0xcc, 0x00, 0xff];  // weak bit
-const C_SYNC_BG  = [0x1a, 0x2e, 0x3a, 0xff];  // sync region bg
-const C_IDAM_BG  = [0x2e, 0x28, 0x0e, 0xff];  // IDAM/DAM region bg
-const C_CHRN_BG  = [0x2e, 0x20, 0x08, 0xff];  // CHRN/CRC region bg
-const C_DATA_BG  = [0x14, 0x14, 0x14, 0xff];  // data region bg
+const C_VIOL = [0xff, 0x30, 0x30, 0xff];  // MFM violation (11) — priority
+const C_WEAK = [0xff, 0xcc, 0x00, 0xff];  // weak bit — priority
 
+// Per-region colors: BG = 0-bit (dark), FG = 1-bit (bright same hue)
 const REGION_BG = [
-    [0x14,0x14,0x14,0xff], // 0 = none
-    [0x10,0x18,0x10,0xff], // 1 = gap1
-    [0x0e,0x0e,0x0e,0xff], // 2 = gap0
-    [0x0a,0x20,0x30,0xff], // 3 = sync (blue tint)
-    [0x30,0x28,0x06,0xff], // 4 = IDAM (amber tint)
-    [0x28,0x18,0x04,0xff], // 5 = CHRN (orange tint)
-    [0x20,0x10,0x28,0xff], // 6 = hdr CRC (purple tint)
-    [0x30,0x20,0x06,0xff], // 7 = DAM (amber)
-    [0x14,0x14,0x14,0xff], // 8 = data
-    [0x20,0x10,0x28,0xff], // 9 = data CRC (purple)
+    [0x1e, 0x1e, 0x1e, 0xff], // 0  unknown
+    [0x0e, 0x1a, 0x0e, 0xff], // 1  GAP 4E
+    [0x0c, 0x10, 0x22, 0xff], // 2  sync 00
+    [0x08, 0x22, 0x38, 0xff], // 3  sync
+    [0x38, 0x28, 0x04, 0xff], // 4  IDAM
+    [0x30, 0x1a, 0x04, 0xff], // 5  CHRN
+    [0x22, 0x0e, 0x2e, 0xff], // 6  hdr CRC
+    [0x30, 0x22, 0x04, 0xff], // 7  DAM FB
+    [0x16, 0x16, 0x16, 0xff], // 8  data
+    [0x22, 0x0e, 0x2e, 0xff], // 9  data CRC
+    [0x3a, 0x08, 0x08, 0xff], // 10 CRC error
+    [0x38, 0x14, 0x06, 0xff], // 11 DAM F8
+];
+const REGION_FG = [
+    [0x77, 0x77, 0x77, 0xff], // 0  unknown
+    [0x55, 0xaa, 0x22, 0xff], // 1  GAP 4E
+    [0x44, 0x66, 0xbb, 0xff], // 2  sync 00
+    [0x22, 0xaa, 0xee, 0xff], // 3  sync
+    [0xee, 0xbb, 0x22, 0xff], // 4  IDAM
+    [0xdd, 0x88, 0x18, 0xff], // 5  CHRN
+    [0xaa, 0x55, 0xdd, 0xff], // 6  hdr CRC
+    [0xdd, 0xaa, 0x22, 0xff], // 7  DAM FB
+    [0xbb, 0xbb, 0xbb, 0xff], // 8  data
+    [0xaa, 0x55, 0xdd, 0xff], // 9  data CRC
+    [0xee, 0x22, 0x22, 0xff], // 10 CRC error
+    [0xdd, 0x66, 0x18, 0xff], // 11 DAM F8
 ];
 
 function renderMfmCanvas(data) {
-    const bits    = unpackBits(data.bits, data.bitSize);
-    const weakBits = data.weakBits ? unpackBits(data.weakBits, data.bitSize) : null;
-    const regMap  = buildRegionMap(data.bitSize, 0, data.sectors || []);
+    const bits       = unpackBits(data.bits, data.bitSize);
+    const weakBits   = data.weakBits ? unpackBits(data.weakBits, data.bitSize) : null;
+    // Use bitOff=0: index 0 of bitfield = physical track start (index hole)
+    const byteRegMap = buildFullRegionMap(bits, data.bitSize, 0, data.sectors);
+    // Expand byte-level map to bit-level (16 MFM bits per decoded byte)
+    const bitRegMap  = new Uint8Array(data.bitSize);
+    for (let i = 0; i < data.bitSize; i++) bitRegMap[i] = byteRegMap[Math.floor(i / 16)];
 
     const BITS_PER_ROW = 512;  // 32 decoded bytes per row
-    const BIT_W = 1.5;         // px per bit (canvas px = physical)
+    const BIT_W = 1.5;
     const ROW_H = 5;
     const nbRows = Math.ceil(data.bitSize / BITS_PER_ROW);
     const canvasW = Math.floor(BITS_PER_ROW * BIT_W);
@@ -548,23 +651,19 @@ function renderMfmCanvas(data) {
             const bitIdx = row * BITS_PER_ROW + col;
             if (bitIdx >= data.bitSize) break;
 
-            const byteIdx = Math.floor(bitIdx / 16);
-            const bg = REGION_BG[regMap[byteIdx] || 0];
-
             const val  = bits[bitIdx];
             const prev = bitIdx > 0 ? bits[bitIdx - 1] : 0;
+            // Weak bits take priority: a weak bit can cause an apparent 11 violation
             const isWeak = weakBits ? weakBits[bitIdx] : false;
-            const isViol = (val === 1 && prev === 1);
-            const isClockPos = (bitIdx % 2 === 0);
+            const isViol = !isWeak && (val === 1 && prev === 1);
 
+            const reg = bitRegMap[bitIdx];
             let color;
-            if (isWeak)       color = C_WEAK;
-            else if (isViol)  color = C_VIOL;
-            else if (val === 0) color = bg;   // 0 = use background tint
-            else if (isClockPos) color = C_CLK1;
-            else color = C_DATA1;
+            if (isWeak)         color = C_WEAK;
+            else if (isViol)    color = C_VIOL;
+            else if (val === 0) color = REGION_BG[reg];
+            else                color = REGION_FG[reg];
 
-            // Draw BIT_W × ROW_H rectangle
             const x0 = Math.floor(col * BIT_W);
             const x1 = Math.floor((col + 1) * BIT_W);
             for (let y = row * ROW_H; y < (row + 1) * ROW_H; y++) {
@@ -588,6 +687,7 @@ function switchTab(tab) {
     document.getElementById('tabHex').classList.toggle('active', tab === 'hex');
     document.getElementById('tabMfm').classList.toggle('active', tab === 'mfm');
     document.getElementById('hexView').style.display     = tab === 'hex' ? 'block' : 'none';
+    document.getElementById('hexLegend').style.display   = tab === 'hex' ? 'flex'  : 'none';
     document.getElementById('hexControls').style.display = tab === 'hex' ? 'flex'  : 'none';
     document.getElementById('mfmView').style.display     = tab === 'mfm' ? 'block' : 'none';
     if (rawData) {
@@ -636,6 +736,8 @@ function applyRawTrack(data) {
 // ── Event listeners ───────────────────────────────────────────────────────────
 
 document.getElementById('btnRefresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+document.getElementById('btnInsertA').addEventListener('click', () => vscode.postMessage({ type: 'insertDisk', drive: 0 }));
+document.getElementById('btnInsertB').addEventListener('click', () => vscode.postMessage({ type: 'insertDisk', drive: 1 }));
 
 document.getElementById('rawDrive').addEventListener('change', function() {
     const drive = parseInt(this.value, 10);
@@ -675,6 +777,19 @@ window.addEventListener('message', e => {
         case 'fdcState':  applyFdcState(msg.state); break;
         case 'rawLoading': document.getElementById('rawStatus').textContent = 'Loading…'; break;
         case 'rawTrack':  applyRawTrack(msg.data); break;
+        case 'insertResult': {
+            const el = document.getElementById('insertStatus');
+            if (msg.error) {
+                el.style.color = '#f48771';
+                el.textContent = '✗ ' + msg.error;
+            } else {
+                const letter = msg.drive === 0 ? 'A' : 'B';
+                const base = msg.path.replace(/.*[\\\\/]/, '');
+                el.style.color = '#73c991';
+                el.textContent = '✓ Drive ' + letter + ': ' + base;
+            }
+            break;
+        }
         case 'rawError':
             document.getElementById('rawStatus').textContent = 'Error: ' + msg.message;
             break;

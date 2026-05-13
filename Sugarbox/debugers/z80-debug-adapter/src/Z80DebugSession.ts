@@ -236,6 +236,11 @@ protected async launchRequest(
     // Track early exit so we can give a more actionable error message.
     let emulatorExitCode: number | null = null;
     let spawnError: string | null = null;
+    // Guard: only fire TerminatedEvent once launchRequest has fully completed
+    // (i.e. InitializedEvent was sent). If the emulator exits during the launch
+    // phase, launchRequest detects it via emulatorExitCode and sends a proper
+    // failure response instead.
+    let launchCompleted = false;
 
     this.emulatorProcess = cp.spawn(args.emulator, spawnArgs, {
         stdio: ["ignore", "ignore", "pipe"],
@@ -251,12 +256,12 @@ protected async launchRequest(
         const msg = `Failed to start emulator "${args.emulator}": ${err.message}\n`;
         console.error(msg);
         this.sendEvent(new OutputEvent(msg, "stderr"));
-        this.sendEvent(new TerminatedEvent());
+        if (launchCompleted) this.sendEvent(new TerminatedEvent());
     });
     this.emulatorProcess.on("exit", code => {
         emulatorExitCode = code ?? -1;
         console.log("DAP: Emulator exited with code", code);
-        this.sendEvent(new TerminatedEvent());
+        if (launchCompleted) this.sendEvent(new TerminatedEvent());
     });
 
     // Wait for the TCP debug port to open (up to 10 s)
@@ -329,6 +334,7 @@ protected async launchRequest(
     };
 
     this.sendResponse(response);
+    launchCompleted = true;
     this.sendEvent(new InitializedEvent());
 }
 
@@ -1288,6 +1294,18 @@ protected async customRequest(
             this.sendResponse(response);
         } catch (e) {
             this.sendErrorResponse(response, 1247, `getTrackRaw failed: ${e}`);
+        }
+    } else if (command === "insertDisk") {
+        try {
+            const result = await this.emulator.send({ cmd: "insertDisk", drive: args.drive ?? 0, path: args.path });
+            if (result?.error) {
+                this.sendErrorResponse(response, 1248, `insertDisk failed: ${result.error}`);
+            } else {
+                response.body = result;
+                this.sendResponse(response);
+            }
+        } catch (e) {
+            this.sendErrorResponse(response, 1248, `insertDisk failed: ${e}`);
         }
     } else {
         this.sendErrorResponse(response, 1014, `Unknown custom request: ${command}`);

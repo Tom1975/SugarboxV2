@@ -11,6 +11,7 @@ import { PpiPanel } from "./PpiPanel";
 import { FdcPanel } from "./FdcPanel";
 import { TapePanel } from "./TapePanel";
 import { HardwarePanelTreeProvider } from "./HardwarePanelTreeProvider";
+import { ConfigPanel } from "./ConfigPanel";
 import { initI18n, t } from "./i18n";
 
 // ─── Disassembly virtual document provider ────────────────────────────────────
@@ -381,9 +382,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // ── Commands: configure + project + quick launch ──────────────────────────
     context.subscriptions.push(
-        vscode.commands.registerCommand("z80debug.configure",   configureWorkspace),
+        vscode.commands.registerCommand("z80debug.configure",   () => ConfigPanel.createOrShow(context)),
         vscode.commands.registerCommand("z80debug.newProject",  newProject),
-        vscode.commands.registerCommand("z80debug.quickLaunch", quickLaunch)
+        vscode.commands.registerCommand("z80debug.quickLaunch", () => quickLaunch(context))
     );
 
     checkConfiguration();
@@ -620,7 +621,16 @@ function settingsJson(buildName: string, sugarbox: string, rasm: string): string
 interface MediaItem extends vscode.QuickPickItem { media: string; }
 interface ConfigItem extends vscode.QuickPickItem { cfg?: string; }
 
-async function quickLaunch(): Promise<void> {
+interface LastLaunch {
+    media: string;
+    file?: string;
+    configuration?: string;
+    label: string;
+}
+
+const QL_LAST_KEY = "ql.last";
+
+async function quickLaunch(context: vscode.ExtensionContext): Promise<void> {
     const cfg = vscode.workspace.getConfiguration("z80debug");
     let emulatorPath = cfg.get<string>("sugarbox") || "";
 
@@ -653,8 +663,15 @@ async function quickLaunch(): Promise<void> {
     }
 
     const symSuffix = projectSymbols ? t("ql.media.symbols.suffix") : "";
+    const lastLaunch = context.workspaceState.get<LastLaunch>(QL_LAST_KEY);
 
     const mediaItems: MediaItem[] = [
+        // Last launch shortcut at the top if available
+        ...(lastLaunch ? [{
+            label:       `$(history) ${lastLaunch.label}`,
+            description: t("ql.media.last.desc"),
+            media:       "__last__"
+        }] : []),
         ...(projectSna ? [{
             label:       t("ql.media.projectSnapshot"),
             description: t("ql.media.projectSnapshot.desc", buildName, symSuffix),
@@ -674,11 +691,21 @@ async function quickLaunch(): Promise<void> {
             media:       "projectDisk"
         }] : []),
         { label: t("ql.media.empty"),    description: t("ql.media.empty.desc"),    media: "empty"     },
-        { label: t("ql.media.diskA"),    description: t("ql.media.diskA.desc"),    media: "disk"      },
-        { label: t("ql.media.diskB"),    description: t("ql.media.diskB.desc"),    media: "diskB"     },
-        { label: t("ql.media.tape"),     description: t("ql.media.tape.desc"),     media: "tape"      },
-        { label: t("ql.media.snapshot"), description: t("ql.media.snapshot.desc"), media: "snapshot"  },
-        { label: t("ql.media.cartridge"),description: t("ql.media.cartridge.desc"),media: "cartridge" },
+        { label: t("ql.media.diskA"),    description: t("ql.media.diskA.desc"),    media: "disk",
+          ...(lastLaunch?.media === "disk" && lastLaunch.file
+              ? { detail: lastLaunch.file } : {}) },
+        { label: t("ql.media.diskB"),    description: t("ql.media.diskB.desc"),    media: "diskB",
+          ...(lastLaunch?.media === "diskB" && lastLaunch.file
+              ? { detail: lastLaunch.file } : {}) },
+        { label: t("ql.media.tape"),     description: t("ql.media.tape.desc"),     media: "tape",
+          ...(lastLaunch?.media === "tape" && lastLaunch.file
+              ? { detail: lastLaunch.file } : {}) },
+        { label: t("ql.media.snapshot"), description: t("ql.media.snapshot.desc"), media: "snapshot",
+          ...(lastLaunch?.media === "snapshot" && lastLaunch.file
+              ? { detail: lastLaunch.file } : {}) },
+        { label: t("ql.media.cartridge"),description: t("ql.media.cartridge.desc"),media: "cartridge",
+          ...(lastLaunch?.media === "cartridge" && lastLaunch.file
+              ? { detail: lastLaunch.file } : {}) },
     ];
 
     const mediaChoice = await vscode.window.showQuickPick(mediaItems, {
@@ -688,15 +715,35 @@ async function quickLaunch(): Promise<void> {
     });
     if (!mediaChoice) return;
 
+    // Re-use last launch directly
+    if (mediaChoice.media === "__last__" && lastLaunch) {
+        const launchCfg: vscode.DebugConfiguration = {
+            type: "z80", request: "launch", name: t("ql.launchName"),
+            emulator: emulatorPath, port: 1234,
+            hideEmulator: cfg.get<boolean>("hideEmulator", false),
+        };
+        if (lastLaunch.file)          (launchCfg as any)[lastLaunch.media] = lastLaunch.file;
+        if (lastLaunch.configuration) launchCfg.configuration = lastLaunch.configuration;
+        // Project-based media need symbols too
+        if (lastLaunch.media === "projectSnapshot" || lastLaunch.media === "projectSnapshotBuild") {
+            launchCfg.snapshot = projectSna;
+            if (projectSymbols) launchCfg.symbolFile = projectSymbols;
+            if (lastLaunch.media === "projectSnapshotBuild") launchCfg.preLaunchTask = "RASM: assemble";
+        } else if (lastLaunch.media === "projectDisk") {
+            launchCfg.disk = projectDsk;
+            if (projectSymbols) launchCfg.symbolFile = projectSymbols;
+        }
+        await vscode.debug.startDebugging(folder, launchCfg);
+        return;
+    }
+
     const launchCfg: vscode.DebugConfiguration = {
-        type: "z80",
-        request: "launch",
-        name: t("ql.launchName"),
-        emulator: emulatorPath,
-        port: 1234,
-        hideEmulator: false,
+        type: "z80", request: "launch", name: t("ql.launchName"),
+        emulator: emulatorPath, port: 1234,
+        hideEmulator: cfg.get<boolean>("hideEmulator", false),
     };
 
+    let chosenFile: string | undefined;
     switch (mediaChoice.media) {
         case "projectSnapshot":
             launchCfg.snapshot = projectSna;
@@ -721,13 +768,17 @@ async function quickLaunch(): Promise<void> {
                 snapshot:  { [t("ql.filePicker.snapshot")]:  ["sna"] },
                 cartridge: { [t("ql.filePicker.cartridge")]: ["cpr"] },
             };
+            // Open dialog in the last used directory for this media type
+            const lastFile = (lastLaunch?.media === mediaChoice.media) ? lastLaunch?.file : undefined;
             const files = await vscode.window.showOpenDialog({
                 title: t("ql.filePicker.title"),
                 canSelectMany: false,
+                defaultUri: lastFile ? vscode.Uri.file(nodePath.dirname(lastFile)) : undefined,
                 filters: filterMap[mediaChoice.media] ?? { [t("ql.filePicker.all")]: ["*"] }
             });
             if (!files) return;
-            (launchCfg as any)[mediaChoice.media] = files[0].fsPath;
+            chosenFile = files[0].fsPath;
+            (launchCfg as any)[mediaChoice.media] = chosenFile;
             break;
         }
     }
@@ -740,10 +791,17 @@ async function quickLaunch(): Promise<void> {
         { label: t("ql.config.custom"),   description: t("ql.config.custom.desc"),   cfg: "__custom__"  },
     ];
 
+    // Reorder config list: last used config at the top
+    if (lastLaunch?.configuration) {
+        const lastIdx = configItems.findIndex(i => i.cfg === lastLaunch.configuration);
+        if (lastIdx > 0) configItems.unshift(configItems.splice(lastIdx, 1)[0]);
+    }
+
     const configChoice = await vscode.window.showQuickPick(configItems, {
         title: t("ql.config.title")
     });
 
+    let chosenConfig: string | undefined;
     if (configChoice) {
         if (configChoice.cfg === "__custom__") {
             const custom = await vscode.window.showInputBox({
@@ -751,50 +809,27 @@ async function quickLaunch(): Promise<void> {
                 prompt: t("ql.config.customInput.prompt"),
                 placeHolder: t("ql.config.customInput.placeholder")
             });
-            if (custom?.trim()) launchCfg.configuration = custom.trim();
+            if (custom?.trim()) { launchCfg.configuration = custom.trim(); chosenConfig = custom.trim(); }
         } else if (configChoice.cfg) {
             launchCfg.configuration = configChoice.cfg;
+            chosenConfig = configChoice.cfg;
         }
     }
 
+    // Build human-readable label for the "last launch" entry
+    const mediaLabel = mediaChoice.label.replace(/^\$\([^)]+\)\s*/, ""); // strip icon
+    const fileBase   = chosenFile ? nodePath.basename(chosenFile) : undefined;
+    const lastLabel  = fileBase ? `${mediaLabel} — ${fileBase}` : mediaLabel;
+
+    // Save this launch as the new "last"
+    await context.workspaceState.update(QL_LAST_KEY, {
+        media:         mediaChoice.media,
+        file:          chosenFile,
+        configuration: chosenConfig,
+        label:         lastLabel,
+    } satisfies LastLaunch);
+
     await vscode.debug.startDebugging(folder, launchCfg);
-}
-
-// ─── Configure workspace ──────────────────────────────────────────────────────
-
-async function configureWorkspace(): Promise<void> {
-    const config = vscode.workspace.getConfiguration("z80debug");
-
-    const sugarboxResult = await vscode.window.showOpenDialog({
-        title: t("cfg.sugarboxPicker.title"),
-        canSelectMany: false,
-        filters: process.platform === "win32"
-            ? { [t("cfg.exe")]: ["exe"] }
-            : { [t("cfg.all")]: ["*"] }
-    });
-    if (!sugarboxResult || sugarboxResult.length === 0) {
-        vscode.window.showWarningMessage(t("cfg.warnNoSugarbox"));
-        return;
-    }
-    const sugarboxPath = sugarboxResult[0].fsPath;
-
-    const rasmResult = await vscode.window.showOpenDialog({
-        title: t("cfg.rasmPicker.title"),
-        canSelectMany: false,
-        filters: process.platform === "win32"
-            ? { [t("cfg.exe")]: ["exe"] }
-            : { [t("cfg.all")]: ["*"] }
-    });
-    if (!rasmResult || rasmResult.length === 0) {
-        vscode.window.showWarningMessage(t("cfg.warnNoRasm"));
-        return;
-    }
-    const rasmPath = rasmResult[0].fsPath;
-
-    await config.update("sugarbox", sugarboxPath, vscode.ConfigurationTarget.Workspace);
-    await config.update("rasm",     rasmPath,     vscode.ConfigurationTarget.Workspace);
-
-    vscode.window.showInformationMessage(t("cfg.done", sugarboxPath, rasmPath));
 }
 
 // ─── Startup check ────────────────────────────────────────────────────────────

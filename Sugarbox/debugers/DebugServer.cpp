@@ -625,6 +625,18 @@ void DebugServer::handleClient(int clientSocket)
       {
          HandleGetTapeSignal();
       }
+      else if (cmd == "insertDisk")
+      {
+         int drive = request.value("drive", 0);
+         std::string path = request.value("path", "");
+         int result = emulation_->LoadDisk(path.c_str(), drive);
+         json resp;
+         if (result == 0)
+            resp = { {"status", "ok"} };
+         else
+            resp = { {"error", "LoadDisk failed"}, {"code", result} };
+         SendResponse(resp);
+      }
       else
       {
          response = { {"error", "unknown command"} };

@@ -34,6 +34,7 @@
     "ql.emulatorPicker.exe": "Exécutable",
     "ql.emulatorPicker.all": "Tous les fichiers",
     "ql.media.title": "Lancer le CPC — Que charger ?",
+    "ql.media.last.desc": "Réutiliser les paramètres du dernier lancement",
     "ql.media.projectSnapshot": "$(project) Snapshot du projet",
     "ql.media.projectSnapshot.desc": "build/{0}.sna{1}",
     "ql.media.projectSnapshotBuild": "$(tools) Snapshot du projet (avec build)",

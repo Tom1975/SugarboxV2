@@ -42,6 +42,11 @@
           "type": "string",
           "default": "rasm",
           "description": "%cfg.rasm.desc%"
+        },
+        "z80debug.hideEmulator": {
+          "type": "boolean",
+          "default": false,
+          "description": "%cfg.hideEmulator.desc%"
         }
       }
     },
@@ -152,11 +157,13 @@
       "z80-debug-sidebar": [
         {
           "id": "z80debug.launcher",
-          "name": "%view.launcher%"
+          "name": "%view.launcher%",
+          "visibility": "visible"
         },
         {
           "id": "z80debug.hardwarePanels",
-          "name": "%view.hardware%"
+          "name": "%view.hardware%",
+          "visibility": "visible"
         }
       ]
     },
