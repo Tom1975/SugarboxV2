@@ -8,3 +8,6 @@
 	path = json
 	url = https://github.com/nlohmann/json
 	branch = master
+[submodule "Sugarbox/debugers/z80-debug-adapter"]
+	path = Sugarbox/debugers/z80-debug-adapter
+	url = https://github.com/Tom1975/amstrad-cpc-debug.git
