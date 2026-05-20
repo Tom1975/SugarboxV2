@@ -202,20 +202,30 @@ void DebugServer::NotifyMediaChanged(int drive, bool inserted)
 
 void DebugServer::handleClient(int clientSocket)
 {
-   char buffer[4096];
+   std::string accumulator;
+   char chunk[4096];
 
    // Break emulation
    emulation_->Break();
 
    while (running_)
    {
-      std::memset(buffer, 0, sizeof(buffer));
-      int received = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+      int received = recv(clientSocket, chunk, sizeof(chunk), 0);
       if (received <= 0)
          break;
 
-      std::string requestStr(buffer);
-      requestStr.erase(requestStr.find_last_not_of("\r\n") + 1);
+      accumulator.append(chunk, received);
+
+      // Process every complete newline-delimited JSON line in the buffer.
+      // This handles commands larger than a single TCP packet (e.g. loadSnapshot).
+      size_t pos;
+      while ((pos = accumulator.find('\n')) != std::string::npos)
+      {
+      std::string requestStr = accumulator.substr(0, pos);
+      accumulator.erase(0, pos + 1);
+      if (!requestStr.empty() && requestStr.back() == '\r')
+         requestStr.pop_back();
+      if (requestStr.empty()) continue;
 
       json request;
       try
@@ -642,6 +652,7 @@ void DebugServer::handleClient(int clientSocket)
          response = { {"error", "unknown command"} };
          SendResponse(response);
       }
+      } // end inner while (complete lines)
    }
 }
 void DebugServer::HandleReadMemory(const nlohmann::json& request)
