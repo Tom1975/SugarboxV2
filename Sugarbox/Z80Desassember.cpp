@@ -217,20 +217,20 @@ const int Z80Desassember::DasmMnemonicEx(unsigned short Addr, const ReadByteFn& 
          // Replace  %n" by value
          else if (pReplace_L[1] == 'n')
          {
-            char minibuf[3];
-            std::snprintf(minibuf, 3, "$%2.2X", readByte(currentAddr + size - 1));
+            char minibuf[4];
+            std::snprintf(minibuf, 4, "$%2.2X", readByte(currentAddr + size - 1));
             // 2 then 1
-            memcpy(pReplace_L, minibuf, 2 * sizeof (char));
+            memcpy(pReplace_L, minibuf, 3 * sizeof (char));
          }
          // Replace %j__ by relative jump
          else if (pReplace_L[1] == 'j')
          {
-            char minibuf[5];
+            char minibuf[6];
             char dec_L = static_cast<char>(readByte(currentAddr + size - 1));
             unsigned short relative_adress = Addr + dec_L + size;
-            std::snprintf(minibuf, 5, "$%4.4X", relative_adress);
+            std::snprintf(minibuf, 6, "$%4.4X", relative_adress);
             // 2 then 1
-            memcpy(pReplace_L, minibuf, 4 * sizeof (char));
+            memcpy(pReplace_L, minibuf, 5 * sizeof (char));
 
          }
          // Replace %r by register
