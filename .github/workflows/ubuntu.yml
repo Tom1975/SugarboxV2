@@ -33,6 +33,7 @@ jobs:
         sudo apt-get install libxinerama-dev libxcursor-dev --fix-missing
         sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev --fix-missing
         sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3-dev libcairo2-dev --fix-missing
+        sudo apt-get install xvfb libopenal1 python3-pytest --fix-missing
 
     - name: Checkout submodules
       run: git submodule update --init --recursive 
@@ -44,6 +45,18 @@ jobs:
         cd build
         echo 'Version : '  ${{ inputs.version }}
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        make -j$(nproc)
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox/debugers
+        pytest test_protocol.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
+
+    - name: Package
+      run: |
+        cd build
         make package
         ls -l
 

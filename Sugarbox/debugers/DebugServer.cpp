@@ -537,36 +537,25 @@ void DebugServer::handleClient(int clientSocket)
          else if (up == "ROM"  )            access = Memory::MEM_ROM_BANK;
          else if (up == "CART" )            access = Memory::MEM_CART_SLOT;
 
-         const bool useDefaultReader = (access == Memory::MEM_READ);
-
          // For non-READ sources: read the whole address space into a local buffer.
-         // ROM/RAM banks are 0x4000 bytes; READ/WRITE span 0x10000.
+         // ROM/RAM banks are 0x4000 bytes; READ/WRITE/RAM_LOWER span 0x10000.
+         // Always snapshot even for MEM_READ: Memory::Get() has a bank-switching
+         // side effect (SwitchBank) that corrupts the active cartridge bank when
+         // the disassembler reads sequentially across bank boundaries.
          const uint32_t BUF_SIZE = (access == Memory::MEM_READ || access == Memory::MEM_WRITE
                                     || access == Memory::MEM_RAM_LOWER_BANK)
                                    ? 0x10000u : 0x4000u;
-         std::vector<unsigned char> bankBuf;
-         if (!useDefaultReader)
-         {
-            bankBuf.resize(BUF_SIZE, 0);
-            mem->GetDebugValue(bankBuf.data(), 0,
-                               static_cast<uint16_t>(BUF_SIZE),
-                               access,
-                               static_cast<unsigned int>(bank < 0 ? 0 : bank));
-         }
+         std::vector<unsigned char> bankBuf(BUF_SIZE, 0);
+         mem->GetDebugValue(bankBuf.data(), 0,
+                            BUF_SIZE,
+                            access,
+                            static_cast<unsigned int>(bank < 0 ? 0 : bank));
 
          Z80Desassember* dasm = emulation_->GetDisassembler();
 
-         // Build the byte-reader lambda used for disassembly
-         auto makeReader = [&]() -> Z80Desassember::ReadByteFn {
-            if (useDefaultReader) {
-               return [mem](unsigned short a) -> unsigned char { return mem->Get(a); };
-            } else {
-               return [&bankBuf, BUF_SIZE](unsigned short a) -> unsigned char {
-                  return bankBuf[a % BUF_SIZE];
-               };
-            }
+         auto readByte = [&bankBuf, BUF_SIZE](unsigned short a) -> unsigned char {
+            return bankBuf[a % BUF_SIZE];
          };
-         auto readByte = makeReader();
 
          json arr = json::array();
          for (unsigned int i = 0; i < count; i++)
