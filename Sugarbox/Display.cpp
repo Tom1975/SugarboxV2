@@ -33,7 +33,7 @@ CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_inde
    QSurfaceFormat format;
    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer); // Double buffering
    format.setSwapInterval(1); // Activer VSync
-   //format.setVersion(3, 3); // Utiliser une version moderne si nécessaire
+   //format.setVersion(3, 3); // Utiliser une version moderne si nï¿½cessaire
    QSurfaceFormat::setDefaultFormat(format);
    setFormat(format);
 
@@ -378,7 +378,10 @@ void CDisplay::paintGL()
    }
    else
    {
-      // Redraw old frame ? (or do nothing !)
+      // No new frame ready (e.g. emulation paused in debug mode).
+      // Clear to black so the widget is opaque, not transparent.
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
       sync_mutex_.unlock();
    }
 }
