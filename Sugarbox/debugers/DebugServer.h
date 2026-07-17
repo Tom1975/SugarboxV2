@@ -89,11 +89,11 @@ private:
    std::thread thread_send_;
 
 #ifdef _WIN32
-   SOCKET serverSocket_;
-   SOCKET clientSocket_;
+   SOCKET serverSocket_ = INVALID_SOCKET;
+   SOCKET clientSocket_ = INVALID_SOCKET;
 #else
-   int serverSocket_;
-   int clientSocket_;
+   int serverSocket_ = -1;
+   int clientSocket_ = -1;
 #endif
 
    DebugMessageQueue outgoing_queue_;

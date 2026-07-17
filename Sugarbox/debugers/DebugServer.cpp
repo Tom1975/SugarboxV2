@@ -794,15 +794,21 @@ void DebugServer::HandleGetGateArrayState()
 {
     GateArray* ga = emulation_->GetEngine()->GetVGA();
 
-    json inks = json::array();
+    json inks    = json::array();
+    json inkRegs = json::array();
     for (int i = 0; i < 16; i++)
+    {
         inks.push_back(ga->ink_list_[i]);
+        inkRegs.push_back(ga->ink_regs_[i]);
+    }
 
     json resp;
     resp["mode"]             = ga->screen_mode_;
     resp["pen"]              = ga->pen_r_;
     resp["inks"]             = inks;
+    resp["inkRegs"]          = inkRegs;
     resp["border"]           = ga->video_border_[0];
+    resp["borderReg"]        = ga->border_reg_;
     resp["interruptCounter"] = ga->interrupt_counter_;
     resp["interruptRaised"]  = ga->interrupt_raised_;
     resp["asicLocked"]       = (ga->unlocked_ == false);
