@@ -259,7 +259,7 @@ void DebugServer::handleClient(int clientSocket)
          response["IX"]  = z80->ix_.w;
          response["IY"]  = z80->iy_.w;
          response["SP"]  = z80->sp_;
-         response["PC"]  = z80->new_instruction_ ? z80->pc_ : z80->GetPC();
+         response["PC"]  = emulation_->GetDebugPC();
          response["I"]   = z80->ir_.b.h;
          response["R"]   = z80->ir_.b.l;
          SendResponse(response);
@@ -272,9 +272,7 @@ void DebugServer::handleClient(int clientSocket)
          // To choose which bank is used
          // PC : source:address. 
 
-         // new_instruction_ = true: stopped after full instruction (pc_ = next instr address)
-         // new_instruction_ = false: stopped mid-fetch (GetPC() = pc_-1 = current instr address)
-         response["pc"] = z80->new_instruction_ ? z80->pc_ : z80->GetPC();
+         response["pc"] = emulation_->GetDebugPC();
          response["sp"] = z80->sp_;
 
          response["running"] =
@@ -309,13 +307,18 @@ void DebugServer::handleClient(int clientSocket)
       {
          uint16_t pc = static_cast<uint16_t>(request.value("address", 0));
          emulation_->GetEngine()->GetProc()->PrepareForFetch(pc);
+         emulation_->SetDebugPC(pc);
          response = { {"status", "ok"} };
          SendResponse(response);
       }
       else if (cmd == "setRegisters")
       {
          Z80* z80 = emulation_->GetEngine()->GetProc();
-         if (request.contains("pc"))  z80->PrepareForFetch(static_cast<uint16_t>(request["pc"]));
+         if (request.contains("pc")) {
+            uint16_t newPc = static_cast<uint16_t>(request["pc"]);
+            z80->PrepareForFetch(newPc);
+            emulation_->SetDebugPC(newPc);
+         }
          if (request.contains("sp"))  z80->sp_    = static_cast<uint16_t>(request["sp"]);
          if (request.contains("af"))  z80->af_.w  = static_cast<uint16_t>(request["af"]);
          if (request.contains("bc"))  z80->bc_.w  = static_cast<uint16_t>(request["bc"]);
@@ -792,7 +795,8 @@ void DebugServer::HandleGetCrtcState()
 
 void DebugServer::HandleGetGateArrayState()
 {
-    GateArray* ga = emulation_->GetEngine()->GetVGA();
+    GateArray* ga  = emulation_->GetEngine()->GetVGA();
+    Memory*    mem = emulation_->GetEngine()->GetMem();
 
     json inks    = json::array();
     json inkRegs = json::array();
@@ -800,6 +804,21 @@ void DebugServer::HandleGetGateArrayState()
     {
         inks.push_back(ga->ink_list_[i]);
         inkRegs.push_back(ga->ink_regs_[i]);
+    }
+
+    // ── Memory windows (4 x 16 KB) ────────────────────────────────────────────
+    static const unsigned int WINDOW_BASE[4] = { 0x0000, 0x4000, 0x8000, 0xC000 };
+    json memWindows = json::array();
+    for (int w = 0; w < 4; w++)
+    {
+        Memory::WindowInfo wi = mem->GetWindowInfo(w);
+        json win;
+        win["base"]       = WINDOW_BASE[w];
+        win["readType"]   = wi.readType;
+        win["readIndex"]  = wi.readIndex;
+        win["writeType"]  = wi.writeType;
+        win["writeIndex"] = wi.writeIndex;
+        memWindows.push_back(win);
     }
 
     json resp;
@@ -812,6 +831,11 @@ void DebugServer::HandleGetGateArrayState()
     resp["interruptCounter"] = ga->interrupt_counter_;
     resp["interruptRaised"]  = ga->interrupt_raised_;
     resp["asicLocked"]       = (ga->unlocked_ == false);
+    resp["lowerRomEnabled"]  = mem->IsLowerRomConnected();
+    resp["upperRomEnabled"]  = mem->IsUpperRomConnected();
+    resp["selectedRom"]      = mem->GetSelectedRom();
+    resp["ramBankConfig"]    = mem->GetRamBankConfig();
+    resp["memWindows"]       = memWindows;
     SendResponse(resp);
 }
 

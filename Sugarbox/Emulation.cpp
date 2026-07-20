@@ -135,6 +135,8 @@ void Emulation::EmulationLoop()
             emulator_engine_->RunDebugMode(1);
             emulator_engine_->SetRun(false);
             stop_reason_ = IDebugerStopped::Step;
+            // After step: pc_ already points to the next instruction to execute
+            debug_pc_ = emulator_engine_->GetProc()->pc_;
             debug_action_ = DBG_BREAK;
             break;
          case DBG_RUN:
@@ -148,12 +150,25 @@ void Emulation::EmulationLoop()
                {
                   emulator_engine_->RemoveBreakpoint(step_over_bp_addr_);
                   step_over_bp_active_ = false;
+
+                  // Restore any permanent BP that was temporarily removed at the CALL
+                  // address to prevent a spurious T=4 re-fire (see StepOver()).
+                  if (step_over_removed_bp_)
+                  {
+                     emulator_engine_->AddBreakpoint(step_over_removed_bp_addr_);
+                     step_over_removed_bp_ = false;
+                  }
+
                   stop_reason_ = IDebugerStopped::Step;
                }
                else
                {
                   stop_reason_ = IDebugerStopped::InstructionBreakpoint;
                }
+               // DebugNew stops at T=4 of M1 (opcode just fetched, pc_=addr+1).
+               // GetPC() = pc_-1 = instruction start address, correct for both
+               // regular BP and step-over BP.
+               debug_pc_ = emulator_engine_->GetProc()->GetPC();
 
                // Break notification :
                IBreakpointItem* bp = emulator_engine_->GetBreakpointHandler()->GetCurrentBreakpoint();
@@ -173,6 +188,7 @@ void Emulation::EmulationLoop()
             // xx opcodes run : stop now
             emulator_engine_->RunDebugMode(nb_opcode_to_run_);
             stop_reason_ = IDebugerStopped::Step;
+            debug_pc_ = emulator_engine_->GetProc()->pc_;
             debug_action_ = DBG_BREAK;
 
             // Break notification
@@ -192,6 +208,7 @@ void Emulation::EmulationLoop()
             // Script running
             ExecuteNextScript();
             stop_reason_ = IDebugerStopped::Step;
+            debug_pc_ = emulator_engine_->GetProc()->pc_;
             debug_action_ = DBG_BREAK;
             break;
          }
@@ -308,6 +325,7 @@ bool Emulation::LoadSnapshot(const char* file_path)
       // DBG_BREAK, which never happens here (we load while already stopped).
       // Force-notify so the debug UI (DebugDialog, MemoryDialog, etc.) refreshes.
       stop_reason_ = IDebugerStopped::Pause;
+      debug_pc_ = emulator_engine_->GetProc()->pc_;
       for (auto& it : notifier_dbg_list_)
          it->NotifyStop(stop_reason_);
    }
@@ -561,6 +579,7 @@ void Emulation::TrackChanged(int nb_tracks)
 void Emulation::Break()
 {
    stop_reason_ = IDebugerStopped::Pause;
+   debug_pc_ = emulator_engine_->GetProc()->pc_;
    debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
 
@@ -747,7 +766,9 @@ void Emulation::Step()
 void Emulation::StepOver()
 {
    Z80* z80 = emulator_engine_->GetProc();
-   uint16_t pc = z80->pc_;
+   // After a BP fires (DebugNew T=4), z80->pc_ = instruction+1 (opcode already fetched).
+   // Use debug_pc_ which holds the correct instruction start address.
+   uint16_t pc = debug_pc_;
 
    unsigned char opcode[2] = { 0, 0 };
    emulator_engine_->GetMem()->GetDebugValue(opcode, pc, 2, Memory::MEM_READ);
@@ -787,6 +808,17 @@ void Emulation::StepOver()
 
    if (step_over)
    {
+      // When Z80 is at t_==1 (new_instruction_ state from DBG_STEP), DebugNew will
+      // call Tick_Fetch_1 for the CALL, set t_=4, then fire the T=4 BP check.
+      // A permanent user BP at the CALL address would match and produce a spurious
+      // extra stop. Temporarily remove it; it is restored when step-over ends.
+      if (z80->t_ == 1 && emulator_engine_->HasBreakpoint(pc))
+      {
+         emulator_engine_->RemoveBreakpoint(pc);
+         step_over_removed_bp_      = true;
+         step_over_removed_bp_addr_ = pc;
+      }
+
       // Set a temporary breakpoint at the instruction after the call/block.
       // It will be removed in EmulationLoop once DBG_RUN stops.
       emulator_engine_->AddBreakpoint(next_pc);
