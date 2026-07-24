@@ -330,6 +330,8 @@ void DebugServer::handleClient(int clientSocket)
          if (request.contains("bc'")) z80->bc_p_.w = static_cast<uint16_t>(request["bc'"]);
          if (request.contains("de'")) z80->de_p_.w = static_cast<uint16_t>(request["de'"]);
          if (request.contains("hl'")) z80->hl_p_.w = static_cast<uint16_t>(request["hl'"]);
+         if (request.contains("i"))   z80->ir_.b.h = static_cast<uint8_t>(request["i"]);
+         if (request.contains("r"))   z80->ir_.b.l = static_cast<uint8_t>(request["r"]);
          response = { {"status", "ok"} };
          SendResponse(response);
       }
@@ -402,6 +404,8 @@ void DebugServer::handleClient(int clientSocket)
          else if (up == "E")   text = hex8(z80->de_.b.l);
          else if (up == "H")   text = hex8(z80->hl_.b.h);
          else if (up == "L")   text = hex8(z80->hl_.b.l);
+         else if (up == "I")   text = hex8(z80->ir_.b.h);
+         else if (up == "R")   text = hex8(z80->ir_.b.l);
          else {
             // Try to parse as [mode:]address
             // Syntax:
