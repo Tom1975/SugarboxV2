@@ -392,11 +392,11 @@ int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bo
    return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
-int Emulation::LoadDisk(const char* container, unsigned int drive_number)
+int Emulation::LoadDisk(const char* container, unsigned int drive_number, bool differential_load)
 {
    command_waiting_ = true;
    const std::lock_guard<std::mutex> lock(command_mutex_);
-   return emulator_engine_->LoadDisk(container, drive_number);
+   return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
 void Emulation::SaveTapeAs(const char* file, TapeFormat tape_format)

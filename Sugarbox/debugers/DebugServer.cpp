@@ -635,7 +635,7 @@ void DebugServer::handleClient(int clientSocket)
       {
          int drive = request.value("drive", 0);
          std::string path = request.value("path", "");
-         int result = emulation_->LoadDisk(path.c_str(), drive);
+         int result = emulation_->LoadDisk(path.c_str(), drive, false);
          json resp;
          if (result == 0)
             resp = { {"status", "ok"} };

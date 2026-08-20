@@ -137,7 +137,7 @@ protected:
    bool sync_on_frame_;
 
    // Open gl stuff
-   QColor clearColor;
+   QColor clearColor = QColor(0, 0, 0, 255);
    QPoint lastPos;
    int xRot;
    int yRot;

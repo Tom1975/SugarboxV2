@@ -33,6 +33,7 @@ CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_inde
    QSurfaceFormat format;
    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer); // Double buffering
    format.setSwapInterval(1); // Activer VSync
+   format.setAlphaBufferSize(0); // No alpha channel to avoid transparency
    //format.setVersion(3, 3); // Utiliser une version moderne si n�cessaire
    QSurfaceFormat::setDefaultFormat(format);
    setFormat(format);
@@ -171,7 +172,7 @@ void CDisplay::initializeGL()
       "void main()\n"
       "{\n"
       "   vec2 coord = vec2( vTexCoord.x *vratio.x + vorigin.x, vTexCoord.y*vratio.y + vorigin.y);\n"
-      "   gl_FragColor = texture2D(texture, coord);\n"
+      "   gl_FragColor = vec4(texture2D(texture, coord).rgb, 1.0);\n"
       "}";
 
    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex);
