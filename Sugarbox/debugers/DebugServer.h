@@ -63,6 +63,9 @@ public:
    void stop();
    void NotifyStop(IDebugerStopped::Reason reason);
    void NotifyMediaChanged(int drive, bool inserted);
+   // Called once per VSync (any thread). Pushes a "frame" event only if a
+   // client has subscribed via the "subscribeScreen" command.
+   void NotifyFrame();
 
 private:
    void serverThread();
@@ -82,9 +85,12 @@ private:
    void HandleGetAsicState();
    void HandleGetTrackRaw(const nlohmann::json& request);
    void HandleGetTapeSignal();
+   void HandleGetScreen();
+   bool BuildScreenBody(nlohmann::json& body);
 
    int port_;
    std::atomic<bool> running_{ false };
+   std::atomic<bool> screen_subscribed_{ false };
    std::thread thread_;
    std::thread thread_send_;
 

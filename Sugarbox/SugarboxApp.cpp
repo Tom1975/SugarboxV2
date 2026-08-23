@@ -259,6 +259,7 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
       {
          debugger_link_ = new DebugServer(emulation_, port);
          debugger_link_->StartServer();
+         display_.SetFrameCallback([this]() { debugger_link_->NotifyFrame(); });
       }
       else
       {

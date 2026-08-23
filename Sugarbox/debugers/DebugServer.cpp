@@ -17,6 +17,10 @@ using socklen_t = int;
 #include <fstream>
 #include <vector>
 
+#include <QImage>
+#include <QBuffer>
+#include <QByteArray>
+
 using json = nlohmann::json;
 
 // ─── Base64 decode ────────────────────────────────────────────────────────────
@@ -197,6 +201,24 @@ void DebugServer::NotifyMediaChanged(int drive, bool inserted)
    body["drive"]    = drive;
    body["inserted"] = inserted;
    j["body"] = body;
+   outgoing_queue_.push(j.dump() + "\n");
+}
+
+void DebugServer::NotifyFrame()
+{
+   // Called from the emulation thread on every VSync. Skip the (relatively
+   // costly) capture+PNG-encode entirely unless a client actually subscribed.
+   if (!screen_subscribed_)
+      return;
+
+   json body;
+   if (!BuildScreenBody(body))
+      return;
+
+   json j;
+   j["type"]  = "event";
+   j["event"] = "frame";
+   j["body"]  = body;
    outgoing_queue_.push(j.dump() + "\n");
 }
 
@@ -631,6 +653,22 @@ void DebugServer::handleClient(int clientSocket)
       {
          HandleGetTapeSignal();
       }
+      else if (cmd == "getScreen")
+      {
+         HandleGetScreen();
+      }
+      else if (cmd == "subscribeScreen")
+      {
+         screen_subscribed_ = true;
+         response = { {"status", "ok"} };
+         SendResponse(response);
+      }
+      else if (cmd == "unsubscribeScreen")
+      {
+         screen_subscribed_ = false;
+         response = { {"status", "ok"} };
+         SendResponse(response);
+      }
       else if (cmd == "insertDisk")
       {
          int drive = request.value("drive", 0);
@@ -650,6 +688,9 @@ void DebugServer::handleClient(int clientSocket)
       }
       } // end inner while (complete lines)
    }
+
+   // Client gone: stop capturing/encoding frames nobody will receive.
+   screen_subscribed_ = false;
 }
 void DebugServer::HandleReadMemory(const nlohmann::json& request)
 {
@@ -794,7 +835,48 @@ void DebugServer::HandleGetCrtcState()
     resp["r52"]         = emulation_->GetEngine()->GetVGA()->interrupt_counter_;
     resp["beamX"]       = emulation_->GetEngine()->GetMonitor()->GetX();
     resp["beamY"]       = emulation_->GetEngine()->GetMonitor()->GetY();
+    resp["hSyncActive"] = emulation_->GetEngine()->GetSig()->h_sync_;
+    resp["vSyncActive"] = emulation_->GetEngine()->GetSig()->v_sync_;
     SendResponse(resp);
+}
+
+// ─── Screen capture ─────────────────────────────────────────────────────────
+
+bool DebugServer::BuildScreenBody(nlohmann::json& body)
+{
+    IDisplay* display = emulation_->GetEngine()->GetMonitor()->screen_;
+    if (!display)
+        return false;
+
+    std::vector<unsigned char> rgba;
+    int width = 0, height = 0;
+    if (!display->CaptureFrameRGBA(rgba, width, height) || width <= 0 || height <= 0)
+        return false;
+
+    QImage img(rgba.data(), width, height, width * 4, QImage::Format_RGBA8888);
+    QByteArray pngBytes;
+    QBuffer buf(&pngBytes);
+    buf.open(QIODevice::WriteOnly);
+    img.save(&buf, "PNG");
+    buf.close();
+
+    body["format"] = "png";
+    body["width"]  = width;
+    body["height"] = height;
+    body["data"]   = pngBytes.toBase64().toStdString();
+    return true;
+}
+
+void DebugServer::HandleGetScreen()
+{
+    json body;
+    if (!BuildScreenBody(body))
+    {
+        json resp = { {"error", "screen capture unavailable"} };
+        SendResponse(resp);
+        return;
+    }
+    SendResponse(body);
 }
 
 void DebugServer::HandleGetGateArrayState()
