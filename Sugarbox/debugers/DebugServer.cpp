@@ -681,6 +681,26 @@ void DebugServer::handleClient(int clientSocket)
             resp = { {"error", "LoadDisk failed"}, {"code", result} };
          SendResponse(resp);
       }
+      else if (cmd == "sendKey")
+      {
+         int line    = request.value("line", -1);
+         int bit     = request.value("bit", -1);
+         bool pressed = request.value("pressed", false);
+         if (line >= 0 && line <= 9 && bit >= 0 && bit <= 7)
+         {
+            IKeyboard* kb = emulation_->GetKeyboardHandler();
+            unsigned int scanCode = kb->GetScanCode(
+               static_cast<unsigned int>(line),
+               static_cast<unsigned int>(bit));
+            kb->SendScanCode(scanCode, pressed);
+            response = { {"status", "ok"} };
+         }
+         else
+         {
+            response = { {"error", "invalid line/bit"} };
+         }
+         SendResponse(response);
+      }
       else
       {
          response = { {"error", "unknown command"} };
