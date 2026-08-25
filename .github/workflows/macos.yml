@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "master", "develop" ]
   workflow_call:
-    inputs: 
+    inputs:
       version:
         description: 'Version to build'
         default: 2.x.x
@@ -18,29 +18,28 @@ env:
 
 jobs:
   build:
-    runs-on:  macOS-latest
-          
+    # macOS-13 (Ventura) is required: AGL.framework was removed in macOS 14 and Qt < 6.7 depends on it.
+    # Once Qt is upgraded to 6.7+, this can move back to macos-latest.
+    runs-on: macos-13
+
     steps:
     - uses: actions/checkout@v4
-          
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.6.*'
-        modules: qtwebsockets 
+        version: '6.6.2'
+        modules: qtwebsockets
         target: 'desktop'
-        arch: ${{ matrix.qt_version }}
+        arch: clang_64
         install-deps: 'true'
-        
-    - name: Install Third Party
-      run: |
-        brew install openal-soft 
-        brew install qt6
-        export Qt6_DIR=$(brew --prefix)/opt/qt6
+        cache: true
 
+    - name: Install OpenAL
+      run: brew install openal-soft
 
     - name: Checkout submodules
-      run: git submodule update --init --recursive 
+      run: git submodule update --init --recursive
 
     - name: Configure & build CMake
       run: |
@@ -51,12 +50,9 @@ jobs:
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
         make package
         ls -l
-      
+
     - name: Archive zip
       uses: actions/upload-artifact@v4
       with:
           name: SugarboxV2MacOS
           path: ${{github.workspace}}/build/*.tar.gz
-          
-          
-          

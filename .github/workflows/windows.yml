@@ -30,11 +30,12 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.6.*'
+        version: '6.6.2'
         target: 'desktop'
         arch: win64_msvc2019_64
         install-deps: 'true'
-        modules: qtwebsockets 
+        modules: qtwebsockets
+        cache: true
         
     - name: Install udev
       run: ${{ matrix.other_installer }}
