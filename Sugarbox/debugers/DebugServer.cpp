@@ -681,6 +681,17 @@ void DebugServer::handleClient(int clientSocket)
             resp = { {"error", "LoadDisk failed"}, {"code", result} };
          SendResponse(resp);
       }
+      else if (cmd == "insertTape")
+      {
+         std::string path = request.value("path", "");
+         int result = emulation_->LoadTape(path.c_str());
+         json resp;
+         if (result == 0)
+            resp = { {"status", "ok"} };
+         else
+            resp = { {"error", "LoadTape failed"}, {"code", result} };
+         SendResponse(resp);
+      }
       else if (cmd == "sendKey")
       {
          int line    = request.value("line", -1);
