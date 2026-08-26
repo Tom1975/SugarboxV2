@@ -48,6 +48,29 @@ jobs:
         cd build
         echo 'Version : '  ${{ inputs.version }}
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        make -j$(sysctl -n hw.logicalcpu)
+        ls -l
+
+    - name: Install pytest
+      run: pip3 install pytest
+
+    - name: Find Sugarbox binary
+      run: |
+        BINARY=$(find ${{ github.workspace }}/build/Sugarbox -type f -name "Sugarbox" | head -1)
+        echo "SUGARBOX_BINARY=$BINARY" >> $GITHUB_ENV
+        echo "Found binary: $BINARY"
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox/debugers
+        python3 -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ env.SUGARBOX_BINARY }}
+        SUGARBOX_PORT: 1234
+
+    - name: Package
+      run: |
+        cd build
         make package
         ls -l
 

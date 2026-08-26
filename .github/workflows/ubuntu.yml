@@ -50,9 +50,10 @@ jobs:
     - name: Run protocol integration tests
       run: |
         cd Sugarbox/debugers
-        pytest test_protocol.py -v --tb=short
+        pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
         SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
+        SUGARBOX_PORT: 1234
 
     - name: Package
       run: |

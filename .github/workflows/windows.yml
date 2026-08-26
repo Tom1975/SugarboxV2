@@ -49,11 +49,20 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}} 
+      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
+
+    - name: Install pytest
+      run: pip install pytest
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox\debugers
+        python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\Sugarbox.exe
+        SUGARBOX_PORT: 1234
 
     - name: Install
-      # Make install
       run: cmake --install ${{github.workspace}}\build
 
     - name: Packaging
