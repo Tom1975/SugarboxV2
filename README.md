@@ -6,7 +6,7 @@
 
 # SugarboxV2
 
-Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+ (ASIC). Built with Qt 6, runs on Windows, Linux and macOS.
+Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+. Built with Qt 6, runs on Windows, Linux and macOS.
 
 ## Table of contents
 
