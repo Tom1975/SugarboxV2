@@ -6,6 +6,8 @@ zero failures.  The 'emulator' fixture (conftest.py) owns the process
 lifecycle; all tests share the same session-scoped connection.
 """
 
+import socket as _socket
+
 import pytest
 
 from test_step import (
@@ -107,10 +109,13 @@ def test_reset(emulator):
 # This test is intentionally last; it opens its own connection.
 
 def test_reconnect(emulator):
-    sock, reader = emulator
-    host = sock.getpeername()[0]
-    port = sock.getpeername()[1]
+    sock, reader = emulator[0], emulator[1]
+    host, port = sock.getpeername()
     # Close shared connection so the server loops back to accept()
     reader.close()
     sock.close()
     assert _disconnect_reconnect(host, port) == 0
+    # Restore the shared connection so later tests (conformance) can use it.
+    new_sock = _socket.create_connection((host, port), timeout=10)
+    emulator[0] = new_sock
+    emulator[1] = new_sock.makefile("r")

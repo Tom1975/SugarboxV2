@@ -114,10 +114,12 @@ def emulator():
         pytest.fail(f"Debug server did not open on port {port} within {STARTUP_TIMEOUT}s")
 
     reader = sock.makefile("r")
-    yield sock, reader
+    # Yield a mutable list so test_reconnect can replace the socket after closing it.
+    shared = [sock, reader]
+    yield shared
 
-    reader.close()
-    sock.close()
+    shared[1].close()
+    shared[0].close()
     _terminate(proc)
     try:
         proc.wait(timeout=5)
