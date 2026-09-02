@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BreakpointHandler.h"
+#include <functional>
 #include <string>
 
 class Z80Desassember
@@ -11,7 +12,10 @@ public:
 
    void InitOpcodeShortcuts();
 
+   using ReadByteFn = std::function<unsigned char(unsigned short)>;
+
    const int DasmMnemonic(unsigned short Addr, char pMnemonic[16], char pArgument[16]) const;
+   const int DasmMnemonicEx(unsigned short Addr, const ReadByteFn& readByte, char pMnemonic[16], char pArgument[16]) const;
 
    unsigned short GetMaxedPreviousValidAdress(unsigned short Addr_P);
    unsigned short GetPreviousValidAdress(unsigned short Addr_P);

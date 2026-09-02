@@ -33,7 +33,8 @@ CDisplay::CDisplay(QWidget *parent) : current_texture_(0), current_index_of_inde
    QSurfaceFormat format;
    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer); // Double buffering
    format.setSwapInterval(1); // Activer VSync
-   //format.setVersion(3, 3); // Utiliser une version moderne si nécessaire
+   format.setAlphaBufferSize(0); // No alpha channel to avoid transparency
+   //format.setVersion(3, 3); // Utiliser une version moderne si nï¿½cessaire
    QSurfaceFormat::setDefaultFormat(format);
    setFormat(format);
 
@@ -171,7 +172,7 @@ void CDisplay::initializeGL()
       "void main()\n"
       "{\n"
       "   vec2 coord = vec2( vTexCoord.x *vratio.x + vorigin.x, vTexCoord.y*vratio.y + vorigin.y);\n"
-      "   gl_FragColor = texture2D(texture, coord);\n"
+      "   gl_FragColor = vec4(texture2D(texture, coord).rgb, 1.0);\n"
       "}";
 
    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex);
@@ -245,6 +246,34 @@ void CDisplay::Screenshot(const char* scr_path)
 
 }
 
+bool CDisplay::CaptureFrameRGBA (std::vector<unsigned char>& rgba, int& width, int& height)
+{
+   // Same crop/de-interlace window as Screenshot(), but reading the buffer
+   // that is actually currently being displayed (index_current_buffer_),
+   // and returning raw RGBA8888 bytes instead of writing to disk.
+   sync_mutex_.lock();
+   QImage img((unsigned char*)buffer_list_[index_current_buffer_].framebufferArray_, 1024, 1024, QImage::Format_ARGB32);
+   QImage scr(DISP_WINDOW_X, DISP_WINDOW_Y, QImage::Format_ARGB32);
+
+   QPainter p;
+   for (int line = ORIGIN_Y; line < DISP_WINDOW_Y / 2; line++)
+   {
+      p.begin(&scr);
+      p.drawImage(QRectF(0, line * 2, DISP_WINDOW_X, 2),
+         img, QRectF(ORIGIN_X, line, DISP_WINDOW_X, 1),
+         Qt::AutoColor);
+      p.end();
+   }
+   sync_mutex_.unlock();
+
+   QImage rgbaImg = scr.convertToFormat(QImage::Format_RGBA8888);
+   width  = rgbaImg.width();
+   height = rgbaImg.height();
+   rgba.assign(rgbaImg.constBits(), rgbaImg.constBits() + (size_t)rgbaImg.sizeInBytes());
+
+   return true;
+}
+
 void CDisplay::SyncOnFrame(bool set)
 {
    sync_on_frame_ = set;
@@ -293,6 +322,7 @@ void CDisplay::VSync (bool bDbg)
       frame_emitted_++;
       sync_mutex_.unlock();
       emit FrameIsReady();
+      if (frame_callback_) frame_callback_();
       index_current_buffer_ = next_to_play;
    }
    else
@@ -378,7 +408,10 @@ void CDisplay::paintGL()
    }
    else
    {
-      // Redraw old frame ? (or do nothing !)
+      // No new frame ready (e.g. emulation paused in debug mode).
+      // Clear to black so the widget is opaque, not transparent.
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
       sync_mutex_.unlock();
    }
 }

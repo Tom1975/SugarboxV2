@@ -6,48 +6,89 @@ on:
   pull_request:
     branches: [ "master", "develop" ]
   workflow_call:
-    inputs: 
+    inputs:
       version:
         description: 'Version to build'
         default: 2.x.x
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
+    # ubuntu-24.04 (GLIBC 2.39) — AppImage runs on 24.04 and future 26.04+.
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Prepare Environement
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt install qt6-base-dev --fix-missing
-        sudo apt-get install libqt6websockets6-dev --fix-missing
-        sudo apt-get install udev build-essential libpthread-stubs0-dev libgl1-mesa-dev libx11-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libxi-dev --fix-missing
-        sudo apt-get install libxinerama-dev libxcursor-dev --fix-missing
-        sudo apt-get install libudev-dev libglu1-mesa-dev libsecret-1-dev libnotify-dev --fix-missing
-        sudo apt-get install checkinstall libtiff5-dev ubuntu-restricted-extras freeglut3-dev libcairo2-dev --fix-missing
+        sudo apt-get install -y --fix-missing \
+          build-essential libpthread-stubs0-dev \
+          qt6-base-dev libqt6websockets6-dev \
+          libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev \
+          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+          libfreetype6-dev libglew-dev libjpeg-dev \
+          libudev-dev libsecret-1-dev libnotify-dev \
+          checkinstall libtiff5-dev libcairo2-dev \
+          xvfb libopenal1 python3-pytest \
+          libfuse2
 
     - name: Checkout submodules
-      run: git submodule update --init --recursive 
-      
-    - name: Configure CMake
-      run: |
-        echo 'Generating makefile'
-        mkdir build
-        cd build
-        echo 'Version : '  ${{ inputs.version }}
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
-        make package
-        ls -l
+      run: git submodule update --init --recursive
 
-    - name: Archive
-      uses: actions/upload-artifact@v3
+    - name: Build
+      run: |
+        mkdir build && cd build
+        echo 'Version : ' ${{ inputs.version }}
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        make -j$(nproc)
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox/debugers
+        pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
+        SUGARBOX_PORT: 1234
+
+    - name: Download linuxdeploy + Qt plugin
+      run: |
+        wget -q -O linuxdeploy.AppImage \
+          https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget -q -O linuxdeploy-plugin-qt.AppImage \
+          https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+
+    - name: Populate AppDir
+      run: |
+        cmake --install build --prefix AppDir/usr
+        cp packaging/linux/AppRun AppDir/AppRun
+        chmod +x AppDir/AppRun
+
+    - name: Build AppImage
+      env:
+        QMAKE: /usr/bin/qmake6
+        OUTPUT: Sugarbox-Linux-x86_64.AppImage
+      run: |
+        ./linuxdeploy.AppImage \
+          --appdir AppDir \
+          --executable AppDir/usr/Sugarbox \
+          --desktop-file Sugarbox/sugarbox.desktop \
+          --icon-file Sugarbox/sugarbox.svg \
+          --plugin qt \
+          --output appimage
+
+    - name: Archive AppImage
+      uses: actions/upload-artifact@v4
       with:
-          name: SugarboxV2Ubuntu
-          path: ${{github.workspace}}/build/*.tar.gz
+        name: SugarboxV2Ubuntu
+        path: Sugarbox-*.AppImage

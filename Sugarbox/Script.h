@@ -3,7 +3,7 @@
 #include <QtWidgets>
 #include <filesystem>
 
-#include "DebugCommand.h"
+#include "debugers/DebugCommand.h"
 #include "ScriptContext.h"
 
 class IScriptCommand

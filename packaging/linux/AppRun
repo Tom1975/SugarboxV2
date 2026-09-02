@@ -1,0 +1,9 @@
+#!/bin/bash
+# Fix CWD so Sugarbox finds ROM/, CONF/, etc. via std::filesystem::current_path().
+SELF=$(readlink -f "$0")
+HERE="${SELF%/*}"
+cd "$HERE/usr"
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export QT_PLUGIN_PATH="$HERE/usr/plugins"
+export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms"
+exec "$HERE/usr/Sugarbox" "$@"

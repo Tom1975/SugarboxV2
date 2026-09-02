@@ -1,0 +1,107 @@
+////////////////////////////////////////////////////////
+// 
+//  DAP Class adapter : This class will communicate with DAP 
+// to provide a way to debug z80 application through Sugarbox
+// 
+#pragma once
+
+#include <string>
+#include <thread>
+#include <atomic>
+
+#include "json.hpp"
+
+#include "Emulation.h"
+
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+
+#ifdef _WIN32
+   // link with Ws2_32.lib
+   #pragma comment(lib,"Ws2_32.lib")
+
+   #include <winsock2.h>
+   #include <ws2tcpip.h>
+#endif
+
+class DebugMessageQueue
+{
+public:
+    void push(std::string msg)
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(std::move(msg));
+        }
+        m_cv.notify_one();
+    }
+
+    std::string pop()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_cv.wait(lock, [&]{ return !m_queue.empty(); });
+
+        std::string msg = std::move(m_queue.front());
+        m_queue.pop();
+        return msg;
+    }
+
+private:
+    std::queue<std::string> m_queue;
+    std::mutex m_mutex;
+    std::condition_variable m_cv;
+};
+
+class DebugServer
+{
+public:
+   DebugServer(Emulation* emulation, int port = 1234 );
+   ~DebugServer();
+
+   void StartServer();
+   void stop();
+   void NotifyStop(IDebugerStopped::Reason reason);
+   void NotifyMediaChanged(int drive, bool inserted);
+   // Called once per VSync (any thread). Pushes a "frame" event only if a
+   // client has subscribed via the "subscribeScreen" command.
+   void NotifyFrame();
+
+private:
+   void serverThread();
+   void networkThread();
+   void handleClient(int clientSocket);
+   void SendResponse(nlohmann::json response);
+
+
+   void HandleReadMemory(const nlohmann::json& request);
+   void HandleGetMemBanks();
+   void HandleGetCrtcState();
+   void HandleGetGateArrayState();
+   void HandleGetPsgState();
+   void HandleGetPpiState();
+   void HandleGetFdcState();
+   void HandleGetTapeState();
+   void HandleGetAsicState();
+   void HandleGetTrackRaw(const nlohmann::json& request);
+   void HandleGetTapeSignal();
+   void HandleGetScreen();
+   bool BuildScreenBody(nlohmann::json& body);
+
+   int port_;
+   std::atomic<bool> running_{ false };
+   std::atomic<bool> screen_subscribed_{ false };
+   std::thread thread_;
+   std::thread thread_send_;
+
+#ifdef _WIN32
+   SOCKET serverSocket_ = INVALID_SOCKET;
+   SOCKET clientSocket_ = INVALID_SOCKET;
+#else
+   int serverSocket_ = -1;
+   int clientSocket_ = -1;
+#endif
+
+   DebugMessageQueue outgoing_queue_;
+   Emulation* emulation_;
+};

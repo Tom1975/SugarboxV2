@@ -132,16 +132,19 @@ unsigned short Z80Desassember::GetPreviousValidAdress(unsigned short Addr_P)
 
 const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], char pArgument[16]) const
 {
-   // Disassemble the memory from Addr, to Addr+size
+   if (machine_->GetMem() == nullptr) { memset(pMnemonic,0,16); memset(pArgument,0,16); return 1; }
+   ReadByteFn reader = [this](unsigned short a) -> unsigned char { return machine_->GetMem()->Get(a); };
+   return DasmMnemonicEx(Addr, reader, pMnemonic, pArgument);
+}
+
+const int Z80Desassember::DasmMnemonicEx(unsigned short Addr, const ReadByteFn& readByte, char pMnemonic[16], char pArgument[16]) const
+{
+   // Disassemble the memory from Addr, to Addr+size — bytes supplied by readByte()
    unsigned short currentAddr = Addr;
 
    memset(pMnemonic, 0, 16);
    memset(pArgument, 0, 16);
-   if (machine_->GetMem() == NULL)
-   {
-      return 1;
-   }
-   unsigned char nextInstr_L = machine_->GetMem()->Get(currentAddr);
+   unsigned char nextInstr_L = readByte(currentAddr);
    unsigned char size = ListeOpcodes[nextInstr_L].Size;
 
    // Disassembly
@@ -149,28 +152,28 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
    if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%CB") == 0)
    {
       // CB ?
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
+      nextInstr_L = readByte(currentAddr + 1);
       Opcode_L = ListeOpcodesCB[nextInstr_L].Disassembly;
       size += ListeOpcodesCB[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%ED") == 0)
    {
       // ED ?
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
+      nextInstr_L = readByte(currentAddr + 1);
       Opcode_L = ListeOpcodesED[nextInstr_L].Disassembly;
       size += ListeOpcodesED[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%DD") == 0)
    {
       // DD
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
+      nextInstr_L = readByte(currentAddr + 1);
       Opcode_L = ListeOpcodesDD[nextInstr_L].Disassembly;
       size += ListeOpcodesDD[nextInstr_L].Size;
    }
    else if (strcmp(ListeOpcodes[nextInstr_L].Disassembly.c_str(), "%FD") == 0)
    {
       // FD
-      nextInstr_L = machine_->GetMem()->Get(currentAddr + 1);
+      nextInstr_L = readByte(currentAddr + 1);
       Opcode_L = ListeOpcodesFD[nextInstr_L].Disassembly;
       size += ListeOpcodesFD[nextInstr_L].Size;
    }
@@ -199,7 +202,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          if (pReplace_L[1] == 'n' && pReplace_L[2] == 'n')
          {
             char minibuf[6];
-            std::snprintf(minibuf, 6, "$%2.2X%2.2X", machine_->GetMem()->Get(currentAddr + size - 1), machine_->GetMem()->Get(currentAddr + size - 2));
+            std::snprintf(minibuf, 6, "$%2.2X%2.2X", readByte(currentAddr + size - 1), readByte(currentAddr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 5 * sizeof (char));
          }
@@ -207,27 +210,27 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          else if (pReplace_L[1] == 'n' && pReplace_L[2] == '2')
          {
             char minibuf[4];
-            std::snprintf(minibuf, 4, "%2.2X ", machine_->GetMem()->Get(currentAddr + size - 2));
+            std::snprintf(minibuf, 4, "$%2.2X ", readByte(currentAddr + size - 2));
             // 2 then 1
             memcpy(pReplace_L, minibuf, 3 * sizeof (char));
          }
          // Replace  %n" by value
          else if (pReplace_L[1] == 'n')
          {
-            char minibuf[3];
-            std::snprintf(minibuf, 3, "%2.2X", machine_->GetMem()->Get(currentAddr + size - 1));
+            char minibuf[4];
+            std::snprintf(minibuf, 4, "$%2.2X", readByte(currentAddr + size - 1));
             // 2 then 1
-            memcpy(pReplace_L, minibuf, 2 * sizeof (char));
+            memcpy(pReplace_L, minibuf, 3 * sizeof (char));
          }
          // Replace %j__ by relative jump
          else if (pReplace_L[1] == 'j')
          {
-            char minibuf[5];
-            char dec_L = machine_->GetMem()->Get(currentAddr + size - 1);
+            char minibuf[6];
+            char dec_L = static_cast<char>(readByte(currentAddr + size - 1));
             unsigned short relative_adress = Addr + dec_L + size;
-            std::snprintf(minibuf, 5, "%4.4X", relative_adress);
+            std::snprintf(minibuf, 6, "$%4.4X", relative_adress);
             // 2 then 1
-            memcpy(pReplace_L, minibuf, 4 * sizeof (char));
+            memcpy(pReplace_L, minibuf, 5 * sizeof (char));
 
          }
          // Replace %r by register
@@ -235,7 +238,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          {
             // get previous value
             int indexReg = currentAddr + size - 1;
-            unsigned char reg = machine_->GetMem()->Get(indexReg);
+            unsigned char reg = readByte(static_cast<unsigned short>(indexReg));
             // mask the 3 first bits
             switch (reg & 0x7)
             {
@@ -256,7 +259,7 @@ const int Z80Desassember::DasmMnemonic(unsigned short Addr, char pMnemonic[16], 
          {
             // get previous value
             int indexReg = currentAddr + size - 1;
-            unsigned char bit = machine_->GetMem()->Get(indexReg);
+            unsigned char bit = readByte(static_cast<unsigned short>(indexReg));
             bit = (bit >> 3) & 0x7;
             ((char*)pReplace_L)[0] = '0' + bit;
             ((char*)pReplace_L)[1] = ' ';

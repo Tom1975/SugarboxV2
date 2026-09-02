@@ -37,6 +37,7 @@ protected:
    Emulation* emulation_;
 };
 
+
 ////////////////////////////////////////////////////////
 /// About
 class RemoteCommandAbout : public IRemoteCommand

@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <QMouseEvent>
+#include <QTimer>
 
 /////////////////////////////////////
 // SugarbonApp
@@ -35,6 +36,7 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
 
    clear();
 
+   gdbCreator_ = new GdbThreadCreator();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -42,6 +44,7 @@ SugarboxApp::~SugarboxApp()
    //key_mgr_out.CloseFile();
 
    delete emulation_;
+   delete gdbCreator_;
 }
 
 //////////////////////////////////////////////
@@ -210,6 +213,11 @@ void SugarboxApp::InitSettings()
 
 int SugarboxApp::RunApp(SugarboxInitialisation& init)
 {
+   if (init._no_show)
+   {
+      hide();
+   }
+   
    // Settings
    InitSettings();
 
@@ -244,8 +252,20 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
    
    status_sound_.SetEmulation(emulation_);
 
-   debugger_link_ = new DebugSocket(this, emulation_);
-   debugger_link_->StartServer();
+   if ( init._dbs_server.size() > 0)
+   {
+      unsigned short port = static_cast< unsigned short >( std::strtoul(init._dbs_server.c_str(), NULL, 0) );
+      if (port > 0)
+      {
+         debugger_link_ = new DebugServer(emulation_, port);
+         debugger_link_->StartServer();
+         display_.SetFrameCallback([this]() { debugger_link_->NotifyFrame(); });
+      }
+      else
+      {
+         // Error 
+      }
+   }
 
    dlg_settings_.Init(emulation_->GetEngine());
    keyboard_handler_ = emulation_->GetKeyboardHandler();
@@ -269,7 +289,7 @@ int SugarboxApp::RunApp(SugarboxInitialisation& init)
       emulation_->AddScript(init._script_to_run);
    }
 
-   if (init._debug_start)
+   if (init._debug_start && !init._no_show)
       OpenDebugger();
 
    // This part was used to convert keyboard from windows to keycode (for cross platform usage)
@@ -948,12 +968,24 @@ void SugarboxApp::dragMoveEvent(QDragMoveEvent *event)
 
 void SugarboxApp::dropEvent(QDropEvent *event)
 {
-   QList<QUrl> url_list = event->mimeData()->urls();
+   // Capture URLs and return immediately so OLE DnD completes before any heavy work.
+   // Loading is deferred via QTimer to avoid running inside the OLE mouse hook context,
+   // which would make any crash/assert dialog unclickable on Windows.
+   pending_drop_urls_ = event->mimeData()->urls();
+   event->acceptProposedAction();
+   QTimer::singleShot(0, this, &SugarboxApp::LoadDroppedFiles);
+}
+
+void SugarboxApp::LoadDroppedFiles()
+{
+   QList<QUrl> url_list = pending_drop_urls_;
+   pending_drop_urls_.clear();
+
    foreach(const QUrl &url, url_list)
    {
       QString fileName = url.toLocalFile();
       std::string path = fileName.toUtf8().constData();
-      
+
       DataContainer* dnd_container = emulation_->CanLoad(path.c_str());
 
       if (dnd_container == nullptr)
@@ -964,13 +996,14 @@ void SugarboxApp::dropEvent(QDropEvent *event)
             || url_path.extension() == ".Csl"
             || url_path.extension() == ".CSL")
          {
-            // Ok : Load as CSL 
+            // Ok : Load as CSL
             emulation_->AddScript(url_path);
             return;
          }
-
+         // Unrecognized file type
+         continue;
       }
-         
+
       MediaManager mediaMgr(dnd_container);
       std::vector<MediaManager::MediaType> list_of_types;
       list_of_types.push_back(MediaManager::MEDIA_DISK);
@@ -985,7 +1018,6 @@ void SugarboxApp::dropEvent(QDropEvent *event)
 
       switch (media_type)
       {
-         // Test : Is it SNA?
       case 1:
          emulation_->LoadSnapshot(path.c_str());
          break;
@@ -999,22 +1031,12 @@ void SugarboxApp::dropEvent(QDropEvent *event)
             emulation_->LoadDisk(dnd_container, 0);
          }
          break;
-         // Tape - TODO
       }
       case 4:
-         // TODO : Ask for tape saving ?
-
-         // Load first element of the container
-         //m_pMachine->LoadTape(m_DragFiles[0]);
       {
-         MediaManager mediaMgr(dnd_container);
-         std::vector<MediaManager::MediaType> list_of_types;
-         list_of_types.push_back(MediaManager::MEDIA_TAPE);
          auto list = dnd_container->GetFileList();
-
-
-         emulation_->LoadTape(list[0]);
-         //UpdateStatusBar();
+         if (!list.empty())
+            emulation_->LoadTape(list[0]);
          break;
       }
       case 5:
@@ -1041,8 +1063,20 @@ void SugarboxApp::dragLeaveEvent(QDragLeaveEvent *event)
 
 void SugarboxApp::DiskLoaded()
 {
-   // Signal an update 
+   // Signal an update
    emit MenuChanged();
+}
+
+void SugarboxApp::DiskInserted(int drive)
+{
+   if (debugger_link_ != nullptr)
+      debugger_link_->NotifyMediaChanged(drive, true);
+}
+
+void SugarboxApp::DiskEjected()
+{
+   if (debugger_link_ != nullptr)
+      debugger_link_->NotifyMediaChanged(-1, false);
 }
 
 void SugarboxApp::ChangeSettings(MachineSettings* settings)
@@ -1054,8 +1088,12 @@ void SugarboxApp::ChangeSettings(MachineSettings* settings)
 
 }
 
-void SugarboxApp::NotifyStop()
+void SugarboxApp::NotifyStop(IDebugerStopped::Reason reason)
 {
+   if (debugger_link_ != nullptr)
+   {
+      debugger_link_->NotifyStop(reason);
+   }
    // call update for debugger
    debug_.Update();
    for (auto& i: memory_)

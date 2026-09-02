@@ -1,6 +1,20 @@
 Sugarbox changelog
 ------------------
-v2.0.3 - 
+v2.1.1 -
+   * Add VS Code debug adapter (DAP) for Z80/Amstrad CPC development: breakpoints, registers, stack, disassembly and memory read/write, launch & attach modes
+   * Add GDB-compatible debug interface
+   * Add hexadecimal memory editor and memory video view panel to the debugger
+   * Add FDC, Tape, PPI and ASIC debug panels
+   * Add remote commands: insertTape, sendKey
+   * Add differential snapshot load
+   * Fix disassembly view (native view suppressed, correct PC arrow)
+   * Fix drag & drop crash on Windows when loading a file during debug
+   * Various CI/build fixes
+
+v2.0.4 -
+   * Add : Check the proper "speed" limit set
+
+v2.0.3 -
    * Memory debug window added (up to 4)
    * CRTC debug window added
 
