@@ -45,7 +45,7 @@ jobs:
     - name: Install Qt 6.7
       uses: jurplel/install-qt-action@v4
       with:
-        version: '6.7.3'
+        version: '6.7.2'
         modules: qtwebsockets
         target: 'desktop'
         arch: gcc_64
