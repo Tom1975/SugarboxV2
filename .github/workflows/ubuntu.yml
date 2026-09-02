@@ -22,9 +22,8 @@ env:
 
 jobs:
   build:
-    # ubuntu-22.04 (GLIBC 2.35) — oldest supported LTS; AppImage built here
-    # runs on 22.04, 24.04 and future 26.04+ without recompilation.
-    runs-on: ubuntu-22.04
+    # ubuntu-24.04 (GLIBC 2.39) — AppImage runs on 24.04 and future 26.04+.
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
@@ -34,6 +33,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --fix-missing \
           build-essential libpthread-stubs0-dev \
+          qt6-base-dev libqt6websockets6-dev \
           libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev \
           libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
           libfreetype6-dev libglew-dev libjpeg-dev \
@@ -41,16 +41,6 @@ jobs:
           checkinstall libtiff5-dev libcairo2-dev \
           xvfb libopenal1 python3-pytest \
           libfuse2
-
-    - name: Install Qt 6.7
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.7.2'
-        modules: qtwebsockets
-        target: 'desktop'
-        arch: gcc_64
-        install-deps: 'true'
-        cache: true
 
     - name: Checkout submodules
       run: git submodule update --init --recursive
@@ -83,22 +73,22 @@ jobs:
         cmake --install build --prefix AppDir/usr
 
         # Custom AppRun: fix CWD so Sugarbox finds ROM/, CONF/, etc. via
-        # std::filesystem::current_path() (relative to the binary directory).
+        # std::filesystem::current_path() (relative to the install prefix).
         cat > AppDir/AppRun << 'APPRUN'
-        #!/bin/bash
-        SELF=$(readlink -f "$0")
-        HERE="${SELF%/*}"
-        cd "$HERE/usr"
-        export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        export QT_PLUGIN_PATH="$HERE/usr/plugins"
-        export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms"
-        exec "$HERE/usr/Sugarbox" "$@"
-        APPRUN
+#!/bin/bash
+SELF=$(readlink -f "$0")
+HERE="${SELF%/*}"
+cd "$HERE/usr"
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export QT_PLUGIN_PATH="$HERE/usr/plugins"
+export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms"
+exec "$HERE/usr/Sugarbox" "$@"
+APPRUN
         chmod +x AppDir/AppRun
 
     - name: Build AppImage
       env:
-        QMAKE: ${{ env.Qt6_DIR }}/bin/qmake
+        QMAKE: /usr/bin/qmake6
         OUTPUT: Sugarbox-Linux-x86_64.AppImage
       run: |
         ./linuxdeploy.AppImage \
