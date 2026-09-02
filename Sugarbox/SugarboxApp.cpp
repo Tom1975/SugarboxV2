@@ -36,7 +36,6 @@ status_speed_("0", this), status_tape_(this), status_disk_(this)
 
    clear();
 
-   gdbCreator_ = new GdbThreadCreator();
 }
 
 SugarboxApp::~SugarboxApp()
@@ -44,7 +43,6 @@ SugarboxApp::~SugarboxApp()
    //key_mgr_out.CloseFile();
 
    delete emulation_;
-   delete gdbCreator_;
 }
 
 //////////////////////////////////////////////
