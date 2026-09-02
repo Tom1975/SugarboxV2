@@ -71,19 +71,7 @@ jobs:
     - name: Populate AppDir
       run: |
         cmake --install build --prefix AppDir/usr
-
-        # Custom AppRun: fix CWD so Sugarbox finds ROM/, CONF/, etc. via
-        # std::filesystem::current_path() (relative to the install prefix).
-        cat > AppDir/AppRun << 'APPRUN'
-#!/bin/bash
-SELF=$(readlink -f "$0")
-HERE="${SELF%/*}"
-cd "$HERE/usr"
-export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export QT_PLUGIN_PATH="$HERE/usr/plugins"
-export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms"
-exec "$HERE/usr/Sugarbox" "$@"
-APPRUN
+        cp packaging/linux/AppRun AppDir/AppRun
         chmod +x AppDir/AppRun
 
     - name: Build AppImage
@@ -102,5 +90,5 @@ APPRUN
     - name: Archive AppImage
       uses: actions/upload-artifact@v4
       with:
-        name: SugarboxV2-Linux-AppImage
+        name: SugarboxV2Ubuntu
         path: Sugarbox-*.AppImage
