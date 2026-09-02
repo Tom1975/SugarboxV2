@@ -31,7 +31,6 @@
 #include "SCLPlayer.h"
 #include "Script.h"
 #include "SoundWidget.h"
-#include "debugers/gdb/GdbThreadCreator.h"
 #include "debugers/DebugServer.h"
 
 namespace Ui {
@@ -214,7 +213,6 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
-   GdbThreadCreator* gdbCreator_;
    DebugServer* debugger_link_;
 
    DebugDialog debug_;
