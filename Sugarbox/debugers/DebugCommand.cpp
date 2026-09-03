@@ -1,7 +1,5 @@
 
 #include "DebugCommand.h"
-
-#include "DebugSocket.h"
 #include "Emulation.h"
 
 // Cross compilation : use stricmp / strcasecmp depending on windows / linux
@@ -14,8 +12,7 @@
 #define CURRENT_VERSION    "10.0"
 #define CURRENT_MACHINE    "ZX Spectrum+ 128k"
 
-#define STATE_DEFAULT      ""
-#define STATE_CPU_STEP     "cpu-step"
+
 
 
 ////////////////////////////////////////////////////////
@@ -190,6 +187,7 @@ bool RemoteCommandGetCPUFrequency::Execute(std::vector<std::string>& param)
 /// Get current machine
 bool RemoteCommandGetCurrentMachine::Execute(std::vector<std::string>& param)
 {
+   // TODO : set correct value here
    callback_->SendResponse(CURRENT_MACHINE);
    return true;
 }

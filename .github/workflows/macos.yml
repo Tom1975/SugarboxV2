@@ -6,40 +6,43 @@ on:
   pull_request:
     branches: [ "master", "develop" ]
   workflow_call:
-    inputs: 
+    inputs:
       version:
         description: 'Version to build'
         default: 2.x.x
         type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
-    runs-on:  macOS-latest
-          
-    steps:
-    - uses: actions/checkout@v3
-          
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.6.*'
-        modules: qtwebsockets 
-        target: 'desktop'
-        arch: ${{ matrix.qt_version }}
-        install-deps: 'true'
-        
-    - name: Install Third Party
-      run: |
-        brew install openal-soft 
-        brew install qt6
-        export Qt6_DIR=$(brew --prefix)/opt/qt6
+    # macOS-13 (Ventura) is required: AGL.framework was removed in macOS 14 and Qt < 6.7 depends on it.
+    # Once Qt is upgraded to 6.7+, this can move back to macos-latest.
+    runs-on: macos-13
 
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.6.2'
+        modules: qtwebsockets
+        target: 'desktop'
+        arch: clang_64
+        install-deps: 'true'
+        cache: true
+
+    - name: Install OpenAL
+      run: brew install openal-soft
 
     - name: Checkout submodules
-      run: git submodule update --init --recursive 
+      run: git submodule update --init --recursive
 
     - name: Configure & build CMake
       run: |
@@ -48,14 +51,34 @@ jobs:
         cd build
         echo 'Version : '  ${{ inputs.version }}
         cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        make -j$(sysctl -n hw.logicalcpu)
+        ls -l
+
+    - name: Install pytest
+      run: pip3 install pytest
+
+    - name: Find Sugarbox binary
+      run: |
+        BINARY=$(find ${{ github.workspace }}/build/Sugarbox -type f -name "Sugarbox" | head -1)
+        echo "SUGARBOX_BINARY=$BINARY" >> $GITHUB_ENV
+        echo "Found binary: $BINARY"
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox/debugers
+        python3 -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ env.SUGARBOX_BINARY }}
+        SUGARBOX_PORT: 1234
+
+    - name: Package
+      run: |
+        cd build
         make package
         ls -l
-      
+
     - name: Archive zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: SugarboxV2MacOS
           path: ${{github.workspace}}/build/*.tar.gz
-          
-          
-          

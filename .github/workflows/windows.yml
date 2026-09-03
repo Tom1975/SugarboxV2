@@ -15,6 +15,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -24,16 +25,17 @@ jobs:
     runs-on:  windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.*'
+        version: '6.6.2'
         target: 'desktop'
         arch: win64_msvc2019_64
         install-deps: 'true'
-        modules: qtwebsockets 
+        modules: qtwebsockets
+        cache: true
         
     - name: Install udev
       run: ${{ matrix.other_installer }}
@@ -47,11 +49,20 @@ jobs:
         cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}'
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}} 
+      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
+
+    - name: Install pytest
+      run: pip install pytest
+
+    - name: Run protocol integration tests
+      run: |
+        cd Sugarbox\debugers
+        python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\Sugarbox.exe
+        SUGARBOX_PORT: 1234
 
     - name: Install
-      # Make install
       run: cmake --install ${{github.workspace}}\build
 
     - name: Packaging
@@ -60,7 +71,7 @@ jobs:
       run: cpack -G 7Z .
       
     - name: Archive zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: SugarboxV2
           path: ${{github.workspace}}\build\*.7z

@@ -1,8 +1,4 @@
-IF(MSVC)
-   cmake_minimum_required(VERSION 3.14)
-else()
-   cmake_minimum_required(VERSION 3.10)
-endif()
+cmake_minimum_required(VERSION 3.16)
 
 project(Sugarbox)
 
@@ -16,7 +12,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set (SUGARBOX_VERSION "2.0.4" CACHE STRING "Version to build" FORCE)
+set (SUGARBOX_VERSION "2.1.1" CACHE STRING "Version to build" FORCE)
 
 MESSAGE (STATUS "Version :" ${SUGARBOX_VERSION})
 
@@ -62,10 +58,12 @@ find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
 file(GLOB HEADERS
     *.h
+    debugers/*.h
 )
 
 file(GLOB SRCS
     *.cpp
+    debugers/*.cpp
 )
 
 file(GLOB RES
@@ -129,14 +127,18 @@ IF(MSVC)
    endif()
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")  
 ENDIF(MSVC)
-if(CMAKE_COMPILER_IS_GNUCC)
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
-   set ( LIB_EXT pthread stdc++fs)
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
+        set(LIB_EXT pthread stdc++fs)
+    else()
+        set(LIB_EXT pthread)
+    endif()
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	set ( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17 )
-   set ( LIBZA libz.a pthread stdc++fs)
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} --std=c++17)
+    set(LIBZA libz.a pthread)
 endif()
 
 IF(WIN32)
@@ -167,7 +169,8 @@ IF(APPLE)
 
 endif()
 
-target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} )
+target_include_directories(Sugarbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../json/single_include/nlohmann)
+target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION=${SUGARBOX_VERSION} WIN32_LEAN_AND_MEAN)
 
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_INSTALL_BINDIR})
 set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})

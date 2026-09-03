@@ -24,13 +24,14 @@
 #include "SettingsList.h"
 #include "Settings.h"
 #include "DlgSettings.h"
-#include "DebugSocket.h"
+#include "debugers/DebugSocket.h"
 #include "FlagHandler.h"
 #include "TapeWidget.h"
 #include "DiskWidget.h"
 #include "SCLPlayer.h"
 #include "Script.h"
 #include "SoundWidget.h"
+#include "debugers/DebugServer.h"
 
 namespace Ui {
    class SugarboxApp;
@@ -56,7 +57,7 @@ public:
    Action* GetFirstAction(FunctionType&);
    Action* GetNextAction(FunctionType&);
 
-   virtual void NotifyStop();
+   virtual void NotifyStop(IDebugerStopped::Reason reason);
 
    virtual bool PlusEnabled();
    virtual bool FdcPresent();
@@ -89,8 +90,10 @@ public:
    virtual void OpenMemory(int memory_index);
    virtual void OpenCrtc();
 
-   // INotifier 
+   // INotifier
    virtual void DiskLoaded();
+   virtual void DiskInserted(int drive);
+   virtual void DiskEjected();
 
    // ISoundFactory interface
    virtual ISound* GetSound(const char* name);
@@ -120,6 +123,7 @@ public slots:
    void UpdateMenu();
    virtual void ChangeSettings(MachineSettings*);
    void Display();
+   void LoadDroppedFiles();
 
 signals:
    void changed(const QMimeData *mimeData = nullptr);
@@ -209,12 +213,14 @@ protected:
    ConfigurationManager key_mgr, key_mgr_out;
 
    // Debugger
-
-   DebugSocket* debugger_link_;
+   DebugServer* debugger_link_;
 
    DebugDialog debug_;
    MemoryDialog memory_[4];
    CRTCDialog crtc_debug_;
+
+   // Pending DnD files (processed after dropEvent returns)
+   QList<QUrl> pending_drop_urls_;
 
    // Flag handler
    FlagHandler flag_handler_;

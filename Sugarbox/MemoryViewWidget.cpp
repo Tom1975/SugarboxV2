@@ -114,10 +114,10 @@ void MemoryViewWidget::keyPressEvent(QKeyEvent* event)
 void MemoryViewWidget::mousePressEvent(QMouseEvent* event)
 {
    // Check line
-   int line = event->y() / line_height_;
+   int line = event->position().x() / line_height_;
 
    // check position
-   int x = event->x();
+   int x = event->position().x();
 }
 
 void MemoryViewWidget::Update()

@@ -5,6 +5,8 @@
 #include <string>
 #include <memory.h>
 #include <mutex>
+#include <functional>
+#include <vector>
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -48,6 +50,8 @@ public :
    virtual void Screenshot (const char* scr_path);
    virtual void Screenshot();
    virtual void ScreenshotEveryFrame(int bSetOn) {};
+   bool CaptureFrameRGBA (std::vector<unsigned char>& rgba, int& width, int& height) override;
+   void SetFrameCallback (std::function<void()> callback) override { frame_callback_ = std::move(callback); }
    virtual bool IsEveryFrameScreened() {
       return false;
    }
@@ -136,8 +140,10 @@ protected:
 
    bool sync_on_frame_;
 
+   std::function<void()> frame_callback_;
+
    // Open gl stuff
-   QColor clearColor;
+   QColor clearColor = QColor(0, 0, 0, 255);
    QPoint lastPos;
    int xRot;
    int yRot;

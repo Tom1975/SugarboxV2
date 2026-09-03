@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Sugarbox
+Comment=Amstrad CPC / CPC+ / GX4000 Emulator
+Exec=Sugarbox
+Icon=sugarbox
+Type=Application
+Categories=Game;Emulator;

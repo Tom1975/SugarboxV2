@@ -20,6 +20,8 @@ class INotifier
 {
 public:
    virtual void DiskLoaded() = 0;
+   virtual void DiskInserted(int drive) = 0;
+   virtual void DiskEjected() = 0;
 };
 
 class IBeakpointNotifier
@@ -32,7 +34,18 @@ public:
 class IDebugerStopped
 {
 public:
-   virtual void NotifyStop() = 0;
+   typedef enum {
+      Breakpoint,
+      Step,
+      Exception,
+      Pause,
+      Entry,
+      Goto,
+      FunctionBreakpoint,
+      DataBreakpoint,
+      InstructionBreakpoint
+   } Reason;
+   virtual void NotifyStop(Reason) = 0;
 };
 
 class Emulation  : public IDirectories, IFdcNotify
@@ -88,7 +101,7 @@ public :
    bool LoadBin(const char* path_file);
    void SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type);
    int LoadDisk(DataContainer* container, unsigned int drive_number = 0, bool differential_load = true);
-   int LoadDisk(const char* container, unsigned int drive_number);
+   int LoadDisk(const char* container, unsigned int drive_number, bool differential_load = true);
 
    void SaveTapeAs(const char* file, TapeFormat tape_format);
    int LoadTape(const char* file_path);
@@ -125,9 +138,14 @@ public :
    std::list< IDebugerStopped*> notifier_dbg_list_;
 
    bool IsRunning();
+   bool IsStepping(); // true while a step/run command is in progress
    void Step();
+   void StepOver();
+   void StepOut();
    void Run( int nb_opcodes = 0);
    void Break();
+   unsigned short GetDebugPC() const { return debug_pc_; }
+   void SetDebugPC(unsigned short pc) { debug_pc_ = pc; }
 
    int Disassemble(unsigned short address, char* buffer, int buffer_size);
    std::vector<std::string> GetZ80Registers();
@@ -185,6 +203,25 @@ protected:
    bool pause_;
 
    unsigned nb_opcode_to_run_;
+
+   // Step-over temporary breakpoint
+   bool     step_over_bp_active_ = false;
+   uint16_t step_over_bp_addr_   = 0;
+
+   // When step-over starts from new_instruction_ state (t_==1), DebugNew re-fetches
+   // the CALL opcode via Tick_Fetch_1 and fires the T=4 check — which would match any
+   // permanent BP at the CALL address and cause a spurious extra stop.
+   // We temporarily remove that BP and restore it once step-over ends.
+   bool     step_over_removed_bp_      = false;
+   uint16_t step_over_removed_bp_addr_ = 0;
+
+   // Reason for the last stop (used by NotifyStop)
+   IDebugerStopped::Reason stop_reason_ = IDebugerStopped::Breakpoint;
+
+   // PC to report to the debugger at the last stop point.
+   // - After step/step-over: pc_ (next instruction to execute)
+   // - After instruction breakpoint: GetPC() = pc_-1 (the instruction that triggered the BP)
+   unsigned short debug_pc_ = 0;
 
 
    std::thread* worker_thread_;
