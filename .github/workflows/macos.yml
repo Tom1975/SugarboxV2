@@ -38,6 +38,9 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
 
+    - name: Workaround missing AGL framework (Qt links it but never uses it)
+      run: sudo mkdir -p "$(xcrun --show-sdk-path)/System/Library/Frameworks/AGL.framework"
+
     - name: Configure & build CMake
       run: |
         echo 'Generating makefile'
