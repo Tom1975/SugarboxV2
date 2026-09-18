@@ -52,6 +52,114 @@ DebugServer::DebugServer(Emulation* emulation, int port )
    WSADATA wsa;
    WSAStartup(MAKEWORD(2, 2), &wsa);
 #endif
+   InitSettings();
+}
+
+void DebugServer::InitSettings()
+{
+   setting_defs_.push_back({
+      "sound_volume", "Volume", "Volume sonore (0-100)", "INT", 0, 100,
+      [this]() -> std::string {
+         auto* sm = emulation_->GetSoundMixer();
+         if (!sm) return "0";
+         return std::to_string(static_cast<int>(sm->GetVolume() * 100.f + 0.5f));
+      },
+      [this](const std::string& val) {
+         auto* sm = emulation_->GetSoundMixer();
+         if (!sm) return;
+         try {
+            int v = std::stoi(val);
+            if (v < 0)   v = 0;
+            if (v > 100) v = 100;
+            sm->SetVolume(v / 100.f);
+         } catch (...) {}
+      }
+   });
+
+   setting_defs_.push_back({
+      "autoload", "Autoload", "Charger automatiquement les médias au démarrage", "BOOL", 0, 1,
+      [this]() -> std::string {
+         return emulation_->IsAutoloadEnabled() ? "true" : "false";
+      },
+      [this](const std::string& val) {
+         bool target = (val == "true" || val == "1");
+         if (emulation_->IsAutoloadEnabled() != target)
+            emulation_->ToggleAutoload();
+      }
+   });
+}
+
+void DebugServer::HandleGetEmulatorSettings()
+{
+   json arr = json::array();
+   for (auto& s : setting_defs_) {
+      json entry;
+      entry["variableReglage"] = s.key;
+      entry["nomCourt"]        = s.short_name;
+      entry["nomLong"]         = s.long_name;
+      entry["type"]            = s.type;
+      entry["valeur"]          = s.getter();
+      if (s.type == "INT") {
+         entry["min"] = s.min_val;
+         entry["max"] = s.max_val;
+      }
+      arr.push_back(entry);
+   }
+   SendResponse({ {"status", "ok"}, {"settings", arr} });
+}
+
+void DebugServer::HandleGetEmulatorSetting(const nlohmann::json& request)
+{
+   std::string key = request.value("variableReglage", "");
+   for (auto& s : setting_defs_) {
+      if (s.key == key) {
+         SendResponse({ {"status", "ok"}, {"variableReglage", key}, {"valeur", s.getter()} });
+         return;
+      }
+   }
+   SendResponse({ {"error", "unknown setting"}, {"variableReglage", key} });
+}
+
+void DebugServer::HandleSetEmulatorSetting(const nlohmann::json& request)
+{
+   std::string key = request.value("variableReglage", "");
+   std::string val = request.value("valeur", "");
+   for (auto& s : setting_defs_) {
+      if (s.key == key) {
+         s.setter(val);
+         SendResponse({ {"status", "ok"}, {"variableReglage", key} });
+         return;
+      }
+   }
+   SendResponse({ {"error", "unknown setting"}, {"variableReglage", key} });
+}
+
+void DebugServer::HandleSetEmulatorSettings(const nlohmann::json& request)
+{
+   auto items = request.value("settings", json::array());
+   json updated = json::array();
+   json errors  = json::array();
+
+   for (auto& item : items) {
+      std::string key = item.value("variableReglage", "");
+      std::string val = item.value("valeur", "");
+      bool found = false;
+      for (auto& s : setting_defs_) {
+         if (s.key == key) {
+            s.setter(val);
+            updated.push_back(key);
+            found = true;
+            break;
+         }
+      }
+      if (!found)
+         errors.push_back({ {"variableReglage", key}, {"error", "unknown setting"} });
+   }
+
+   json resp = { {"status", errors.empty() ? "ok" : "partial"}, {"updated", updated} };
+   if (!errors.empty())
+      resp["errors"] = errors;
+   SendResponse(resp);
 }
 
 DebugServer::~DebugServer()
@@ -691,6 +799,22 @@ void DebugServer::handleClient(int clientSocket)
          else
             resp = { {"error", "LoadTape failed"}, {"code", result} };
          SendResponse(resp);
+      }
+      else if (cmd == "getEmulatorSettings")
+      {
+         HandleGetEmulatorSettings();
+      }
+      else if (cmd == "getEmulatorSetting")
+      {
+         HandleGetEmulatorSetting(request);
+      }
+      else if (cmd == "setEmulatorSetting")
+      {
+         HandleSetEmulatorSetting(request);
+      }
+      else if (cmd == "setEmulatorSettings")
+      {
+         HandleSetEmulatorSettings(request);
       }
       else if (cmd == "sendKey")
       {

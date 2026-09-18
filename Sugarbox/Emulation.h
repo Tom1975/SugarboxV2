@@ -85,6 +85,7 @@ public :
    virtual const char* GetBaseDirectory();
    IKeyboard* GetKeyboardHandler();
    unsigned int GetSpeed();
+   ALSoundMixer* GetSoundMixer() { return sound_mixer_; }
 
    // Media handling
    bool IsAutoloadEnabled();
