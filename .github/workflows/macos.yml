@@ -17,9 +17,7 @@ env:
 
 jobs:
   build:
-    # macOS-13 (Ventura) is required: AGL.framework was removed in macOS 14 and Qt < 6.7 depends on it.
-    # Once Qt is upgraded to 6.7+, this can move back to macos-latest.
-    runs-on: macos-13
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +25,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.2'
+        version: '6.8.1'
         modules: qtwebsockets
         target: 'desktop'
         arch: clang_64
@@ -40,13 +38,19 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
 
+    - name: Workaround missing AGL framework (Qt links it but never uses it)
+      run: |
+        SDK_FRAMEWORKS="$(xcrun --show-sdk-path)/System/Library/Frameworks"
+        sudo mkdir -p "$SDK_FRAMEWORKS/AGL.framework"
+        sudo clang -dynamiclib -o "$SDK_FRAMEWORKS/AGL.framework/AGL" -x c /dev/null
+
     - name: Configure & build CMake
       run: |
         echo 'Generating makefile'
         mkdir build
         cd build
         echo 'Version : '  ${{ inputs.version }}
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}' -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
         make -j$(sysctl -n hw.logicalcpu)
         ls -l
 

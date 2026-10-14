@@ -6,10 +6,12 @@ zero failures.  The 'emulator' fixture (conftest.py) owns the process
 lifecycle; all tests share the same session-scoped connection.
 """
 
+import json
 import socket as _socket
 
 import pytest
 
+from test_step import get_pc, get_state, recv_event, recv_msg, send, wait_running
 from test_step import (
     test_nop_steps            as _nop_steps,
     test_call_stepover        as _call_stepover,
@@ -103,6 +105,62 @@ def test_async(emulator):
 def test_reset(emulator):
     sock, reader = emulator
     assert _restart(sock, reader) == 0
+
+
+# ── Malformed requests ───────────────────────────────────────────────────────
+# Each of these used to terminate Sugarbox (an uncaught JSON type_error) or
+# make it index past a fixed array (bank, drive, side, track). The server has
+# to answer with an error and keep serving.
+
+_MALFORMED = [
+    ("not_an_object_number", "42"),
+    ("not_an_object_array", "[1,2]"),
+    ("address_as_string", {"cmd": "readMemory", "address": "0x100", "size": 4}),
+    ("bytes_not_an_array", {"cmd": "writeMemory", "address": 0x4000, "bytes": 5}),
+    ("pc_as_string", {"cmd": "setRegisters", "pc": "abc"}),
+    ("setpc_as_string", {"cmd": "setPC", "address": "abc"}),
+    ("settings_not_an_array", {"cmd": "setEmulatorSettings", "settings": 3}),
+    ("read_ram_bank_out_of_range", {"cmd": "readMemory", "address": 0, "size": 16, "memType": "ram", "bank": 100}),
+    ("read_rom_bank_out_of_range", {"cmd": "readMemory", "address": 0, "size": 16, "memType": "rom", "bank": 100000}),
+    ("disassemble_bank_out_of_range", {"cmd": "disassemble", "address": 0, "count": 4, "memType": "ram", "bank": 100}),
+    ("insert_disk_drive_out_of_range", {"cmd": "insertDisk", "drive": 5, "path": "/nonexistent.dsk"}),
+    ("insert_disk_negative_drive", {"cmd": "insertDisk", "drive": -1, "path": "/nonexistent.dsk"}),
+    ("track_raw_negative_drive", {"cmd": "getTrackRaw", "drive": -1, "side": 0, "track": 0}),
+    ("track_raw_negative_side", {"cmd": "getTrackRaw", "drive": 0, "side": -1, "track": 0}),
+    ("track_raw_negative_track", {"cmd": "getTrackRaw", "drive": 0, "side": 0, "track": -1}),
+]
+
+
+@pytest.mark.parametrize("payload", [p for _, p in _MALFORMED], ids=[n for n, _ in _MALFORMED])
+def test_malformed_request_is_refused(emulator, payload):
+    sock, reader = emulator
+    line = payload if isinstance(payload, str) else json.dumps(payload)
+    sock.sendall((line + "\n").encode())
+    assert "error" in recv_msg(reader)
+    # Still serving.
+    assert isinstance(get_pc(sock, reader), int)
+
+
+def test_evaluate_with_bank_out_of_range_gives_no_value(emulator):
+    sock, reader = emulator
+    resp = send(sock, reader, {"cmd": "evaluate", "expression": "rom[999]:0x0000"})
+    assert resp.get("text") == "?"
+    assert isinstance(get_pc(sock, reader), int)
+
+
+# ── Pause while running ──────────────────────────────────────────────────────
+# A halt is taken between two emulation slices: the emulation loop does not see it
+# happen, so Break() has to send the stopped event itself.
+
+def test_halt_while_running_sends_stopped(emulator):
+    sock, reader = emulator
+    send(sock, reader, {"cmd": "continue"})
+    wait_running(sock, reader)
+    sock.sendall((json.dumps({"cmd": "halt"}) + "\n").encode())
+    event = recv_event(sock, reader, timeout=5.0)
+    assert event.get("event") == "stopped"
+    assert event["body"]["reason"] == "pause"
+    assert get_state(sock, reader)["running"] == "false"
 
 
 # ── Reconnect (runs after connection is closed at session teardown) ───────────

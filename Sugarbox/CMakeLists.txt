@@ -165,8 +165,6 @@ IF(APPLE)
        MACOSX_BUNDLE_COPYRIGHT "Thomas GUILLEMIN"
    )
  
-   target_link_libraries(Sugarbox "-framework OpenGL")
-
 endif()
 
 target_include_directories(Sugarbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../json/single_include/nlohmann)

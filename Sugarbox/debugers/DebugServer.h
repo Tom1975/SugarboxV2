@@ -8,6 +8,8 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <functional>
+#include <vector>
 
 #include "json.hpp"
 
@@ -73,7 +75,25 @@ private:
    void handleClient(int clientSocket);
    void SendResponse(nlohmann::json response);
 
+   struct SettingDef {
+      std::string key;
+      std::string short_name;
+      std::string long_name;
+      std::string type;   // "BOOL", "INT", "TEXT"
+      int         min_val = 0;
+      int         max_val = 100;
+      std::function<std::string()>            getter;
+      std::function<void(const std::string&)> setter;
+   };
+   std::vector<SettingDef> setting_defs_;
+   void InitSettings();
 
+   void HandleGetEmulatorSettings();
+   void HandleGetEmulatorSetting(const nlohmann::json& request);
+   void HandleSetEmulatorSetting(const nlohmann::json& request);
+   void HandleSetEmulatorSettings(const nlohmann::json& request);
+
+   void HandleCommand(nlohmann::json& request);
    void HandleReadMemory(const nlohmann::json& request);
    void HandleGetMemBanks();
    void HandleGetCrtcState();
