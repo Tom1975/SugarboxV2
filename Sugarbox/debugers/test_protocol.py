@@ -11,7 +11,7 @@ import socket as _socket
 
 import pytest
 
-from test_step import get_pc, recv_msg, send
+from test_step import get_pc, get_state, recv_event, recv_msg, send, wait_running
 from test_step import (
     test_nop_steps            as _nop_steps,
     test_call_stepover        as _call_stepover,
@@ -146,6 +146,21 @@ def test_evaluate_with_bank_out_of_range_gives_no_value(emulator):
     resp = send(sock, reader, {"cmd": "evaluate", "expression": "rom[999]:0x0000"})
     assert resp.get("text") == "?"
     assert isinstance(get_pc(sock, reader), int)
+
+
+# ── Pause while running ──────────────────────────────────────────────────────
+# A halt is taken between two emulation slices: the emulation loop does not see it
+# happen, so Break() has to send the stopped event itself.
+
+def test_halt_while_running_sends_stopped(emulator):
+    sock, reader = emulator
+    send(sock, reader, {"cmd": "continue"})
+    wait_running(sock, reader)
+    sock.sendall((json.dumps({"cmd": "halt"}) + "\n").encode())
+    event = recv_event(sock, reader, timeout=5.0)
+    assert event.get("event") == "stopped"
+    assert event["body"]["reason"] == "pause"
+    assert get_state(sock, reader)["running"] == "false"
 
 
 # ── Reconnect (runs after connection is closed at session teardown) ───────────

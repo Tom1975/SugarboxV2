@@ -11,6 +11,8 @@ using socklen_t = int;
 #include "DebugServer.h"
 
 #include <algorithm>
+#include <optional>
+#include <set>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -419,6 +421,22 @@ void DebugServer::HandleCommand(nlohmann::json& request)
    json response;
 
    std::string cmd = request.value("cmd", "");
+
+   // A command that changes the machine, or reads a structure that a disk or tape change
+   // reallocates, holds it: the emulation thread is not running a slice meanwhile.
+   // Reads of registers, memory and chip registers stay unlocked, as before: while
+   // running, a lock waits for the end of the slice, and the panels poll them live.
+   static const std::set<std::string> kUnlockedReads = {
+      "readRegisters", "getState", "readMemory", "getMemBanks", "evaluate", "disassemble",
+      "getCrtcState", "getGateArrayState", "getPsgState", "getPpiState", "getAsicState",
+      "getScreen", "subscribeScreen", "unsubscribeScreen",
+      "getEmulatorSettings", "getEmulatorSetting", "sendKey",
+   };
+   std::optional<Emulation::CommandLock> lock;
+   if (kUnlockedReads.count(cmd) == 0)
+   {
+      lock.emplace(emulation_);
+   }
 
    std::cout << "Command : " << cmd << std::endl;
 
