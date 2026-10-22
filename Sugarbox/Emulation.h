@@ -1,6 +1,8 @@
 #pragma once
 
+#include <atomic>
 #include <mutex>
+#include <thread>
 
 #include "Machine.h"
 #include "Motherboard.h"
@@ -181,6 +183,22 @@ public :
    void Lock();
    void Unlock();
 
+   // Holds the machine for a command from any thread: the emulation loop lets it in
+   // between two slices. Taking it again on the thread that holds it does nothing, so
+   // a command can be called from the emulation thread (scripts) or from within
+   // another command.
+   class CommandLock
+   {
+   public:
+      explicit CommandLock(Emulation* emulation);
+      ~CommandLock();
+      CommandLock(const CommandLock&) = delete;
+      CommandLock& operator=(const CommandLock&) = delete;
+   private:
+      Emulation* emulation_;
+      bool owned_;
+   };
+
 protected:
    // Listener list
    std::vector< IUpdate*> listeners_;
@@ -201,7 +219,7 @@ protected:
    bool autorun_;
 
    // Emulation control
-   bool pause_;
+   std::atomic<bool> pause_;
 
    unsigned nb_opcode_to_run_;
 
@@ -226,11 +244,12 @@ protected:
 
 
    std::thread* worker_thread_;
-   bool running_thread_;
-   bool emulation_stopped_;
+   std::atomic<bool> running_thread_;
+   std::atomic<bool> emulation_stopped_;
 
    // Thread synchronisation
-   bool command_waiting_;
+   std::atomic<int> commands_waiting_{ 0 };
+   std::atomic<std::thread::id> command_owner_;
    std::mutex command_mutex_;
    std::string current_path_;
 

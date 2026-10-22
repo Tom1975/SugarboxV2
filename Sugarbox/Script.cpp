@@ -145,18 +145,16 @@ bool CommandCslVersion::Execute(std::vector<std::string>& param)
 bool CommandReset::Execute(std::vector<std::string>& param)
 {
    // Reset type
-   unsigned int type_reset = 0;
-   if (param.size() > 2)
+   // param[0] is the command itself
+   if (param.size() > 1 && param[1] == "soft")
    {
-      if (param[1] == "soft") type_reset = 1;
+      // RESET line : the RAM keeps its content
+      context_->GetEmulation()->GetEngine()->Reset();
    }
-
-   context_->GetEmulation()->GetEngine()->OnOff();
-
-   if (type_reset == 0)
+   else
    {
-      // Reset all RAM
-      // TODO
+      // Power off then on : the RAM is cleared
+      context_->GetEmulation()->GetEngine()->OnOff();
    }
 
    return true;

@@ -25,7 +25,6 @@ Emulation::Emulation(INotifier* notifier) :
    pause_(false),
    nb_opcode_to_run_(0),
    worker_thread_(nullptr),
-   command_waiting_(false),
    sound_mixer_(nullptr),
    autorun_(true),
    emulation_stopped_(false)
@@ -111,7 +110,7 @@ void Emulation::Stop()
 
 void Emulation::EmulationLoop()
 {
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   Lock();
 
    emulator_engine_->GetProc()->stop_on_fetch_ = false;
    while (running_thread_)
@@ -229,28 +228,56 @@ void Emulation::EmulationLoop()
          }
       }
 
-      // Command waiting ? 
-      if (command_waiting_)
+      // Commands waiting ? Let all of them through before going on: std::mutex is not
+      // fair, relocking straight away could starve them.
+      if (commands_waiting_ > 0)
       {
-         command_mutex_.unlock();
-         
-         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-         command_waiting_ = false;
-         command_mutex_.lock();
+         Unlock();
+         while (commands_waiting_ > 0)
+         {
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+         }
+         Lock();
       }
    }
    emulator_engine_->Stop();
    emulation_stopped_ = true;
+   Unlock();
 }
 
 void Emulation::Lock()
 {
    command_mutex_.lock();
+   command_owner_ = std::this_thread::get_id();
 }
 
 void Emulation::Unlock()
 {
+   command_owner_ = std::thread::id();
    command_mutex_.unlock();
+}
+
+Emulation::CommandLock::CommandLock(Emulation* emulation) :
+   emulation_(emulation),
+   owned_(emulation->command_owner_ != std::this_thread::get_id())
+{
+   // The emulation thread runs with the lock held, and calls back here when a script
+   // or a notifier asks for a command: it already owns the machine, locking again
+   // would deadlock.
+   if (owned_)
+   {
+      ++emulation_->commands_waiting_;
+      emulation_->Lock();
+      --emulation_->commands_waiting_;
+   }
+}
+
+Emulation::CommandLock::~CommandLock()
+{
+   if (owned_)
+   {
+      emulation_->Unlock();
+   }
 }
 
 
@@ -272,46 +299,40 @@ bool Emulation::EmulationRun()
 
 void Emulation::ChangeConfig(MachineSettings* settings)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->ChangeSettings(settings);
    emulator_engine_->OnOff();
 }
 
 void Emulation::HardReset()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->OnOff();
 }
 
 DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->CanLoad(file, list_of_types);
 }
 
 bool Emulation::LoadSnr(const char* path_file)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadSnr(path_file);
 }
 
 bool Emulation::LoadBin(const char* path_file)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadBin(path_file);
 }
 
 bool Emulation::LoadSnapshot(const char* file_path)
 {
-   command_waiting_ = true;
    bool ok;
    {
-      const std::lock_guard<std::mutex> lock(command_mutex_);
+      const CommandLock lock(this);
       // Use LoadSnapshotNow() — loads immediately under the mutex.
       // The deferred mechanism (LoadSnapshot → sna_to_load_ flag → HandleSnapshots)
       // never fires in DBG_BREAK state because HandleSnapshots() is only called from
@@ -335,30 +356,26 @@ bool Emulation::LoadSnapshot(const char* file_path)
 
 void Emulation::SaveSnapshot(const char* file_path)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->SaveSnapshot(file_path);
 }
 
 void Emulation::RecordSnr(const char* file_path)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->StartRecord(file_path);
 }
 
 void Emulation::QuickLoadsnapshot()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->QuickLoadsnapshot();
 
 }
 
 void Emulation::QuickSavesnapshot()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->QuickSavesnapshot();
 
 }
@@ -366,43 +383,37 @@ void Emulation::QuickSavesnapshot()
 
 bool Emulation::IsDiskPresent(unsigned int drive)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->IsDiskPresent(drive);
 }
 
 void Emulation::InsertBlankDisk(int drive, IDisk::DiskType type)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->InsertBlankDisk(drive, type );
 }
 
 void Emulation::SaveDiskAs(unsigned int drive_number, const char* file, const FormatType* format_type)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->SaveDiskAs(drive_number, file, format_type);
 }
 
 int Emulation::LoadDisk(DataContainer* container, unsigned int drive_number , bool differential_load )
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
 int Emulation::LoadDisk(const char* container, unsigned int drive_number, bool differential_load)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadDisk(container, drive_number, differential_load);
 }
 
 void Emulation::SaveTapeAs(const char* file, TapeFormat tape_format)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
 
    CTape* tape = emulator_engine_->GetTape();
    if (tape != nullptr)
@@ -431,71 +442,61 @@ void Emulation::SaveTapeAs(const char* file, TapeFormat tape_format)
 
 int Emulation::LoadTape(const char* file_path)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadTape(file_path);
 }
 
 int Emulation::LoadTape(IContainedElement* container)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadTape(container);
 }
 
 int Emulation::LoadCpr(const char* file_path)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadCpr(file_path);
 }
 
 int Emulation::LoadXpr(const char* file_path)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->LoadXpr(file_path);
 }
 
 void Emulation::TapeRecord()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->Record();
 }
 
 void Emulation::TapePlay()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->Play();
 }
 
 void Emulation::TapeFastForward()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->FastForward();
 }
 
 void Emulation::TapeRewind()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->Rewind();
 }
 
 void Emulation::TapePause()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->Pause();
 }
 
 void Emulation::TapeStop()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    return emulator_engine_->GetTape()->StopEject();
 }
 
@@ -578,13 +579,22 @@ void Emulation::TrackChanged(int nb_tracks)
 
 void Emulation::Break()
 {
+   const CommandLock lock(this);
+   const bool was_stopped = (debug_action_ == DBG_BREAK);
    stop_reason_ = IDebugerStopped::Pause;
    debug_pc_ = emulator_engine_->GetProc()->pc_;
    debug_action_ = DBG_BREAK;
    emulator_engine_->SetRun(false);
 
-   // wait for break to occur
-
+   // The loop only notifies a stop that happens during one of its slices; this one
+   // happens between two of them.
+   if (!was_stopped)
+   {
+      for (auto& it : notifier_dbg_list_)
+      {
+         it->NotifyStop(stop_reason_);
+      }
+   }
 }
 
 std::vector<std::string> Emulation::GetZ80Registers()
@@ -663,52 +673,45 @@ std::vector<std::string> Emulation::GetZ80Registers()
 }
 unsigned int Emulation::ReadMemory( unsigned short address, unsigned char * buffer, unsigned int size)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetMem()->GetDebugValue(buffer, address, size, Memory::MEM_READ, 0);
    return size;
 }
 
 void Emulation::ClearBreakpoints()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->ClearBreakpoints();
 }
 
 void Emulation::CreateBreakpoint(int indice, std::vector<std::string> param)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->CreateBreakpoint(indice, param);
 
 }
 
 void Emulation::EnableBreakpoint(int bp_number)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->EnableBreakpoint(bp_number);
 }
 
 void Emulation::EnableBreakpoints()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->EnableBreakpoints();
 }
 
 void Emulation::DisableBreakpoint(int bp_number)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->DisableBreakpoint(bp_number);
 }
 
 void Emulation::DisableBreakpoints()
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->GetBreakpointHandler()->DisableBreakpoints();
 }
 
@@ -721,8 +724,9 @@ const char* Emulation::GetStackType(unsigned int index)
 
 unsigned short Emulation::GetStackShort(unsigned int index)
 {
+   const CommandLock lock(this);
    // address : 
-   unsigned short stack_address = emulator_engine_->GetProc()->sp_ += index * 2;
+   unsigned short stack_address = emulator_engine_->GetProc()->sp_ + index * 2;
    return emulator_engine_->GetMem()->GetWord(stack_address);
 }
 
@@ -758,6 +762,7 @@ void Emulation::RemoveNotifierDbg(IDebugerStopped* notifier)
 
 void Emulation::Step()
 {
+   const CommandLock lock(this);
    emulator_engine_->SetStepIn(true);
    emulator_engine_->SetRun(true);
    debug_action_ = DBG_STEP;
@@ -765,6 +770,7 @@ void Emulation::Step()
 
 void Emulation::StepOver()
 {
+   const CommandLock lock(this);
    Z80* z80 = emulator_engine_->GetProc();
    // After a BP fires (DebugNew T=4), z80->pc_ = instruction+1 (opcode already fetched).
    // Use debug_pc_ which holds the correct instruction start address.
@@ -834,6 +840,7 @@ void Emulation::StepOver()
 
 void Emulation::StepOut()
 {
+   const CommandLock lock(this);
    Z80* z80 = emulator_engine_->GetProc();
    uint16_t sp = z80->sp_;
 
@@ -862,6 +869,7 @@ bool Emulation::IsStepping()
 
 void Emulation::Run(int nb_opcodes )
 {
+   const CommandLock lock(this);
    emulator_engine_->SetRun(true);
    emulator_engine_->SetStepIn(false);  // clear stale step_in_ flag from previous Step()
    if (nb_opcodes == 0)
@@ -883,14 +891,14 @@ void Emulation::AddUpdateListener(IUpdate* listener)
 
 void Emulation::AddScript(std::filesystem::path& path)
 {
+   const CommandLock lock(this);
    script_player_.LoadScript(path);
    
 }
 
 void Emulation::ChangeConfiguration (const char* config_name)
 {
-   command_waiting_ = true;
-   const std::lock_guard<std::mutex> lock(command_mutex_);
+   const CommandLock lock(this);
    emulator_engine_->LoadConfiguration(config_name);
    emulator_engine_->UpdateFromSettings();
 }
