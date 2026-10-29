@@ -752,12 +752,14 @@ void DebugServer::HandleCommand(nlohmann::json& request)
       }
 
       // For non-READ sources: read the whole address space into a local buffer.
-      // ROM/RAM banks are 0x4000 bytes; READ/WRITE/RAM_LOWER span 0x10000.
+      // ROM banks are 0x4000 bytes; READ/WRITE and the RAM pages (lower 64 KB and each
+      // expansion page) span 0x10000.
       // Always snapshot even for MEM_READ: Memory::Get() has a bank-switching
       // side effect (SwitchBank) that corrupts the active cartridge bank when
       // the disassembler reads sequentially across bank boundaries.
       const uint32_t BUF_SIZE = (access == Memory::MEM_READ || access == Memory::MEM_WRITE
-                                 || access == Memory::MEM_RAM_LOWER_BANK)
+                                 || access == Memory::MEM_RAM_LOWER_BANK
+                                 || access == Memory::MEM_RAM_BANK)
                                 ? 0x10000u : 0x4000u;
       std::vector<unsigned char> bankBuf(BUF_SIZE, 0);
       mem->GetDebugValue(bankBuf.data(), 0,
