@@ -900,6 +900,22 @@ void DebugServer::HandleCommand(nlohmann::json& request)
    {
       HandleSetEmulatorSettings(request);
    }
+      else if (cmd == "getEmulatorSettings")
+      {
+         HandleGetEmulatorSettings();
+      }
+      else if (cmd == "getEmulatorSetting")
+      {
+         HandleGetEmulatorSetting(request);
+      }
+      else if (cmd == "setEmulatorSetting")
+      {
+         HandleSetEmulatorSetting(request);
+      }
+      else if (cmd == "setEmulatorSettings")
+      {
+         HandleSetEmulatorSettings(request);
+      }
    else if (cmd == "sendKey")
    {
       int line    = request.value("line", -1);

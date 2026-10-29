@@ -93,6 +93,11 @@ private:
    void HandleSetEmulatorSetting(const nlohmann::json& request);
    void HandleSetEmulatorSettings(const nlohmann::json& request);
 
+   void HandleGetEmulatorSettings();
+   void HandleGetEmulatorSetting(const nlohmann::json& request);
+   void HandleSetEmulatorSetting(const nlohmann::json& request);
+   void HandleSetEmulatorSettings(const nlohmann::json& request);
+
    void HandleCommand(nlohmann::json& request);
    void HandleReadMemory(const nlohmann::json& request);
    void HandleGetMemBanks();
