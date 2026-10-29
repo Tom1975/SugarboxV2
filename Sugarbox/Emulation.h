@@ -142,6 +142,9 @@ public :
 
    bool IsRunning();
    bool IsStepping(); // true while a step/run command is in progress
+   // Both at once, between two slices of the emulation: whether a command is in progress,
+   // and the PC where the emulation stands (valid once stopped)
+   bool GetDebugState(unsigned short& pc);
    void Step();
    void StepOver();
    void StepOut();

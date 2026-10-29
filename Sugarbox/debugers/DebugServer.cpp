@@ -468,11 +468,12 @@ void DebugServer::HandleCommand(nlohmann::json& request)
       // To choose which bank is used
       // PC : source:address. 
 
-      response["pc"] = emulation_->GetDebugPC();
+      unsigned short pc = 0;
+      const bool stepping = emulation_->GetDebugState(pc);
+      response["pc"] = pc;
       response["sp"] = z80->sp_;
 
-      response["running"] =
-         (emulation_->IsStepping()) ? "true" : "false";
+      response["running"] = stepping ? "true" : "false";
       SendResponse(response);
    }
    else if (cmd == "step")
