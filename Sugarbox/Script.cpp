@@ -145,18 +145,16 @@ bool CommandCslVersion::Execute(std::vector<std::string>& param)
 bool CommandReset::Execute(std::vector<std::string>& param)
 {
    // Reset type
-   unsigned int type_reset = 0;
-   if (param.size() > 2)
+   // param[0] is the command itself
+   if (param.size() > 1 && param[1] == "soft")
    {
-      if (param[1] == "soft") type_reset = 1;
+      // RESET line : the RAM keeps its content
+      context_->GetEmulation()->GetEngine()->Reset();
    }
-
-   context_->GetEmulation()->GetEngine()->OnOff();
-
-   if (type_reset == 0)
+   else
    {
-      // Reset all RAM
-      // TODO
+      // Power off then on : the RAM is cleared
+      context_->GetEmulation()->GetEngine()->OnOff();
    }
 
    return true;
@@ -374,8 +372,13 @@ int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<uns
    {
       if (strncmp( &line[index],"\\(", 2) == 0)
       {
+         // The escape runs from "\(" to ")" included, as the keys of Escape_map_ do.
          auto endseq = std::find(line.begin()+index, line.end(), ')' );
-         std::string spec = line.substr(index, endseq - line.begin() + index);
+         if (endseq == line.end())
+         {
+            return return_index;
+         }
+         std::string spec = line.substr(index, (endseq - line.begin()) - index + 1);
 
          if (ScriptCommandFactory::Escape_map_.find(spec) != ScriptCommandFactory::Escape_map_.end())
          {
@@ -389,16 +392,22 @@ int CommandGenericType::GetNextKey(std::string& line, int index, std::vector<uns
       }
       else if (strncmp( &line[index], "\\{", 2) == 0)
       {
+         // The keys between the braces are pressed together; reading resumes after "}".
          auto endseq = std::find(line.begin() + index, line.end(), '}');
-         std::string spec = line.substr(index, endseq - line.begin() + index);
+         if (endseq == line.end())
+         {
+            return return_index;
+         }
+         const int end_index = static_cast<int>(endseq - line.begin());
+         std::string spec = line.substr(index + 2, end_index - (index + 2));
          if (spec.size()>0)
          {
-            return_index = index + spec.size();
+            return_index = end_index + 1;
             for (auto& c : spec)
             {
                next.push_back((int)c&0xFF);
             }
-            
+
          }
       }
       else
