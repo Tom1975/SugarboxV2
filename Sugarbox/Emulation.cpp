@@ -867,6 +867,15 @@ bool Emulation::IsStepping()
    return debug_action_ != DBG_BREAK;
 }
 
+bool Emulation::GetDebugState(unsigned short& pc)
+{
+   // The emulation thread stops and sets debug_pc_ within one slice, with the lock held:
+   // read separately, a stop between the two reads gives "stopped" with the previous PC.
+   const CommandLock lock(this);
+   pc = debug_pc_;
+   return debug_action_ != DBG_BREAK;
+}
+
 void Emulation::Run(int nb_opcodes )
 {
    const CommandLock lock(this);
