@@ -203,6 +203,8 @@ public :
    };
 
 protected:
+   void RestartSound();
+
    // Listener list
    std::vector< IUpdate*> listeners_;
 
