@@ -67,8 +67,10 @@ void SugarboxApp::CreateStatusBar()
 
 void SugarboxApp::Display()
 {
+   // The frame is painted and presented at once : update() would post a low priority request,
+   // served after the other events, so the frames would leave unevenly spaced
+   display_.repaint();
    DrawStatusBar();
-   display_.update();
 }
 
 void SugarboxApp::createMenus ()

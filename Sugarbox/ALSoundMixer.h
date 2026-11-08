@@ -3,6 +3,7 @@
 #include "ISound.h"
 #include <vector>
 #include <map>
+#include <chrono>
 
 #include "Machine.h"
 #include "AL/alc.h"
@@ -53,6 +54,8 @@ public:
 
    virtual void SyncWithSound();
    virtual void SyncOnSound(bool set);
+   virtual int GetPendingSamples();
+   virtual void SetPrebuffer(unsigned int nb_samples);
 
    // Play other sound
    void AddWav(int id, const unsigned char * buffer, unsigned int size);
@@ -105,5 +108,15 @@ protected:
 
    bool sync_on_sound_;
    int buffer_size_for_sync_;
+   // Last time the stream ran dry : the sync margin grows on an underrun, and shrinks back after
+   // a long time without any
+   std::chrono::steady_clock::time_point last_underrun_;
+
+   // Prebuffering : while the stream is stopped, the buffers are held here, and handed to the
+   // device all together once there are enough of them
+   unsigned int prebuffer_buffers_;
+   std::vector<OAWaveHDR*> held_buffers_;
+   void QueueBuffer(OAWaveHDR* buffer);
+   void ReleaseProcessedBuffers();
 };
 

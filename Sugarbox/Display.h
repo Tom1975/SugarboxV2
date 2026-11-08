@@ -139,6 +139,8 @@ protected:
    int current_texture_;
 
    bool sync_on_frame_;
+   // A frame is in the texture : a repaint without any new frame shows it again (not black)
+   bool texture_has_frame_ = false;
 
    std::function<void()> frame_callback_;
 

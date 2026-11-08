@@ -39,6 +39,9 @@ private:
 
    QIcon protected_icon_off_;
    QIcon protected_icon_on_;
+   // Shown state of the protection (-1 : not shown yet) : the icon changes, and the status bar is
+   // repainted, only when it changes
+   int protection_shown_[2] = { -1, -1 };
 
    Function* menu_;
 };
