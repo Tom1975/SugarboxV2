@@ -2,6 +2,7 @@
 #include <functional>
 #include <map>
 
+#include <QtWidgets>
 #include <QAction>
 
 #include "MultiLanguage.h"

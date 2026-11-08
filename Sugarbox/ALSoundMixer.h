@@ -9,7 +9,7 @@
 #include "AL/alc.h"
 #include "AL/al.h"
 
-#include "ISoundNotification.h"
+#include "IFrontendSound.h"
 
 class OAWaveHDR : public IWaveHDR
 {
@@ -18,13 +18,13 @@ public:
 };
 
 
-class ALSoundMixer : public ISound, public ISoundNotification
+class ALSoundMixer : public IFrontendSound
 {
 public:
    ALSoundMixer();
    virtual ~ALSoundMixer();
 
-   void SetEmulation(EmulatorEngine* emulation);
+   void SetEmulation(EmulatorEngine* emulation) override;
 
    // Interface ISoundNotification
    virtual void Mute(bool bMute);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtWidgets>
 #include <QGridLayout>
 #include <qtoolbutton.h>
 #include <QWidget>

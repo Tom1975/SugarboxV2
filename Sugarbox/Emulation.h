@@ -10,7 +10,7 @@
 #include "ConfigurationManager.h"
 #include "ISound.h"
 #include "Inotify.h" 
-#include "ALSoundMixer.h"
+#include "IFrontendSound.h"
 #include "IUpdate.h"
 #include "Z80Desassember.h"
 
@@ -77,7 +77,7 @@ public :
    virtual void DiskRunning(bool on);
    virtual void TrackChanged(int nb_tracks);
 
-   virtual void Init(IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init);
+   virtual void Init(IDisplay* display, ISoundFactory* sound, IFrontendSound* sound_mixer, const char* current_path, SugarboxInitialisation& init);
    virtual void Stop();
    virtual void HardReset();
    virtual void Pause();
@@ -87,7 +87,7 @@ public :
    virtual const char* GetBaseDirectory();
    IKeyboard* GetKeyboardHandler();
    unsigned int GetSpeed();
-   ALSoundMixer* GetSoundMixer() { return sound_mixer_; }
+   IFrontendSound* GetSoundMixer() { return sound_mixer_; }
 
    // Media handling
    bool IsAutoloadEnabled();
@@ -218,7 +218,7 @@ protected:
 
    ConfigurationManager config_manager_;
    EmulatorSettings emulator_settings_;
-   ALSoundMixer * sound_mixer_;
+   IFrontendSound * sound_mixer_;
 
    // Autorun
    bool autorun_;

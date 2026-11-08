@@ -63,7 +63,7 @@ unsigned int Emulation::GetSpeed()
    return emulator_engine_->GetSpeedPercent();
 }
 
-void Emulation::Init( IDisplay* display, ISoundFactory* sound, ALSoundMixer* sound_mixer, const char* current_path, SugarboxInitialisation& init)
+void Emulation::Init( IDisplay* display, ISoundFactory* sound, IFrontendSound* sound_mixer, const char* current_path, SugarboxInitialisation& init)
 {
    sound_mixer_ = sound_mixer;
    current_path_ = current_path;

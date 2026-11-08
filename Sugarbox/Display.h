@@ -8,6 +8,7 @@
 #include <functional>
 #include <vector>
 
+#include <QtWidgets>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>

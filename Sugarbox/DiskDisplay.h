@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtWidgets>
 #include <QWidget>
 #include <QPainterPath>
 #include <QPainter>

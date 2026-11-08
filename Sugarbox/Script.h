@@ -1,6 +1,8 @@
 #pragma once
 
-#include <QtWidgets>
+#include <string>
+#include <vector>
+#include <map>
 #include <filesystem>
 
 #include "debugers/DebugCommand.h"
@@ -41,7 +43,8 @@ public:
    static void InitFactory(ScriptContext* context);
 
    static IScriptCommand* GetCommand(std::string& command_name);
-   static std::map<std::string, Qt::Key> Escape_map_;
+   // Scan code of each escaped key name
+   static std::map<std::string, unsigned int> Escape_map_;
 
 protected:
    static void AddScanCode(std::string key, ScriptContext* context, unsigned int line, unsigned int column);
