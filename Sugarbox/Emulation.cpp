@@ -102,10 +102,14 @@ void Emulation::Init( IDisplay* display, ISoundFactory* sound, IFrontendSound* s
 
 void Emulation::Stop()
 {
+   // Called by the frontend, then by the destructor : the second time, there is nothing to stop
+   if (worker_thread_ == nullptr) return;
+
    emulator_engine_->GetMixer()->StopMixer();
    running_thread_ = false;
    worker_thread_->join();
    delete worker_thread_;
+   worker_thread_ = nullptr;
 }
 
 void Emulation::EmulationLoop()

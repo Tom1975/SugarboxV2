@@ -29,6 +29,9 @@ public:
    Uint32 GetFrameEventType() const { return frame_event_type_; }
    // Presents the last frame handed over (again, if there is no new one)
    void Render();
+   // Frames handed over by the emulation / presented, since the last call
+   unsigned int TakeEmulatedFrames() { return emulated_frames_.exchange(0); }
+   unsigned int TakePresentedFrames() { const unsigned int n = presented_frames_; presented_frames_ = 0; return n; }
 
    // IDisplay
    unsigned int ConvertRGB(unsigned int rgb) override { return 0xFF000000 | rgb; }
@@ -90,6 +93,8 @@ protected:
    std::mutex mutex_;
    std::condition_variable frame_taken_;
    std::atomic<bool> event_pending_{ false };
+   std::atomic<unsigned int> emulated_frames_{ 0 };
+   unsigned int presented_frames_ = 0;
    std::function<void()> frame_callback_;
 
    // SDL

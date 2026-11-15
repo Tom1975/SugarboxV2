@@ -114,6 +114,7 @@ void SDLDisplay::VSync(bool dbg)
       frame_ready_ = true;
    }
 
+   ++emulated_frames_;
    if (frame_callback_) frame_callback_();
 
    // Wake the main thread up (once, until it handles it)
@@ -144,6 +145,7 @@ void SDLDisplay::Render()
    if (device_ == nullptr) return;
 
    const bool new_frame = TakeFrame();
+   if (new_frame) ++presented_frames_;
 
    SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device_);
    if (command_buffer == nullptr) return;

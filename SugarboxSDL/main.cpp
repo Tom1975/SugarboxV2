@@ -61,6 +61,7 @@ namespace
       void HandleEvent(const SDL_Event& event);
       void LoadMedia(const std::string& path);
       void ToggleFullScreen();
+      void UpdateTitle();
 
       SDL_Window* window_ = nullptr;
       SDLDisplay display_;
@@ -71,33 +72,70 @@ namespace
 
       SugarboxInitialisation init_ = {};
       std::vector<std::string> media_to_load_;
-      // Speed limit from the command line (empty : the one of Sugarbox.ini)
+      // Speed limit from the command line (empty : G-Sync)
       std::string speed_;
       bool running_ = true;
+      Uint64 last_title_update_ = 0;
    };
 
    bool SugarboxSDL::ParseCommandLine(int argc, char* argv[])
    {
+      // The application has no console on Windows : the help and the errors go in a message box
+      static const char* usage =
+         "SugarboxSDL [options] [media...]\n"
+         "  -s, --csl <script>    Run a CSL script\n"
+         "  --cfg <configuration> Configuration to load\n"
+         "  --cart <path>         Cartridge to insert\n"
+         "  -d, --debug           Start in break\n"
+         "  --speed <mode>        gsync (default), vsync, sound, full, ini (the one of Sugarbox.ini),\n"
+         "                        or a percentage\n"
+         "  media                 Disk, tape, snapshot... to load\n"
+         "Options can be written --option value or --option=value.\n"
+         "Alt+Enter : full screen";
+
       for (int i = 1; i < argc; i++)
       {
-         const std::string arg = argv[i];
-         auto value = [&]() -> std::string { return (i + 1 < argc) ? argv[++i] : std::string(); };
+         std::string arg = argv[i];
+         // --option=value
+         std::string inline_value;
+         bool has_inline_value = false;
+         const size_t equal = arg.find('=');
+         if (arg.rfind("--", 0) == 0 && equal != std::string::npos)
+         {
+            inline_value = arg.substr(equal + 1);
+            arg = arg.substr(0, equal);
+            has_inline_value = true;
+         }
+         auto value = [&]() -> std::string {
+            if (has_inline_value) return inline_value;
+            return (i + 1 < argc) ? argv[++i] : std::string();
+         };
 
          if (arg == "-s" || arg == "--csl") init_._script_to_run = value();
          else if (arg == "--cfg" || arg == "--config") init_._hardware_configuration = value();
          else if (arg == "--cart" || arg == "--cartridge") init_._cart_inserted = value();
          else if (arg == "-d" || arg == "--debug") init_._debug_start = true;
-         else if (arg == "--speed") speed_ = value();
+         else if (arg == "--speed")
+         {
+            speed_ = value();
+            const bool known = speed_ == "gsync" || speed_ == "vsync" || speed_ == "sound" || speed_ == "full" || speed_ == "ini";
+            if (!known && std::atoi(speed_.c_str()) <= 0)
+            {
+               const std::string message = "Unknown speed : '" + speed_ + "'\n\n" + usage;
+               SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Sugarbox", message.c_str(), nullptr);
+               return false;
+            }
+         }
          else if (arg == "-h" || arg == "--help")
          {
-            std::printf("SugarboxSDL [options] [media...]\n"
-                        "  -s, --csl <script>    Run a CSL script\n"
-                        "  --cfg <configuration> Configuration to load\n"
-                        "  --cart <path>         Cartridge to insert\n"
-                        "  -d, --debug           Start in break\n"
-                        "  --speed <mode>        gsync, vsync, sound, full, or a percentage\n"
-                        "  media                 Disk, tape, snapshot... to load\n"
-                        "Alt+Enter : full screen\n");
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Sugarbox", usage, nullptr);
+            return false;
+         }
+         else if (arg.size() > 1 && arg[0] == '-')
+         {
+            // Not taken for a media to load : a mistyped option would be silently ignored
+            const std::string message = "Unknown option : '" + std::string(argv[i]) + "'\n\n" + usage;
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Sugarbox", message.c_str(), nullptr);
             return false;
          }
          else media_to_load_.push_back(arg);
@@ -134,20 +172,17 @@ namespace
       sound_.SetEmulation(emulation_.GetEngine());
       keyboard_ = emulation_.GetKeyboardHandler();
 
-      // No menu yet : the speed limit can be chosen on the command line
+      // No menu yet : the speed limit comes from the command line. Without it, the G-Sync mode :
+      // the one of Sugarbox.ini is the full speed by default, and nothing here can change it.
       EmulatorEngine* engine = emulation_.GetEngine();
-      if (speed_ == "gsync") engine->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
+      if (speed_.empty() || speed_ == "gsync") engine->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
       else if (speed_ == "vsync") engine->SetSpeedLimit(EmulatorEngine::E_VBL);
       else if (speed_ == "sound") engine->SetSpeedLimit(EmulatorEngine::E_SOUND);
       else if (speed_ == "full") engine->SetSpeedLimit(EmulatorEngine::E_FULL);
-      else if (!speed_.empty())
+      else if (speed_ != "ini")
       {
-         const int percent = std::atoi(speed_.c_str());
-         if (percent > 0)
-         {
-            engine->SetSpeedLimit(EmulatorEngine::E_CUSTOM);
-            engine->SetSpeed(percent);
-         }
+         engine->SetSpeedLimit(EmulatorEngine::E_CUSTOM);
+         engine->SetSpeed(std::atoi(speed_.c_str()));
       }
 
       script_context_.Init(&emulation_, &display_);
@@ -174,6 +209,7 @@ namespace
                HandleEvent(event);
             }
          }
+         UpdateTitle();
       }
 
       emulation_.Stop();
@@ -235,6 +271,20 @@ namespace
       default:
          break;
       }
+   }
+
+   // No status bar yet : once a second, the speed and the frame rates go in the title
+   void SugarboxSDL::UpdateTitle()
+   {
+      const Uint64 now = SDL_GetTicks();
+      if (now - last_title_update_ < 1000) return;
+
+      const double seconds = (now - last_title_update_) / 1000.0;
+      last_title_update_ = now;
+      char title[128];
+      std::snprintf(title, sizeof(title), "Sugarbox - %u%% - %.1f frames/s emulated, %.1f shown",
+         emulation_.GetSpeed(), display_.TakeEmulatedFrames() / seconds, display_.TakePresentedFrames() / seconds);
+      SDL_SetWindowTitle(window_, title);
    }
 
    void SugarboxSDL::ToggleFullScreen()
