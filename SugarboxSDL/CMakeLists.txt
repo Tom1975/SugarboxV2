@@ -19,6 +19,26 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL3)
 
+# Dear ImGui (menus, status bar, dialogs), with its SDL3 and SDL_GPU backends. The docking branch :
+# the debugger windows will need it.
+FetchContent_Declare(
+   imgui
+   GIT_REPOSITORY https://github.com/ocornut/imgui.git
+   GIT_TAG v1.92.9-docking
+   GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(imgui)
+add_library(imgui STATIC
+   ${imgui_SOURCE_DIR}/imgui.cpp
+   ${imgui_SOURCE_DIR}/imgui_draw.cpp
+   ${imgui_SOURCE_DIR}/imgui_tables.cpp
+   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp
+)
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_link_libraries(imgui PUBLIC SDL3::SDL3-static)
+
 # Frontend sources shared with the Qt application : no Qt in them
 set(SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Sugarbox)
 set(SHARED_SRCS
@@ -40,6 +60,8 @@ set(SRCS
    SDLDisplay.h
    SDLSound.cpp
    SDLSound.h
+   UserInterface.cpp
+   UserInterface.h
 )
 
 add_executable(SugarboxSDL WIN32 ${SRCS} ${SHARED_SRCS})
@@ -66,7 +88,7 @@ if(MSVC)
    target_compile_options(SugarboxSDL PRIVATE /utf-8 /permissive-)
 endif()
 
-target_link_libraries(SugarboxSDL PRIVATE CPCCoreEmu zlibstatic SDL3::SDL3-static)
+target_link_libraries(SugarboxSDL PRIVATE CPCCoreEmu zlibstatic imgui SDL3::SDL3-static)
 if(WIN32)
    # timeBeginPeriod : 1 ms timer resolution, for the frame pacing
    target_link_libraries(SugarboxSDL PRIVATE winmm)

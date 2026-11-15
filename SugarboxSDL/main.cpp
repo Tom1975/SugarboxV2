@@ -1,7 +1,8 @@
 // Sugarbox, SDL3 frontend.
 // First step of the move away from Qt : the emulation, its display (SDL_GPU, variable refresh rate
 // in a window as in full screen), its sound (SDL audio stream), the keyboard, and the media given
-// on the command line or dropped on the window. Menus, settings and debugger come later.
+// on the command line or dropped on the window, the menus and the status bar (Dear ImGui).
+// Settings dialogs and debugger come later.
 
 #include <cstdio>
 #include <cstdlib>
@@ -24,6 +25,7 @@
 #include "KeyboardMap.h"
 #include "SDLDisplay.h"
 #include "SDLSound.h"
+#include "UserInterface.h"
 
 namespace
 {
@@ -38,7 +40,7 @@ namespace
    };
 #endif
 
-   class SugarboxSDL : public INotifier, public ISoundFactory
+   class SugarboxSDL : public INotifier, public ISoundFactory, public IUserInterfaceHost
    {
    public:
       SugarboxSDL() : emulation_(this) {}
@@ -56,12 +58,17 @@ namespace
       const char* GetFirstSoundName() override { return "SDL3 audio"; }
       const char* GetNextSoundName() override { return nullptr; }
 
+      // IUserInterfaceHost
+      void LoadMedia(const std::string& path) override;
+      void ToggleFullScreen() override;
+      bool IsFullScreen() override;
+      void Quit() override { running_ = false; }
+
    protected:
       bool ParseCommandLine(int argc, char* argv[]);
       void HandleEvent(const SDL_Event& event);
-      void LoadMedia(const std::string& path);
-      void ToggleFullScreen();
-      void UpdateTitle();
+      void UpdateStatistics();
+      void RenderFrame();
 
       SDL_Window* window_ = nullptr;
       SDLDisplay display_;
@@ -69,13 +76,18 @@ namespace
       Emulation emulation_;
       ScriptContext script_context_;
       IKeyboard* keyboard_ = nullptr;
+      UserInterface ui_;
+      UserInterface::Statistics statistics_;
 
       SugarboxInitialisation init_ = {};
       std::vector<std::string> media_to_load_;
       // Speed limit from the command line (empty : G-Sync)
       std::string speed_;
       bool running_ = true;
-      Uint64 last_title_update_ = 0;
+      // A frame of the emulation waits to be shown
+      bool frame_due_ = false;
+      Uint64 last_render_ = 0;
+      Uint64 last_statistics_ = 0;
    };
 
    bool SugarboxSDL::ParseCommandLine(int argc, char* argv[])
@@ -91,7 +103,7 @@ namespace
          "                        or a percentage\n"
          "  media                 Disk, tape, snapshot... to load\n"
          "Options can be written --option value or --option=value.\n"
-         "Alt+Enter : full screen";
+         "Alt+Enter : full screen (the menu comes with the mouse at the top of the screen)";
 
       for (int i = 1; i < argc; i++)
       {
@@ -172,8 +184,8 @@ namespace
       sound_.SetEmulation(emulation_.GetEngine());
       keyboard_ = emulation_.GetKeyboardHandler();
 
-      // No menu yet : the speed limit comes from the command line. Without it, the G-Sync mode :
-      // the one of Sugarbox.ini is the full speed by default, and nothing here can change it.
+      // Speed limit : the one of the command line. Without it, the G-Sync mode, not the one of
+      // Sugarbox.ini (full speed by default). The menu changes it for the session.
       EmulatorEngine* engine = emulation_.GetEngine();
       if (speed_.empty() || speed_ == "gsync") engine->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
       else if (speed_ == "vsync") engine->SetSpeedLimit(EmulatorEngine::E_VBL);
@@ -196,12 +208,27 @@ namespace
          LoadMedia(media);
       }
 
-      // Main loop : woken by the events, and by each frame handed over by the emulation, which
-      // is presented at once
+      if (ui_.Init(window_, display_.GetDevice(), &emulation_, &sound_, this, scale))
+      {
+         // Once the height of the bars is known (first frame) : room for them around the screen
+         RenderFrame();
+         SDL_SetWindowSize(window_, static_cast<int>(768 * scale),
+            static_cast<int>(544 * scale) + ui_.GetTopMargin() + ui_.GetBottomMargin());
+      }
+      else
+      {
+         SDL_Log("User interface creation failed : %s", SDL_GetError());
+      }
+
+      // Main loop : woken by the events, and by each frame handed over by the emulation.
+      // The frames of the emulation set the pace of the screen (variable refresh rate) : the
+      // interface is drawn with them, never between two of them. Without them (pause, break),
+      // it is drawn 25 times per second.
+      const Uint64 idle_period = 40;
       while (running_)
       {
          SDL_Event event;
-         if (SDL_WaitEventTimeout(&event, 100))
+         if (SDL_WaitEventTimeout(&event, static_cast<Sint32>(idle_period)))
          {
             HandleEvent(event);
             while (running_ && SDL_PollEvent(&event))
@@ -209,10 +236,17 @@ namespace
                HandleEvent(event);
             }
          }
-         UpdateTitle();
+         ui_.HandleDialogResults();
+         UpdateStatistics();
+         if (frame_due_ || SDL_GetTicks() - last_render_ >= idle_period)
+         {
+            RenderFrame();
+         }
       }
 
       emulation_.Stop();
+      SDL_WaitForGPUIdle(display_.GetDevice());
+      ui_.Shutdown();
       display_.Shutdown();
       sound_.Close();
       SDL_DestroyWindow(window_);
@@ -224,9 +258,10 @@ namespace
    {
       if (event.type == display_.GetFrameEventType())
       {
-         display_.Render();
+         frame_due_ = true;
          return;
       }
+      ui_.ProcessEvent(event);
 
       switch (event.type)
       {
@@ -237,7 +272,7 @@ namespace
       case SDL_EVENT_WINDOW_EXPOSED:
       case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
          // Shown again : the last frame (the emulation may be paused)
-         display_.Render();
+         frame_due_ = true;
          break;
 
       case SDL_EVENT_KEY_DOWN:
@@ -246,7 +281,7 @@ namespace
             if (!event.key.repeat) ToggleFullScreen();
             break;
          }
-         if (!event.key.repeat && keyboard_ != nullptr)
+         if (!event.key.repeat && keyboard_ != nullptr && !ui_.WantsKeyboard())
          {
             const unsigned int code = SdlScancodeToHost(event.key.scancode);
             if (code != 0) keyboard_->SendScanCode(code, true);
@@ -273,24 +308,41 @@ namespace
       }
    }
 
-   // No status bar yet : once a second, the speed and the frame rates go in the title
-   void SugarboxSDL::UpdateTitle()
+   // Once a second : the speed and the frame rates, for the status bar
+   void SugarboxSDL::UpdateStatistics()
    {
       const Uint64 now = SDL_GetTicks();
-      if (now - last_title_update_ < 1000) return;
+      if (now - last_statistics_ < 1000) return;
 
-      const double seconds = (now - last_title_update_) / 1000.0;
-      last_title_update_ = now;
-      char title[128];
-      std::snprintf(title, sizeof(title), "Sugarbox - %u%% - %.1f frames/s emulated, %.1f shown",
-         emulation_.GetSpeed(), display_.TakeEmulatedFrames() / seconds, display_.TakePresentedFrames() / seconds);
-      SDL_SetWindowTitle(window_, title);
+      const double seconds = (now - last_statistics_) / 1000.0;
+      last_statistics_ = now;
+      statistics_.speed = emulation_.GetSpeed();
+      statistics_.emulated_frames = display_.TakeEmulatedFrames() / seconds;
+      statistics_.shown_frames = display_.TakePresentedFrames() / seconds;
+   }
+
+   void SugarboxSDL::RenderFrame()
+   {
+      frame_due_ = false;
+      last_render_ = SDL_GetTicks();
+      if (!ui_.IsReady())
+      {
+         display_.Render();
+         return;
+      }
+      ui_.BuildFrame(statistics_);
+      display_.SetMargins(ui_.GetTopMargin(), ui_.GetBottomMargin());
+      display_.Render(&ui_);
+   }
+
+   bool SugarboxSDL::IsFullScreen()
+   {
+      return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
    }
 
    void SugarboxSDL::ToggleFullScreen()
    {
-      const bool full_screen = (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
-      SDL_SetWindowFullscreen(window_, !full_screen);
+      SDL_SetWindowFullscreen(window_, !IsFullScreen());
    }
 
    // Same handling as the drop on the Qt window
@@ -324,13 +376,12 @@ namespace
          emulation_.LoadSnapshot(path.c_str());
          break;
       case MediaManager::MEDIA_DISK:
-         // TODO : ask to save the disk in the drive when it was modified (no dialog yet)
-         emulation_.LoadDisk(container, 0);
+         if (ui_.ConfirmDiskChange(0)) emulation_.LoadDisk(container, 0);
          break;
       case MediaManager::MEDIA_TAPE:
       {
          auto list = container->GetFileList();
-         if (!list.empty()) emulation_.LoadTape(list[0]);
+         if (!list.empty() && ui_.ConfirmTapeChange()) emulation_.LoadTape(list[0]);
          break;
       }
       case MediaManager::MEDIA_SNR:

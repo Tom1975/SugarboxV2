@@ -16,6 +16,16 @@
 //
 // Threads : the emulation thread draws in a frame, and hands it over at each VSync (when the
 // frame pacer says it is due). The main thread is woken by an SDL event, and presents it at once.
+
+// Drawn over the emulated screen (user interface)
+class IDisplayOverlay
+{
+public:
+   // Before the render pass : uploads
+   virtual void Prepare(SDL_GPUCommandBuffer* command_buffer) = 0;
+   virtual void Draw(SDL_GPUCommandBuffer* command_buffer, SDL_GPURenderPass* render_pass) = 0;
+};
+
 class SDLDisplay : public IDisplay
 {
 public:
@@ -27,8 +37,11 @@ public:
    void Shutdown();
    // Event pushed when a frame is ready
    Uint32 GetFrameEventType() const { return frame_event_type_; }
-   // Presents the last frame handed over (again, if there is no new one)
-   void Render();
+   SDL_GPUDevice* GetDevice() const { return device_; }
+   // Height (pixels) kept free above and under the emulated screen
+   void SetMargins(int top, int bottom) { margin_top_ = top; margin_bottom_ = bottom; }
+   // Presents the last frame handed over (again, if there is no new one), and the overlay over it
+   void Render(IDisplayOverlay* overlay = nullptr);
    // Frames handed over by the emulation / presented, since the last call
    unsigned int TakeEmulatedFrames() { return emulated_frames_.exchange(0); }
    unsigned int TakePresentedFrames() { const unsigned int n = presented_frames_; presented_frames_ = 0; return n; }
@@ -104,4 +117,6 @@ protected:
    SDL_GPUTransferBuffer* transfer_buffer_ = nullptr;
    Uint32 frame_event_type_ = 0;
    bool texture_has_frame_ = false;
+   int margin_top_ = 0;
+   int margin_bottom_ = 0;
 };

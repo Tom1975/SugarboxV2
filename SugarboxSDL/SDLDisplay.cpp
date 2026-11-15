@@ -140,7 +140,7 @@ bool SDLDisplay::TakeFrame()
    return true;
 }
 
-void SDLDisplay::Render()
+void SDLDisplay::Render(IDisplayOverlay* overlay)
 {
    if (device_ == nullptr) return;
 
@@ -193,11 +193,13 @@ void SDLDisplay::Render()
       SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(command_buffer, &target, 1, nullptr);
       SDL_EndGPURenderPass(render_pass);
 
-      if (texture_has_frame_)
+      // Between the margins (menu and status bars)
+      const int area_height = static_cast<int>(swapchain_height) - margin_top_ - margin_bottom_;
+      if (texture_has_frame_ && area_height > 0)
       {
          // The largest 768 x 544 rectangle (the shape of the Qt display) that fits, centred
          const float scale = SDL_min(swapchain_width / static_cast<float>(kWidth),
-                                     swapchain_height / static_cast<float>(kHeight * 2));
+                                     area_height / static_cast<float>(kHeight * 2));
          const Uint32 width = static_cast<Uint32>(kWidth * scale);
          const Uint32 height = static_cast<Uint32>(kHeight * 2 * scale);
 
@@ -207,12 +209,21 @@ void SDLDisplay::Render()
          blit.source.h = kHeight;
          blit.destination.texture = swapchain;
          blit.destination.x = (swapchain_width - width) / 2;
-         blit.destination.y = (swapchain_height - height) / 2;
+         blit.destination.y = margin_top_ + (area_height - static_cast<int>(height)) / 2;
          blit.destination.w = width;
          blit.destination.h = height;
          blit.load_op = SDL_GPU_LOADOP_LOAD;
          blit.filter = SDL_GPU_FILTER_NEAREST;
          SDL_BlitGPUTexture(command_buffer, &blit);
+      }
+
+      if (overlay != nullptr)
+      {
+         overlay->Prepare(command_buffer);
+         target.load_op = SDL_GPU_LOADOP_LOAD;
+         render_pass = SDL_BeginGPURenderPass(command_buffer, &target, 1, nullptr);
+         overlay->Draw(command_buffer, render_pass);
+         SDL_EndGPURenderPass(render_pass);
       }
    }
    SDL_SubmitGPUCommandBuffer(command_buffer);
