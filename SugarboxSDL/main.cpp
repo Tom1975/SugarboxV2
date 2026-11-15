@@ -484,13 +484,15 @@ namespace
       {
          emulation_.ToggleAutoload();
       }
-      settings_.Save("Sugarbox.ini");
+      // Hidden (tests) : the preferences are read, never written
+      if (!init_._no_show) settings_.Save("Sugarbox.ini");
    }
 
    // What changes while running : the window, the disks in the drives
    void SugarboxSDL::SaveSettingsAtExit()
    {
-      if (!IsFullScreen() && !init_._no_show)
+      if (init_._no_show) return;
+      if (!IsFullScreen())
       {
          SDL_GetWindowPosition(window_, &settings_.window_x, &settings_.window_y);
          SDL_GetWindowSize(window_, &settings_.window_width, &settings_.window_height);
