@@ -11,6 +11,8 @@ on:
         description: 'Version to build'
         default: 2.x.x
         type: string
+  # Run by hand on any branch (Actions tab, "Run workflow")
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-ubuntu-${{ github.ref }}
@@ -40,7 +42,11 @@ jobs:
           libudev-dev libsecret-1-dev libnotify-dev \
           checkinstall libtiff5-dev libcairo2-dev \
           xvfb libopenal1 python3-pytest \
-          libfuse2
+          libfuse2 \
+          libxext-dev libxss-dev libxtst-dev libxkbcommon-dev \
+          libwayland-dev wayland-protocols libdecor-0-dev libegl1-mesa-dev \
+          libdrm-dev libgbm-dev libasound2-dev libpulse-dev libpipewire-0.3-dev \
+          libdbus-1-dev
 
     - name: Checkout submodules
       run: git submodule update --init --recursive
@@ -49,7 +55,7 @@ jobs:
       run: |
         mkdir build && cd build
         echo 'Version : ' ${{ inputs.version }}
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}' -DSUGARBOX_BUILD_SDL=ON
         make -j$(nproc)
 
     - name: Run protocol integration tests
@@ -59,6 +65,15 @@ jobs:
       env:
         SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
         SUGARBOX_PORT: 1234
+
+    # The same tests with the SDL frontend, under xvfb (hidden: it runs without GPU if there is none)
+    - name: Run protocol integration tests (SugarboxSDL)
+      run: |
+        cd Sugarbox/debugers
+        pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/SugarboxSDL/SugarboxSDL
+        SUGARBOX_PORT: 1235
 
     - name: Download linuxdeploy + Qt plugin
       run: |

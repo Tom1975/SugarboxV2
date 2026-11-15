@@ -196,9 +196,9 @@ void SDLDisplay::SetScanlines(bool on, int brightness)
 
 void SDLDisplay::Render(IDisplayOverlay* overlay)
 {
-   if (device_ == nullptr) return;
-
+   // Taken even without display : the screen captures read the last frame taken
    const bool new_frame = TakeFrame();
+   if (device_ == nullptr) return;
    if (new_frame) ++presented_frames_;
 
    SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device_);

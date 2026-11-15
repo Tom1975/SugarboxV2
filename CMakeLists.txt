@@ -26,9 +26,14 @@ set ( BUILD_SHARED_LIB_ OFF CACHE BOOL "" FORCE )
 set ( USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE )
 
 add_subdirectory(CPCCore)
-add_subdirectory(openal-soft)
 add_subdirectory(json)
-add_subdirectory(Sugarbox)
+
+# Qt frontend (and OpenAL, its sound output)
+option(SUGARBOX_BUILD_QT "Build the Qt frontend (Sugarbox)" ON)
+if(SUGARBOX_BUILD_QT)
+   add_subdirectory(openal-soft)
+   add_subdirectory(Sugarbox)
+endif()
 
 # SDL3 frontend, on the way to replace the Qt one (SDL3 is downloaded at configure time)
 option(SUGARBOX_BUILD_SDL "Build the SDL3 frontend (SugarboxSDL)" OFF)

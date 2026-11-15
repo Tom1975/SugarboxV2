@@ -215,10 +215,18 @@ namespace
       SDL_SetAppMetadata("Sugarbox", "2.1.1", "org.sugarbox.emulator");
       // Read before the emulation : the window and the speed come from them
       settings_.Load("Sugarbox.ini");
-      if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
+      if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
       {
          SDL_Log("SDL_Init failed : %s", SDL_GetError());
          return 1;
+      }
+      // No sound device (a machine without sound card, a CI runner) : the dummy driver, which
+      // takes the samples at the same pace, so the emulation runs the same
+      if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
+      {
+         SDL_Log("No audio : %s", SDL_GetError());
+         SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "dummy");
+         SDL_InitSubSystem(SDL_INIT_AUDIO);
       }
 
       // 768 x 544 (the Qt display), at the scale of the screen
@@ -240,8 +248,14 @@ namespace
       if (window_ == nullptr || !display_.Init(window_))
       {
          SDL_Log("Display creation failed : %s", SDL_GetError());
-         SDL_Quit();
-         return 1;
+         // Hidden (tests on a machine without GPU) : the emulation and the debug server run
+         // without display
+         if (window_ == nullptr || !init_._no_show)
+         {
+            SDL_Quit();
+            return 1;
+         }
+         display_.Shutdown();
       }
       sound_.Open();
 
@@ -295,7 +309,8 @@ namespace
       }
 
       // Places of the debugger windows (not when hidden : tests)
-      if (ui_.Init(window_, &display_, &emulation_, &sound_, this, scale, init_._no_show ? nullptr : "SugarboxSDL.layout.ini"))
+      if (display_.GetDevice() != nullptr
+         && ui_.Init(window_, &display_, &emulation_, &sound_, this, scale, init_._no_show ? nullptr : "SugarboxSDL.layout.ini"))
       {
          // Started in break : the debugger is shown
          if (init_._debug_start && debug_server_ == nullptr) ui_.OpenDebugger();
@@ -348,7 +363,7 @@ namespace
       display_.SetFrameCallback(nullptr);
       delete debug_server_;
       debug_server_ = nullptr;
-      SDL_WaitForGPUIdle(display_.GetDevice());
+      if (display_.GetDevice() != nullptr) SDL_WaitForGPUIdle(display_.GetDevice());
       gamepads_.Shutdown();
       ui_.Shutdown();
       display_.Shutdown();
