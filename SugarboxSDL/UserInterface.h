@@ -38,7 +38,9 @@ public:
       double shown_frames = 0.0;
    };
 
-   bool Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale);
+   // layout_file : where the places of the windows are kept (nullptr : not kept)
+   bool Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale,
+      const char* layout_file);
    void Shutdown();
 
    bool IsReady() const { return initialised_; }
@@ -55,6 +57,9 @@ public:
 
    // Builds the interface of the next frame shown
    void BuildFrame(const Statistics& statistics);
+   // The windows of the interface that are system windows of their own (debugger...) : after the
+   // main window is presented. They never wait for the screen refresh.
+   void RenderPlatformWindows();
    // Height (pixels) taken at the top and at the bottom of the window : the emulated screen is
    // shown between them
    int GetTopMargin() const { return top_margin_; }

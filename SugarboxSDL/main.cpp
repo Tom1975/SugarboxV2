@@ -294,7 +294,8 @@ namespace
          LoadMedia(media);
       }
 
-      if (ui_.Init(window_, &display_, &emulation_, &sound_, this, scale))
+      // Places of the debugger windows (not when hidden : tests)
+      if (ui_.Init(window_, &display_, &emulation_, &sound_, this, scale, init_._no_show ? nullptr : "SugarboxSDL.layout.ini"))
       {
          // Started in break : the debugger is shown
          if (init_._debug_start && debug_server_ == nullptr) ui_.OpenDebugger();
@@ -367,19 +368,28 @@ namespace
       ui_.ProcessEvent(event);
       gamepads_.HandleEvent(event);
 
+      // The debugger windows are system windows too : only the main one is the CPC
+      const SDL_WindowID main_window = SDL_GetWindowID(window_);
+
       switch (event.type)
       {
       case SDL_EVENT_QUIT:
          running_ = false;
          break;
 
+      case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+         // SDL_EVENT_QUIT only comes once every window is closed
+         if (event.window.windowID == main_window) running_ = false;
+         break;
+
       case SDL_EVENT_WINDOW_EXPOSED:
       case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
          // Shown again : the last frame (the emulation may be paused)
-         frame_due_ = true;
+         if (event.window.windowID == main_window) frame_due_ = true;
          break;
 
       case SDL_EVENT_KEY_DOWN:
+         if (event.key.windowID != main_window) break;
          if (event.key.scancode == SDL_SCANCODE_RETURN && (event.key.mod & SDL_KMOD_ALT) != 0)
          {
             if (!event.key.repeat) ToggleFullScreen();
@@ -410,7 +420,7 @@ namespace
          break;
 
       case SDL_EVENT_DROP_FILE:
-         if (event.drop.data != nullptr)
+         if (event.drop.data != nullptr && event.drop.windowID == main_window)
          {
             LoadMedia(event.drop.data);
          }
@@ -446,6 +456,7 @@ namespace
       ui_.BuildFrame(statistics_);
       display_.SetMargins(ui_.GetTopMargin(), ui_.GetBottomMargin());
       display_.Render(&ui_);
+      ui_.RenderPlatformWindows();
    }
 
    void SugarboxSDL::LoadMachines()

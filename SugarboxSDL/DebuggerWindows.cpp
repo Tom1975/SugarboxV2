@@ -19,6 +19,14 @@ namespace
    const ImU32 kPcColor = IM_COL32(255, 220, 0, 255);
    const ImU32 kPcLineColor = IM_COL32(255, 220, 0, 40);
 
+   // A debugger window is always a system window of its own, even over the main one
+   void SeparateWindow()
+   {
+      ImGuiWindowClass window_class;
+      window_class.ViewportFlagsOverrideSet = ImGuiViewportFlags_NoAutoMerge;
+      ImGui::SetNextWindowClass(&window_class);
+   }
+
    // Hexadecimal address typed : -1 if none
    int ParseAddress(const char* text)
    {
@@ -143,6 +151,7 @@ void DebuggerWindows::DrawDebugger()
    const ImVec2 origin = ImGui::GetMainViewport()->WorkPos;
    ImGui::SetNextWindowPos(ImVec2(origin.x + font, origin.y + font * 2.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(font * 52.0f, font * 34.0f), ImGuiCond_FirstUseEver);
+   SeparateWindow();
    if (!ImGui::Begin("Debugger", &debugger_open_, ImGuiWindowFlags_NoCollapse))
    {
       ImGui::End();
@@ -419,6 +428,7 @@ void DebuggerWindows::DrawMemory(int index)
    const ImVec2 origin = ImGui::GetMainViewport()->WorkPos;
    ImGui::SetNextWindowPos(ImVec2(origin.x + font * (3.0f + index * 2.0f), origin.y + font * (38.0f + index * 2.0f)), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(font * 46.0f, font * 24.0f), ImGuiCond_FirstUseEver);
+   SeparateWindow();
    if (!ImGui::Begin(title, &view.open, ImGuiWindowFlags_NoCollapse))
    {
       ImGui::End();
@@ -545,6 +555,7 @@ void DebuggerWindows::DrawCrtc()
    const ImVec2 origin = ImGui::GetMainViewport()->WorkPos;
    ImGui::SetNextWindowPos(ImVec2(origin.x + font * 55.0f, origin.y + font * 2.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(font * 36.0f, font * 24.0f), ImGuiCond_FirstUseEver);
+   SeparateWindow();
    if (!ImGui::Begin("CRTC", &crtc_open_, ImGuiWindowFlags_NoCollapse))
    {
       ImGui::End();

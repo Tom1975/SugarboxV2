@@ -51,7 +51,8 @@ namespace
    }
 }
 
-bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale)
+bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale,
+   const char* layout_file)
 {
    SDL_GPUDevice* device = display->GetDevice();
    window_ = window;
@@ -63,12 +64,20 @@ bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emu
    IMGUI_CHECKVERSION();
    ImGui::CreateContext();
    ImGuiIO& io = ImGui::GetIO();
-   // No keyboard navigation : the keyboard is the one of the emulated machine, unless a text is edited
-   io.IniFilename = nullptr;
+   // No keyboard navigation : the keyboard is the one of the emulated machine, unless a text is edited.
+   // Windows can leave the main one : they become system windows (multi-viewports), so the
+   // debugger can sit beside the emulated screen.
+   io.IniFilename = layout_file;
+   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
+   io.ConfigDpiScaleFonts = true;
+   io.ConfigDpiScaleViewports = true;
    ImGui::StyleColorsDark();
    ImGuiStyle& style = ImGui::GetStyle();
    style.ScaleAllSizes(scale);
    style.FontScaleDpi = scale;
+   // System windows look like the others
+   style.WindowRounding = 0.0f;
+   style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 
    if (!ImGui_ImplSDL3_InitForSDLGPU(window))
    {
@@ -78,6 +87,9 @@ bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emu
    init_info.Device = device;
    init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
    init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+   // Windows of their own : presented without waiting (the backend skips a window not ready)
+   init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
+   init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
    if (!ImGui_ImplSDLGPU3_Init(&init_info))
    {
       return false;
@@ -129,6 +141,13 @@ void UserInterface::ProcessEvent(const SDL_Event& event)
    if (initialised_) ImGui_ImplSDL3_ProcessEvent(&event);
 }
 
+void UserInterface::RenderPlatformWindows()
+{
+   if (!initialised_ || (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) == 0) return;
+   ImGui::UpdatePlatformWindows();
+   ImGui::RenderPlatformWindowsDefault();
+}
+
 bool UserInterface::WantsKeyboard() const
 {
    return initialised_ && (ImGui::GetIO().WantCaptureKeyboard || debugger_.HasFocus() || settings_dialog_.HasFocus());
@@ -157,7 +176,9 @@ void UserInterface::BuildFrame(const Statistics& statistics)
    // In full screen, the bars are shown over the emulated screen, and only when the mouse is
    // at the top of the screen (or while a menu is open)
    const bool full_screen = host_->IsFullScreen();
-   const bool mouse_at_top = io.MousePos.y >= 0.0f && io.MousePos.y < ImGui::GetFrameHeight() * 3.0f;
+   // Mouse position : in screen coordinates (multi-viewports)
+   const float mouse_y = io.MousePos.y - ImGui::GetMainViewport()->Pos.y;
+   const bool mouse_at_top = io.MousePos.y > -FLT_MAX && mouse_y >= 0.0f && mouse_y < ImGui::GetFrameHeight() * 3.0f;
    const bool show_bars = !full_screen || popup_open_ || mouse_at_top;
 
    top_margin_ = 0;
