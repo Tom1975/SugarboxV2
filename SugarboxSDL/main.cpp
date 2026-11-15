@@ -77,6 +77,9 @@ namespace
       AppSettings& GetSettings() override { return settings_; }
       void ApplySettings() override;
       SettingsList* GetMachines() override { return machines_.get(); }
+      void ReloadMachines() override { LoadMachines(); }
+      bool IsCurrentMachine(const MachineSettings& machine) override;
+      void ChangeMachine(const std::string& path) override;
 
    protected:
       bool ParseCommandLine(int argc, char* argv[]);
@@ -436,6 +439,27 @@ namespace
       const std::filesystem::path conf_path = std::filesystem::current_path() / "CONF";
       machines_->InitSettingsList(&machines_configuration_, conf_path.string().c_str());
       machines_->BuildList();
+   }
+
+   bool SugarboxSDL::IsCurrentMachine(const MachineSettings& machine)
+   {
+      // As the core compares them : by file name
+      MachineSettings* current = emulation_.GetEngine()->GetSettings();
+      return current != nullptr && *current == const_cast<MachineSettings&>(machine);
+   }
+
+   void SugarboxSDL::ChangeMachine(const std::string& path)
+   {
+      for (unsigned int i = 0; i < machines_->GetNumberOfConfigurations(); i++)
+      {
+         MachineSettings* machine = machines_->GetConfiguration(i);
+         if (machine != nullptr && std::filesystem::path(machine->GetFilePath()) == std::filesystem::path(path))
+         {
+            machine->Load(true);
+            emulation_.ChangeConfig(machine);
+            return;
+         }
+      }
    }
 
    // The preferences changed : what the running emulator uses now, then Sugarbox.ini
