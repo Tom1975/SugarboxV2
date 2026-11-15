@@ -28,6 +28,7 @@
 #include "debugers/DebugServer.h"
 
 #include "AppSettings.h"
+#include "GamepadInput.h"
 #include "KeyboardMap.h"
 #include "SDLDisplay.h"
 #include "SDLSound.h"
@@ -80,6 +81,7 @@ namespace
       void ReloadMachines() override { LoadMachines(); }
       bool IsCurrentMachine(const MachineSettings& machine) override;
       void ChangeMachine(const std::string& path) override;
+      std::vector<std::string> GetGamepadNames() override { return gamepads_.GetNames(); }
 
    protected:
       bool ParseCommandLine(int argc, char* argv[]);
@@ -97,6 +99,7 @@ namespace
       ScriptContext script_context_;
       IKeyboard* keyboard_ = nullptr;
       UserInterface ui_;
+      GamepadInput gamepads_;
       UserInterface::Statistics statistics_;
       DebugServer* debug_server_ = nullptr;
 
@@ -207,7 +210,7 @@ namespace
       SDL_SetAppMetadata("Sugarbox", "2.1.1", "org.sugarbox.emulator");
       // Read before the emulation : the window and the speed come from them
       settings_.Load("Sugarbox.ini");
-      if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+      if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
       {
          SDL_Log("SDL_Init failed : %s", SDL_GetError());
          return 1;
@@ -242,6 +245,7 @@ namespace
       emulation_.Init(&display_, this, &sound_, current_path.c_str(), init_);
       sound_.SetEmulation(emulation_.GetEngine());
       keyboard_ = emulation_.GetKeyboardHandler();
+      gamepads_.Init(keyboard_);
       emulation_.AddNotifierDbg(this);
       StartDebugServer();
 
@@ -337,6 +341,7 @@ namespace
       delete debug_server_;
       debug_server_ = nullptr;
       SDL_WaitForGPUIdle(display_.GetDevice());
+      gamepads_.Shutdown();
       ui_.Shutdown();
       display_.Shutdown();
       sound_.Close();
@@ -353,6 +358,7 @@ namespace
          return;
       }
       ui_.ProcessEvent(event);
+      gamepads_.HandleEvent(event);
 
       switch (event.type)
       {
@@ -378,6 +384,8 @@ namespace
             if (!event.key.repeat) ui_.QuickScreenshot();
             break;
          }
+         if (!event.key.repeat && ui_.CaptureKey(event.key.scancode)) break;
+         if (!event.key.repeat && !ui_.WantsKeyboard() && gamepads_.HandleKey(event.key.scancode, true)) break;
          if (!event.key.repeat && keyboard_ != nullptr && !ui_.WantsKeyboard())
          {
             const unsigned int code = SdlScancodeToHost(event.key.scancode);
@@ -386,6 +394,7 @@ namespace
          break;
 
       case SDL_EVENT_KEY_UP:
+         if (gamepads_.HandleKey(event.key.scancode, false)) break;
          if (keyboard_ != nullptr)
          {
             const unsigned int code = SdlScancodeToHost(event.key.scancode);
@@ -468,6 +477,7 @@ namespace
       display_.SetScaling(static_cast<SDLDisplay::Scaling>(settings_.scaling));
       display_.SetSmooth(settings_.smooth);
       display_.SetScanlines(settings_.scanlines, settings_.scanline_brightness);
+      gamepads_.Configure(settings_);
       sound_.SetVolume(settings_.volume);
       sound_.Mute(settings_.mute);
       if (emulation_.IsAutoloadEnabled() != settings_.autoload)

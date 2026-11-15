@@ -228,9 +228,26 @@ void SettingsDialog::HandlePathResults()
    }
 }
 
+bool SettingsDialog::CaptureKey(SDL_Scancode code)
+{
+   if (!open_ || capture_joystick_ < 0) return false;
+   // Escape : no change
+   if (code != SDL_SCANCODE_ESCAPE)
+   {
+      edited_.joysticks[capture_joystick_].keys[capture_key_] = code;
+   }
+   capture_joystick_ = -1;
+   capture_key_ = -1;
+   return true;
+}
+
 void SettingsDialog::Draw()
 {
-   if (!open_) return;
+   if (!open_)
+   {
+      capture_joystick_ = -1;
+      return;
+   }
 
    HandlePathResults();
 
@@ -270,6 +287,11 @@ void SettingsDialog::Draw()
             DrawDisplayTab();
             ImGui::EndTabItem();
          }
+         if (ImGui::BeginTabItem("Input"))
+         {
+            DrawInputTab();
+            ImGui::EndTabItem();
+         }
          ImGui::EndTabBar();
       }
    }
@@ -292,6 +314,7 @@ void SettingsDialog::Draw()
    }
    // Closed with its title bar button
    if (!open_ && machine_dirty_ && !ConfirmDiscardMachine()) open_ = true;
+   if (!open_) capture_joystick_ = -1;
 
    ImGui::End();
 }
@@ -421,6 +444,80 @@ void SettingsDialog::DrawDisplayTab()
    ImGui::Checkbox("Start in full screen", &edited_.start_full_screen);
    ImGui::Checkbox("Status bar", &edited_.show_status_bar);
    ImGui::TextDisabled("The size and the position of the window are kept at exit.");
+}
+
+///////////////////////////////////////////////////
+// Input tab
+
+void SettingsDialog::DrawInputTab()
+{
+   static const Choice sources[] = {
+      { AppSettings::JOY_NONE, "None" },
+      { AppSettings::JOY_GAMEPAD, "Gamepad" },
+      { AppSettings::JOY_KEYBOARD, "Keyboard" },
+   };
+   static const char* key_labels[AppSettings::KEY_COUNT] = { "Up", "Down", "Left", "Right", "Fire 1", "Fire 2" };
+   const std::vector<std::string> gamepads = host_->GetGamepadNames();
+
+   for (int joy = 0; joy < 2; joy++)
+   {
+      AppSettings::Joystick& joystick = edited_.joysticks[joy];
+      ImGui::PushID(joy);
+      ImGui::SeparatorText(joy == 0 ? "CPC joystick 1" : "CPC joystick 2");
+      if (joy == 1)
+      {
+         // KeyboardHandler::JoystickAction only wires the first one
+         ImGui::TextDisabled("Not emulated yet.");
+         ImGui::PopID();
+         continue;
+      }
+
+      int source = joystick.source;
+      Label("Source");
+      if (ChoiceCombo("##source", source, sources)) joystick.source = static_cast<AppSettings::JoystickSource>(source);
+
+      if (joystick.source == AppSettings::JOY_GAMEPAD)
+      {
+         Label("Gamepad");
+         const char* current = joystick.gamepad.empty() ? "First gamepad plugged in" : joystick.gamepad.c_str();
+         if (ImGui::BeginCombo("##gamepad", current))
+         {
+            if (ImGui::Selectable("First gamepad plugged in", joystick.gamepad.empty())) joystick.gamepad.clear();
+            for (const auto& name : gamepads)
+            {
+               if (ImGui::Selectable(name.c_str(), name == joystick.gamepad)) joystick.gamepad = name;
+            }
+            ImGui::EndCombo();
+         }
+         if (gamepads.empty()) ImGui::TextDisabled("No gamepad plugged in.");
+         else if (!joystick.gamepad.empty() && std::find(gamepads.begin(), gamepads.end(), joystick.gamepad) == gamepads.end())
+         {
+            ImGui::TextDisabled("This gamepad is not plugged in.");
+         }
+         ImGui::TextDisabled("D-pad or left stick ; A / X : fire 1 ; B / Y : fire 2.");
+      }
+      else if (joystick.source == AppSettings::JOY_KEYBOARD)
+      {
+         ImGui::TextDisabled("These keys no longer go to the CPC keyboard.");
+         for (int key = 0; key < AppSettings::KEY_COUNT; key++)
+         {
+            ImGui::PushID(key);
+            Label(key_labels[key]);
+            const bool waiting = capture_joystick_ == joy && capture_key_ == key;
+            const char* name = SDL_GetScancodeName(joystick.keys[key]);
+            if (ImGui::Button(waiting ? "Press a key (Escape : cancel)" : (name[0] != 0 ? name : "?"), ImVec2(ImGui::GetFontSize() * 16.0f, 0.0f)))
+            {
+               capture_joystick_ = joy;
+               capture_key_ = key;
+            }
+            ImGui::PopID();
+         }
+      }
+      ImGui::PopID();
+   }
+
+   ImGui::SeparatorText("Shortcuts");
+   ImGui::TextUnformatted("Alt+Enter : full screen\nF12 : screenshot");
 }
 
 ///////////////////////////////////////////////////

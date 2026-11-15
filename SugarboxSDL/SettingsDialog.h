@@ -28,6 +28,8 @@ public:
    virtual bool IsCurrentMachine(const MachineSettings& machine) = 0;
    // Runs this machine (power on again)
    virtual void ChangeMachine(const std::string& path) = 0;
+   // Gamepads plugged in
+   virtual std::vector<std::string> GetGamepadNames() = 0;
 };
 
 // Settings window : one tab per part. It works on a copy of the preferences : Apply and OK
@@ -41,10 +43,13 @@ public:
    bool IsOpen() const { return open_; }
    // Main thread, in the ImGui frame
    void Draw();
+   // A key pressed : true when it was waited for, to set a key of a joystick
+   bool CaptureKey(SDL_Scancode code);
 
 protected:
    void DrawEmulatorTab();
    void DrawDisplayTab();
+   void DrawInputTab();
    void DrawMachineTab();
    void DrawMachineDetail();
    void Apply();
@@ -80,6 +85,10 @@ protected:
    std::vector<std::string> keyboards_;
    char new_name_[128] = {};
    std::string new_name_error_;
+
+   // Input tab : the key of a joystick waited for (-1 : none)
+   int capture_joystick_ = -1;
+   int capture_key_ = -1;
 
    struct PathRequest
    {

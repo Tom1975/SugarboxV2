@@ -45,6 +45,8 @@ public:
    void ProcessEvent(const SDL_Event& event);
    // A text is edited in the interface : the keys are not for the emulated keyboard
    bool WantsKeyboard() const;
+   // A key waited for by the settings (key of a joystick) : true when taken
+   bool CaptureKey(SDL_Scancode code) { return settings_dialog_.CaptureKey(code); }
 
    // Builds the interface of the next frame shown
    void BuildFrame(const Statistics& statistics);
