@@ -44,6 +44,7 @@ public:
 
 protected:
    void DrawEmulatorTab();
+   void DrawDisplayTab();
    void DrawMachineTab();
    void DrawMachineDetail();
    void Apply();

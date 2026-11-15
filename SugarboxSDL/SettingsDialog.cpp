@@ -265,6 +265,11 @@ void SettingsDialog::Draw()
             DrawEmulatorTab();
             ImGui::EndTabItem();
          }
+         if (ImGui::BeginTabItem("Display"))
+         {
+            DrawDisplayTab();
+            ImGui::EndTabItem();
+         }
          ImGui::EndTabBar();
       }
    }
@@ -384,6 +389,38 @@ void SettingsDialog::DrawEmulatorTab()
    }
    ImGui::SameLine();
    if (ImGui::Button("Default", ImVec2(browse_width, 0.0f))) edited_.screenshot_dir.clear();
+}
+
+///////////////////////////////////////////////////
+// Display tab
+
+void SettingsDialog::DrawDisplayTab()
+{
+   ImGui::SeparatorText("Image");
+   static const Choice scalings[] = {
+      { AppSettings::SCALE_FIT, "Fit the window, proportions kept" },
+      { AppSettings::SCALE_INTEGER, "Whole multiples only (sharp pixels)" },
+      { AppSettings::SCALE_STRETCH, "Stretch to the window" },
+   };
+   int scaling = edited_.scaling;
+   Label("Scaling");
+   if (ChoiceCombo("##scaling", scaling, scalings)) edited_.scaling = static_cast<AppSettings::Scaling>(scaling);
+
+   static const Choice filters[] = { { 0, "Sharp (nearest)" }, { 1, "Smooth (linear)" } };
+   int smooth = edited_.smooth ? 1 : 0;
+   Label("Filter");
+   if (ChoiceCombo("##filter", smooth, filters)) edited_.smooth = smooth != 0;
+
+   ImGui::Checkbox("Scanlines", &edited_.scanlines);
+   ImGui::BeginDisabled(!edited_.scanlines);
+   Label("Brightness");
+   ImGui::SliderInt("##scanline", &edited_.scanline_brightness, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+   ImGui::EndDisabled();
+
+   ImGui::SeparatorText("Window");
+   ImGui::Checkbox("Start in full screen", &edited_.start_full_screen);
+   ImGui::Checkbox("Status bar", &edited_.show_status_bar);
+   ImGui::TextDisabled("The size and the position of the window are kept at exit.");
 }
 
 ///////////////////////////////////////////////////

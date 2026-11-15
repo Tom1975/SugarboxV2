@@ -48,15 +48,16 @@ bool SDLDisplay::Init(SDL_Window* window)
    texture_info.type = SDL_GPU_TEXTURETYPE_2D;
    texture_info.format = SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM;
    texture_info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+   // Each line of the frame twice : the second one is the scanline
    texture_info.width = kWidth;
-   texture_info.height = kHeight;
+   texture_info.height = kHeight * 2;
    texture_info.layer_count_or_depth = 1;
    texture_info.num_levels = 1;
    texture_ = SDL_CreateGPUTexture(device_, &texture_info);
 
    SDL_GPUTransferBufferCreateInfo transfer_info = {};
    transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-   transfer_info.size = kWidth * kHeight * 4;
+   transfer_info.size = kWidth * kHeight * 2 * 4;
    transfer_buffer_ = SDL_CreateGPUTransferBuffer(device_, &transfer_info);
 
    if (texture_ == nullptr || transfer_buffer_ == nullptr)
@@ -185,6 +186,14 @@ bool SDLDisplay::TakeFrame()
    return true;
 }
 
+void SDLDisplay::SetScanlines(bool on, int brightness)
+{
+   brightness = SDL_clamp(brightness, 0, 100);
+   if (on != scanlines_ || brightness != scanline_brightness_) upload_again_ = true;
+   scanlines_ = on;
+   scanline_brightness_ = brightness;
+}
+
 void SDLDisplay::Render(IDisplayOverlay* overlay)
 {
    if (device_ == nullptr) return;
@@ -195,16 +204,34 @@ void SDLDisplay::Render(IDisplayOverlay* overlay)
    SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device_);
    if (command_buffer == nullptr) return;
 
-   if (new_frame)
+   if (new_frame || (upload_again_ && texture_has_frame_))
    {
-      // Visible part of the frame -> texture
+      upload_again_ = false;
+      // Visible part of the frame -> texture, each line twice
       Uint8* dest = static_cast<Uint8*>(SDL_MapGPUTransferBuffer(device_, transfer_buffer_, true));
       if (dest != nullptr)
       {
          const int* source = frames_[read_index_].data();
+         const unsigned int brightness = static_cast<unsigned int>(scanline_brightness_ * 256 / 100);
          for (int y = 0; y < kHeight; y++)
          {
-            memcpy(dest + y * kWidth * 4, source + (kOriginY + y) * kBufferWidth + kOriginX, kWidth * 4);
+            const int* line = source + (kOriginY + y) * kBufferWidth + kOriginX;
+            Uint8* first = dest + (y * 2) * kWidth * 4;
+            Uint32* second = reinterpret_cast<Uint32*>(first + kWidth * 4);
+            memcpy(first, line, kWidth * 4);
+            if (!scanlines_)
+            {
+               memcpy(second, line, kWidth * 4);
+               continue;
+            }
+            // Darkened : each 8 bits colour scaled, the alpha kept
+            for (int x = 0; x < kWidth; x++)
+            {
+               const Uint32 pixel = static_cast<Uint32>(line[x]);
+               const Uint32 rb = (((pixel & 0x00FF00FF) * brightness) >> 8) & 0x00FF00FF;
+               const Uint32 g = (((pixel & 0x0000FF00) * brightness) >> 8) & 0x0000FF00;
+               second[x] = (pixel & 0xFF000000) | rb | g;
+            }
          }
          SDL_UnmapGPUTransferBuffer(device_, transfer_buffer_);
 
@@ -212,11 +239,11 @@ void SDLDisplay::Render(IDisplayOverlay* overlay)
          SDL_GPUTextureTransferInfo transfer = {};
          transfer.transfer_buffer = transfer_buffer_;
          transfer.pixels_per_row = kWidth;
-         transfer.rows_per_layer = kHeight;
+         transfer.rows_per_layer = kHeight * 2;
          SDL_GPUTextureRegion region = {};
          region.texture = texture_;
          region.w = kWidth;
-         region.h = kHeight;
+         region.h = kHeight * 2;
          region.d = 1;
          SDL_UploadToGPUTexture(copy_pass, &transfer, &region, true);
          SDL_EndGPUCopyPass(copy_pass);
@@ -242,23 +269,34 @@ void SDLDisplay::Render(IDisplayOverlay* overlay)
       const int area_height = static_cast<int>(swapchain_height) - margin_top_ - margin_bottom_;
       if (texture_has_frame_ && area_height > 0)
       {
-         // The largest 768 x 544 rectangle (the shape of the Qt display) that fits, centred
-         const float scale = SDL_min(swapchain_width / static_cast<float>(kWidth),
-                                     area_height / static_cast<float>(kHeight * 2));
-         const Uint32 width = static_cast<Uint32>(kWidth * scale);
-         const Uint32 height = static_cast<Uint32>(kHeight * 2 * scale);
+         // Fit : the largest 768 x 544 rectangle (the shape of the Qt display) that fits, centred.
+         // Integer : the same, at a whole scale (sharp pixels), if the area is big enough.
+         // Stretch : the whole area.
+         float scale_x = SDL_min(swapchain_width / static_cast<float>(kWidth), area_height / static_cast<float>(kHeight * 2));
+         float scale_y = scale_x;
+         if (scaling_ == SCALE_INTEGER && scale_x >= 1.0f)
+         {
+            scale_x = scale_y = SDL_floorf(scale_x);
+         }
+         else if (scaling_ == SCALE_STRETCH)
+         {
+            scale_x = swapchain_width / static_cast<float>(kWidth);
+            scale_y = area_height / static_cast<float>(kHeight * 2);
+         }
+         const Uint32 width = static_cast<Uint32>(kWidth * scale_x);
+         const Uint32 height = static_cast<Uint32>(kHeight * 2 * scale_y);
 
          SDL_GPUBlitInfo blit = {};
          blit.source.texture = texture_;
          blit.source.w = kWidth;
-         blit.source.h = kHeight;
+         blit.source.h = kHeight * 2;
          blit.destination.texture = swapchain;
          blit.destination.x = (swapchain_width - width) / 2;
          blit.destination.y = margin_top_ + (area_height - static_cast<int>(height)) / 2;
          blit.destination.w = width;
          blit.destination.h = height;
          blit.load_op = SDL_GPU_LOADOP_LOAD;
-         blit.filter = SDL_GPU_FILTER_NEAREST;
+         blit.filter = smooth_ ? SDL_GPU_FILTER_LINEAR : SDL_GPU_FILTER_NEAREST;
          SDL_BlitGPUTexture(command_buffer, &blit);
       }
 

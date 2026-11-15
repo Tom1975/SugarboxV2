@@ -40,6 +40,13 @@ public:
    SDL_GPUDevice* GetDevice() const { return device_; }
    // Height (pixels) kept free above and under the emulated screen
    void SetMargins(int top, int bottom) { margin_top_ = top; margin_bottom_ = bottom; }
+
+   // Image : main thread
+   enum Scaling { SCALE_FIT, SCALE_INTEGER, SCALE_STRETCH };
+   void SetScaling(Scaling scaling) { scaling_ = scaling; }
+   void SetSmooth(bool smooth) { smooth_ = smooth; }
+   // One line in two darkened : brightness of these lines, in percent
+   void SetScanlines(bool on, int brightness);
    // Presents the last frame handed over (again, if there is no new one), and the overlay over it
    void Render(IDisplayOverlay* overlay = nullptr);
    // Frames handed over by the emulation / presented, since the last call
@@ -121,4 +128,10 @@ protected:
    bool texture_has_frame_ = false;
    int margin_top_ = 0;
    int margin_bottom_ = 0;
+   Scaling scaling_ = SCALE_FIT;
+   bool smooth_ = false;
+   bool scanlines_ = false;
+   int scanline_brightness_ = 60;
+   // The texture is uploaded again from the frame shown (scanlines changed while paused)
+   bool upload_again_ = false;
 };

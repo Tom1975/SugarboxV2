@@ -465,6 +465,9 @@ namespace
    // The preferences changed : what the running emulator uses now, then Sugarbox.ini
    void SugarboxSDL::ApplySettings()
    {
+      display_.SetScaling(static_cast<SDLDisplay::Scaling>(settings_.scaling));
+      display_.SetSmooth(settings_.smooth);
+      display_.SetScanlines(settings_.scanlines, settings_.scanline_brightness);
       sound_.SetVolume(settings_.volume);
       sound_.Mute(settings_.mute);
       if (emulation_.IsAutoloadEnabled() != settings_.autoload)
