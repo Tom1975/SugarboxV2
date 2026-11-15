@@ -36,7 +36,7 @@ public:
       double shown_frames = 0.0;
    };
 
-   bool Init(SDL_Window* window, SDL_GPUDevice* device, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale);
+   bool Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale);
    void Shutdown();
 
    bool IsReady() const { return initialised_; }
@@ -54,6 +54,9 @@ public:
 
    // Files chosen in the dialogs since the last call
    void HandleDialogResults();
+
+   // Screenshot in the pictures folder (Pictures/Sugarbox), named after the date
+   void QuickScreenshot();
 
    // The media in the drive / the tape player is about to be replaced : false to keep it
    bool ConfirmDiskChange(int drive);
@@ -77,6 +80,7 @@ protected:
       DLG_LOAD_SNR,
       DLG_RECORD_SNR,
       DLG_LOAD_CPR,
+      DLG_SAVE_SCREENSHOT,
    };
    struct DialogRequest
    {
@@ -96,6 +100,9 @@ protected:
    static void SDLCALL DialogCallback(void* userdata, const char* const* filelist, int filter);
    void HandleDialogResult(const DialogResult& result);
    bool Confirm(const char* message);
+   void Screenshot(const std::string& path);
+   // Shown for a few seconds in the status bar
+   void ShowMessage(const std::string& message);
 
    void DrawMenuBar();
    void DrawDiskMenu(int drive);
@@ -105,6 +112,7 @@ protected:
    void SetSpeed(int limit, int speed);
 
    SDL_Window* window_ = nullptr;
+   SDLDisplay* display_ = nullptr;
    Emulation* emulation_ = nullptr;
    SDLSound* sound_ = nullptr;
    IUserInterfaceHost* host_ = nullptr;
@@ -113,6 +121,8 @@ protected:
    int top_margin_ = 0;
    int bottom_margin_ = 0;
    bool popup_open_ = false;
+   std::string message_;
+   Uint64 message_end_ = 0;
 
    // Hardware configurations (CONF directory)
    SettingsList settings_list_;

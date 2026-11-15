@@ -3,6 +3,8 @@
 #include <chrono>
 #include <cstring>
 
+#include "ImageWriter.h"
+
 SDLDisplay::SDLDisplay()
 {
    for (auto& frame : frames_)
@@ -123,6 +125,49 @@ void SDLDisplay::VSync(bool dbg)
       SDL_Event event = {};
       event.type = frame_event_type_;
       SDL_PushEvent(&event);
+   }
+}
+
+///////////////////////////////////////////////////
+// Any thread
+
+bool SDLDisplay::CaptureFrameRGBA(std::vector<unsigned char>& rgba, int& width, int& height)
+{
+   width = kWidth;
+   height = kHeight * 2;
+   rgba.resize(static_cast<size_t>(width) * height * 4);
+
+   // The frame shown is never the one the emulation draws in : it can be read, under the lock
+   // that keeps the main thread from swapping it
+   std::lock_guard<std::mutex> lock(mutex_);
+   const int* source = frames_[read_index_].data();
+   unsigned char* dest = rgba.data();
+   for (int y = 0; y < kHeight; y++)
+   {
+      const int* line = source + (kOriginY + y) * kBufferWidth + kOriginX;
+      unsigned char* first = dest + (y * 2) * kWidth * 4;
+      for (int x = 0; x < kWidth; x++)
+      {
+         // 0xAARRGGBB -> R, G, B, A
+         const unsigned int pixel = static_cast<unsigned int>(line[x]);
+         first[x * 4 + 0] = static_cast<unsigned char>(pixel >> 16);
+         first[x * 4 + 1] = static_cast<unsigned char>(pixel >> 8);
+         first[x * 4 + 2] = static_cast<unsigned char>(pixel);
+         first[x * 4 + 3] = 0xFF;
+      }
+      // Each line shown twice
+      memcpy(first + kWidth * 4, first, kWidth * 4);
+   }
+   return true;
+}
+
+void SDLDisplay::Screenshot(const char* scr_path)
+{
+   std::vector<unsigned char> rgba;
+   int width = 0, height = 0;
+   if (!CaptureFrameRGBA(rgba, width, height) || !ImageWriter::SavePng(scr_path, rgba.data(), width, height))
+   {
+      SDL_Log("Screenshot failed : %s", scr_path);
    }
 }
 

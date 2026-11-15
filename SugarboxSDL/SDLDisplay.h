@@ -65,7 +65,8 @@ public:
    void Reset() override;
    void FullScreenToggle() override {}
    void ForceFullScreen(bool fullscreen) override {}
-   void Screenshot(const char* scr_path) override {}
+   // PNG of the last frame shown (768 x 544, as shown). Any thread.
+   void Screenshot(const char* scr_path) override;
    void ScreenshotEveryFrame(int on) override {}
    bool IsEveryFrameScreened() override { return false; }
    bool SetSyncWithVbl(int speed) override { return false; }
@@ -81,6 +82,7 @@ public:
    void SetCurrentPart(int x, int y) override {}
    int GetDnDPart() override { return 0; }
    void SetFrameCallback(std::function<void()> callback) override { frame_callback_ = std::move(callback); }
+   bool CaptureFrameRGBA(std::vector<unsigned char>& rgba, int& width, int& height) override;
 
 protected:
    // The emulated monitor draws lines of 1024 pixels : the visible part is cropped from them, as

@@ -9,6 +9,7 @@
 #include "imgui_impl_sdlgpu3.h"
 
 #include "Emulation.h"
+#include "ImageWriter.h"
 #include "SDLSound.h"
 
 namespace
@@ -20,6 +21,7 @@ namespace
    const SDL_DialogFileFilter kSnaFilters[] = { { "Snapshot", "sna" }, kAllFiles };
    const SDL_DialogFileFilter kSnrFilters[] = { { "Snapshot record", "snr" }, kAllFiles };
    const SDL_DialogFileFilter kCprFilters[] = { { "Cartridge", "cpr;bin;xpr" }, kAllFiles };
+   const SDL_DialogFileFilter kPngFilters[] = { { "PNG image", "png" } };
 
    // Same order as the filters
    const SDL_DialogFileFilter kTapeSaveFilters[] = {
@@ -49,9 +51,11 @@ namespace
    }
 }
 
-bool UserInterface::Init(SDL_Window* window, SDL_GPUDevice* device, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale)
+bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emulation, SDLSound* sound, IUserInterfaceHost* host, float scale)
 {
+   SDL_GPUDevice* device = display->GetDevice();
    window_ = window;
+   display_ = display;
    emulation_ = emulation;
    sound_ = sound;
    host_ = host;
@@ -372,6 +376,9 @@ void UserInterface::DrawMenuBar()
    if (ImGui::BeginMenu("Display"))
    {
       if (ImGui::MenuItem("Full screen", "Alt+Enter", host_->IsFullScreen())) host_->ToggleFullScreen();
+      ImGui::Separator();
+      if (ImGui::MenuItem("Screenshot", "F12")) QuickScreenshot();
+      if (ImGui::MenuItem("Save screenshot as...")) OpenDialog(DLG_SAVE_SCREENSHOT);
       ImGui::EndMenu();
    }
 
@@ -471,6 +478,19 @@ void UserInterface::DrawStatusBar(const Statistics& statistics)
          ImGui::SameLine(0.0f, ImGui::GetFontSize());
          ImGui::TextDisabled("Muted");
       }
+
+      if (!message_.empty())
+      {
+         if (SDL_GetTicks() < message_end_)
+         {
+            ImGui::SameLine(0.0f, ImGui::GetFontSize());
+            ImGui::TextUnformatted(message_.c_str());
+         }
+         else
+         {
+            message_.clear();
+         }
+      }
    }
    ImGui::End();
    ImGui::PopStyleColor();
@@ -548,6 +568,9 @@ void UserInterface::OpenDialog(DialogKind kind, int drive)
       break;
    case DLG_LOAD_CPR:
       SDL_ShowOpenFileDialog(DialogCallback, request, window_, kCprFilters, 2, nullptr, false);
+      break;
+   case DLG_SAVE_SCREENSHOT:
+      SDL_ShowSaveFileDialog(DialogCallback, request, window_, kPngFilters, 1, nullptr);
       break;
    }
 }
@@ -675,5 +698,57 @@ void UserInterface::HandleDialogResult(const DialogResult& result)
       if (extension == "xpr") emulation_->LoadXpr(path.c_str());
       else emulation_->LoadCpr(path.c_str());
       break;
+
+   case DLG_SAVE_SCREENSHOT:
+      if (extension != "png") path += ".png";
+      Screenshot(path);
+      break;
    }
+}
+
+///////////////////////////////////////////////////
+// Screenshots
+
+void UserInterface::ShowMessage(const std::string& message)
+{
+   message_ = message;
+   message_end_ = SDL_GetTicks() + 4000;
+}
+
+void UserInterface::Screenshot(const std::string& path)
+{
+   std::vector<unsigned char> rgba;
+   int width = 0, height = 0;
+   if (display_->CaptureFrameRGBA(rgba, width, height) && ImageWriter::SavePng(path.c_str(), rgba.data(), width, height))
+   {
+      ShowMessage("Screenshot : " + std::filesystem::u8path(path).filename().u8string());
+   }
+   else
+   {
+      ShowMessage("Screenshot failed : " + path);
+   }
+}
+
+void UserInterface::QuickScreenshot()
+{
+   std::filesystem::path folder;
+   const char* pictures = SDL_GetUserFolder(SDL_FOLDER_PICTURES);
+   folder = (pictures != nullptr) ? std::filesystem::u8path(pictures) : std::filesystem::current_path();
+   folder /= "Sugarbox";
+   std::error_code error;
+   std::filesystem::create_directories(folder, error);
+
+   // Sugarbox_YYYYMMDD_HHMMSS(_n).png
+   SDL_Time now = 0;
+   SDL_DateTime date = {};
+   SDL_GetCurrentTime(&now);
+   SDL_TimeToDateTime(now, &date, true);
+   char name[64];
+   std::snprintf(name, sizeof(name), "Sugarbox_%04d%02d%02d_%02d%02d%02d", date.year, date.month, date.day, date.hour, date.minute, date.second);
+   std::filesystem::path path = folder / (std::string(name) + ".png");
+   for (int index = 2; std::filesystem::exists(path, error); index++)
+   {
+      path = folder / (std::string(name) + "_" + std::to_string(index) + ".png");
+   }
+   Screenshot(path.u8string());
 }

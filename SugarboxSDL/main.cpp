@@ -1,8 +1,9 @@
 // Sugarbox, SDL3 frontend.
 // First step of the move away from Qt : the emulation, its display (SDL_GPU, variable refresh rate
 // in a window as in full screen), its sound (SDL audio stream), the keyboard, and the media given
-// on the command line or dropped on the window, the menus and the status bar (Dear ImGui).
-// Settings dialogs and debugger come later.
+// on the command line or dropped on the window, the menus and the status bar (Dear ImGui), the
+// screenshots, and the debug server (VS Code debug adapter). Settings dialogs and debugger windows
+// come later.
 
 #include <cstdio>
 #include <cstdlib>
@@ -21,6 +22,7 @@
 #include "Emulation.h"
 #include "Script.h"
 #include "ScriptContext.h"
+#include "debugers/DebugServer.h"
 
 #include "KeyboardMap.h"
 #include "SDLDisplay.h"
@@ -40,7 +42,7 @@ namespace
    };
 #endif
 
-   class SugarboxSDL : public INotifier, public ISoundFactory, public IUserInterfaceHost
+   class SugarboxSDL : public INotifier, public ISoundFactory, public IUserInterfaceHost, public IDebugerStopped
    {
    public:
       SugarboxSDL() : emulation_(this) {}
@@ -49,8 +51,11 @@ namespace
 
       // INotifier
       void DiskLoaded() override {}
-      void DiskInserted(int drive) override {}
-      void DiskEjected() override {}
+      void DiskInserted(int drive) override { if (debug_server_ != nullptr) debug_server_->NotifyMediaChanged(drive, true); }
+      void DiskEjected() override { if (debug_server_ != nullptr) debug_server_->NotifyMediaChanged(-1, false); }
+
+      // IDebugerStopped
+      void NotifyStop(Reason reason) override { if (debug_server_ != nullptr) debug_server_->NotifyStop(reason); }
 
       // ISoundFactory
       ISound* GetSound(const char* name) override { return &sound_; }
@@ -69,6 +74,7 @@ namespace
       void HandleEvent(const SDL_Event& event);
       void UpdateStatistics();
       void RenderFrame();
+      void StartDebugServer();
 
       SDL_Window* window_ = nullptr;
       SDLDisplay display_;
@@ -78,6 +84,7 @@ namespace
       IKeyboard* keyboard_ = nullptr;
       UserInterface ui_;
       UserInterface::Statistics statistics_;
+      DebugServer* debug_server_ = nullptr;
 
       SugarboxInitialisation init_ = {};
       std::vector<std::string> media_to_load_;
@@ -99,11 +106,14 @@ namespace
          "  --cfg <configuration> Configuration to load\n"
          "  --cart <path>         Cartridge to insert\n"
          "  -d, --debug           Start in break\n"
+         "  --hide                No window shown (tests, with the debug server)\n"
+         "  --ds, --debug_server <port>  Debug server (VS Code debug adapter) on this port\n"
          "  --speed <mode>        gsync (default), vsync, sound, full, ini (the one of Sugarbox.ini),\n"
          "                        or a percentage\n"
          "  media                 Disk, tape, snapshot... to load\n"
          "Options can be written --option value or --option=value.\n"
-         "Alt+Enter : full screen (the menu comes with the mouse at the top of the screen)";
+         "Alt+Enter : full screen (the menu comes with the mouse at the top of the screen)\n"
+         "F12 : screenshot (in Pictures/Sugarbox)";
 
       for (int i = 1; i < argc; i++)
       {
@@ -127,6 +137,18 @@ namespace
          else if (arg == "--cfg" || arg == "--config") init_._hardware_configuration = value();
          else if (arg == "--cart" || arg == "--cartridge") init_._cart_inserted = value();
          else if (arg == "-d" || arg == "--debug") init_._debug_start = true;
+         else if (arg == "--hide" || arg == "-hide") init_._no_show = true;
+         else if (arg == "--ds" || arg == "-ds" || arg == "--debug_server")
+         {
+            init_._dbs_server = value();
+            const unsigned long port = std::strtoul(init_._dbs_server.c_str(), nullptr, 0);
+            if (port == 0 || port > 65535)
+            {
+               const std::string message = "Invalid debug server port : '" + init_._dbs_server + "'\n\n" + usage;
+               SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Sugarbox", message.c_str(), nullptr);
+               return false;
+            }
+         }
          else if (arg == "--speed")
          {
             speed_ = value();
@@ -169,7 +191,8 @@ namespace
       // 768 x 544 (the Qt display), at the scale of the screen
       float scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
       if (scale <= 0.0f) scale = 1.0f;
-      window_ = SDL_CreateWindow("Sugarbox", static_cast<int>(768 * scale), static_cast<int>(544 * scale), SDL_WINDOW_RESIZABLE);
+      const SDL_WindowFlags window_flags = SDL_WINDOW_RESIZABLE | (init_._no_show ? SDL_WINDOW_HIDDEN : 0);
+      window_ = SDL_CreateWindow("Sugarbox", static_cast<int>(768 * scale), static_cast<int>(544 * scale), window_flags);
       if (window_ == nullptr || !display_.Init(window_))
       {
          SDL_Log("Display creation failed : %s", SDL_GetError());
@@ -183,6 +206,8 @@ namespace
       emulation_.Init(&display_, this, &sound_, current_path.c_str(), init_);
       sound_.SetEmulation(emulation_.GetEngine());
       keyboard_ = emulation_.GetKeyboardHandler();
+      emulation_.AddNotifierDbg(this);
+      StartDebugServer();
 
       // Speed limit : the one of the command line. Without it, the G-Sync mode, not the one of
       // Sugarbox.ini (full speed by default). The menu changes it for the session.
@@ -208,7 +233,7 @@ namespace
          LoadMedia(media);
       }
 
-      if (ui_.Init(window_, display_.GetDevice(), &emulation_, &sound_, this, scale))
+      if (ui_.Init(window_, &display_, &emulation_, &sound_, this, scale))
       {
          // Once the height of the bars is known (first frame) : room for them around the screen
          RenderFrame();
@@ -244,7 +269,16 @@ namespace
          }
       }
 
+      // The debug server first : its commands wait for the emulation loop
+      if (debug_server_ != nullptr)
+      {
+         debug_server_->stop();
+      }
       emulation_.Stop();
+      emulation_.RemoveNotifierDbg(this);
+      display_.SetFrameCallback(nullptr);
+      delete debug_server_;
+      debug_server_ = nullptr;
       SDL_WaitForGPUIdle(display_.GetDevice());
       ui_.Shutdown();
       display_.Shutdown();
@@ -279,6 +313,12 @@ namespace
          if (event.key.scancode == SDL_SCANCODE_RETURN && (event.key.mod & SDL_KMOD_ALT) != 0)
          {
             if (!event.key.repeat) ToggleFullScreen();
+            break;
+         }
+         // F12 is not a key of the CPC keyboard maps
+         if (event.key.scancode == SDL_SCANCODE_F12)
+         {
+            if (!event.key.repeat) ui_.QuickScreenshot();
             break;
          }
          if (!event.key.repeat && keyboard_ != nullptr && !ui_.WantsKeyboard())
@@ -333,6 +373,18 @@ namespace
       ui_.BuildFrame(statistics_);
       display_.SetMargins(ui_.GetTopMargin(), ui_.GetBottomMargin());
       display_.Render(&ui_);
+   }
+
+   void SugarboxSDL::StartDebugServer()
+   {
+      if (init_._dbs_server.empty()) return;
+
+      const unsigned short port = static_cast<unsigned short>(std::strtoul(init_._dbs_server.c_str(), nullptr, 0));
+      debug_server_ = new DebugServer(&emulation_, port);
+      debug_server_->StartServer();
+      // A frame event per VSync, for the clients that subscribed to the screen
+      display_.SetFrameCallback([this]() { debug_server_->NotifyFrame(); });
+      SDL_Log("Debug server on port %u", port);
    }
 
    bool SugarboxSDL::IsFullScreen()

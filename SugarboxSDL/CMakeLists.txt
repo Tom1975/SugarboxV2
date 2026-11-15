@@ -44,12 +44,14 @@ set(SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Sugarbox)
 set(SHARED_SRCS
    ${SHARED_DIR}/ConfigurationManager.cpp
    ${SHARED_DIR}/Emulation.cpp
+   ${SHARED_DIR}/ImageWriter.cpp
    ${SHARED_DIR}/Log.cpp
    ${SHARED_DIR}/SCLPlayer.cpp
    ${SHARED_DIR}/Script.cpp
    ${SHARED_DIR}/ScriptContext.cpp
    ${SHARED_DIR}/Z80Desassember.cpp
    ${SHARED_DIR}/debugers/DebugCommand.cpp
+   ${SHARED_DIR}/debugers/DebugServer.cpp
 )
 
 set(SRCS
@@ -90,8 +92,8 @@ endif()
 
 target_link_libraries(SugarboxSDL PRIVATE CPCCoreEmu zlibstatic imgui SDL3::SDL3-static)
 if(WIN32)
-   # timeBeginPeriod : 1 ms timer resolution, for the frame pacing
-   target_link_libraries(SugarboxSDL PRIVATE winmm)
+   # timeBeginPeriod : 1 ms timer resolution, for the frame pacing. Sockets : debug server.
+   target_link_libraries(SugarboxSDL PRIVATE winmm ws2_32)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
    target_link_libraries(SugarboxSDL PRIVATE pthread)
 endif()
