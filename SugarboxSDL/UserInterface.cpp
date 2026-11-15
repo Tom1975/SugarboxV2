@@ -84,10 +84,7 @@ bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emu
    }
    initialised_ = true;
 
-   // Hardware configurations
-   const std::filesystem::path conf_path = std::filesystem::current_path() / "CONF";
-   settings_list_.InitSettingsList(emulation_->GetConfigurationManager(), conf_path.string().c_str());
-   settings_list_.BuildList();
+   settings_dialog_.Init(window, host);
 
    // Disk formats. The strings are all stored before the filters point to them.
    const std::vector<FormatType*> load_formats = disk_builder_.GetFormatsList(DiskBuilder::READ);
@@ -167,13 +164,14 @@ void UserInterface::BuildFrame(const Statistics& statistics)
    if (show_bars)
    {
       DrawMenuBar();
-      DrawStatusBar(statistics);
+      if (host_->GetSettings().show_status_bar) DrawStatusBar(statistics);
       if (full_screen)
       {
          top_margin_ = 0;
          bottom_margin_ = 0;
       }
    }
+   settings_dialog_.Draw();
    popup_open_ = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
 
    ImGui::Render();
@@ -257,7 +255,11 @@ void UserInterface::DrawMenuBar()
       if (ImGui::MenuItem("Open media...")) OpenDialog(DLG_OPEN_MEDIA);
       if (ImGui::MenuItem("Run CSL script...")) OpenDialog(DLG_RUN_SCRIPT);
       ImGui::Separator();
-      if (ImGui::MenuItem("Autoload", nullptr, emulation_->IsAutoloadEnabled())) emulation_->ToggleAutoload();
+      if (ImGui::MenuItem("Autoload", nullptr, emulation_->IsAutoloadEnabled()))
+      {
+         emulation_->ToggleAutoload();
+         host_->GetSettings().autoload = emulation_->IsAutoloadEnabled();
+      }
       if (ImGui::MenuItem("Type the clipboard text", nullptr, false, SDL_HasClipboardText()))
       {
          char* text = SDL_GetClipboardText();
@@ -267,6 +269,8 @@ void UserInterface::DrawMenuBar()
             SDL_free(text);
          }
       }
+      ImGui::Separator();
+      if (ImGui::MenuItem("Settings...")) settings_dialog_.Open();
       ImGui::Separator();
       if (ImGui::MenuItem("Exit")) host_->Quit();
       ImGui::EndMenu();
@@ -298,9 +302,10 @@ void UserInterface::DrawMenuBar()
    if (ImGui::BeginMenu("Machine"))
    {
       MachineSettings* current = engine->GetSettings();
-      for (unsigned int i = 0; i < settings_list_.GetNumberOfConfigurations(); i++)
+      SettingsList* machines = host_->GetMachines();
+      for (unsigned int i = 0; i < machines->GetNumberOfConfigurations(); i++)
       {
-         MachineSettings* settings = settings_list_.GetConfiguration(i);
+         MachineSettings* settings = machines->GetConfiguration(i);
          if (settings == nullptr) continue;
          const bool selected = current != nullptr && *current == *settings;
          ImGui::PushID(static_cast<int>(i));
@@ -384,11 +389,22 @@ void UserInterface::DrawMenuBar()
 
    if (ImGui::BeginMenu("Sound"))
    {
+      // Kept in the preferences, saved at exit
+      AppSettings& settings = host_->GetSettings();
       bool muted = sound_->IsMuted();
-      if (ImGui::MenuItem("Mute", nullptr, muted)) sound_->Mute(!muted);
+      if (ImGui::MenuItem("Mute", nullptr, muted))
+      {
+         sound_->Mute(!muted);
+         settings.mute = !muted;
+      }
       float volume = sound_->GetVolume() * 100.0f;
       ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
-      if (ImGui::SliderFloat("Volume", &volume, 0.0f, 100.0f, "%.0f %%")) sound_->SetVolume(volume / 100.0f);
+      if (ImGui::SliderFloat("Volume", &volume, 0.0f, 100.0f, "%.0f %%"))
+      {
+         sound_->SetVolume(volume / 100.0f);
+         settings.volume = volume / 100.0f;
+         settings.mute = sound_->IsMuted();
+      }
       ImGui::EndMenu();
    }
 
@@ -731,10 +747,7 @@ void UserInterface::Screenshot(const std::string& path)
 
 void UserInterface::QuickScreenshot()
 {
-   std::filesystem::path folder;
-   const char* pictures = SDL_GetUserFolder(SDL_FOLDER_PICTURES);
-   folder = (pictures != nullptr) ? std::filesystem::u8path(pictures) : std::filesystem::current_path();
-   folder /= "Sugarbox";
+   const std::filesystem::path folder = std::filesystem::u8path(host_->GetSettings().GetScreenshotFolder());
    std::error_code error;
    std::filesystem::create_directories(folder, error);
 

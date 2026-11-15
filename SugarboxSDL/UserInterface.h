@@ -10,12 +10,13 @@
 #include "SettingsList.h"
 
 #include "SDLDisplay.h"
+#include "SettingsDialog.h"
 
 class Emulation;
 class SDLSound;
 
 // What the user interface asks to the application
-class IUserInterfaceHost
+class IUserInterfaceHost : public ISettingsHost
 {
 public:
    virtual void LoadMedia(const std::string& path) = 0;
@@ -124,8 +125,7 @@ protected:
    std::string message_;
    Uint64 message_end_ = 0;
 
-   // Hardware configurations (CONF directory)
-   SettingsList settings_list_;
+   SettingsDialog settings_dialog_;
 
    // File dialogs : the filters must live until the dialog is closed
    DiskBuilder disk_builder_;

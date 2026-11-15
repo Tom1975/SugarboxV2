@@ -56,12 +56,16 @@ set(SHARED_SRCS
 
 set(SRCS
    main.cpp
+   AppSettings.cpp
+   AppSettings.h
    KeyboardMap.cpp
    KeyboardMap.h
    SDLDisplay.cpp
    SDLDisplay.h
    SDLSound.cpp
    SDLSound.h
+   SettingsDialog.cpp
+   SettingsDialog.h
    UserInterface.cpp
    UserInterface.h
 )

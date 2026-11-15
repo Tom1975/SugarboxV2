@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -19,11 +20,14 @@
 #include <timeapi.h>
 #endif
 
+#include "ConfigurationManager.h"
 #include "Emulation.h"
+#include "SettingsList.h"
 #include "Script.h"
 #include "ScriptContext.h"
 #include "debugers/DebugServer.h"
 
+#include "AppSettings.h"
 #include "KeyboardMap.h"
 #include "SDLDisplay.h"
 #include "SDLSound.h"
@@ -69,12 +73,19 @@ namespace
       bool IsFullScreen() override;
       void Quit() override { running_ = false; }
 
+      // ISettingsHost
+      AppSettings& GetSettings() override { return settings_; }
+      void ApplySettings() override;
+      SettingsList* GetMachines() override { return machines_.get(); }
+
    protected:
       bool ParseCommandLine(int argc, char* argv[]);
       void HandleEvent(const SDL_Event& event);
       void UpdateStatistics();
       void RenderFrame();
       void StartDebugServer();
+      void LoadMachines();
+      void SaveSettingsAtExit();
 
       SDL_Window* window_ = nullptr;
       SDLDisplay display_;
@@ -86,9 +97,18 @@ namespace
       UserInterface::Statistics statistics_;
       DebugServer* debug_server_ = nullptr;
 
+      // Preferences (Sugarbox.ini)
+      AppSettings settings_;
+      // Machines of the CONF directory, read with their own configuration manager (the one of the
+      // emulation is used by its thread). A list replaced stays alive : the emulation may use
+      // one of its machines.
+      ConfigurationManager machines_configuration_;
+      std::unique_ptr<SettingsList> machines_;
+      std::vector<std::unique_ptr<SettingsList>> old_machines_;
+
       SugarboxInitialisation init_ = {};
       std::vector<std::string> media_to_load_;
-      // Speed limit from the command line (empty : G-Sync)
+      // Speed limit from the command line (empty : the one of the preferences)
       std::string speed_;
       bool running_ = true;
       // A frame of the emulation waits to be shown
@@ -108,8 +128,8 @@ namespace
          "  -d, --debug           Start in break\n"
          "  --hide                No window shown (tests, with the debug server)\n"
          "  --ds, --debug_server <port>  Debug server (VS Code debug adapter) on this port\n"
-         "  --speed <mode>        gsync (default), vsync, sound, full, ini (the one of Sugarbox.ini),\n"
-         "                        or a percentage\n"
+         "  --speed <mode>        gsync, vsync, sound, full, or a percentage\n"
+         "                        (default : the one of the settings, G-Sync if not set)\n"
          "  media                 Disk, tape, snapshot... to load\n"
          "Options can be written --option value or --option=value.\n"
          "Alt+Enter : full screen (the menu comes with the mouse at the top of the screen)\n"
@@ -152,7 +172,7 @@ namespace
          else if (arg == "--speed")
          {
             speed_ = value();
-            const bool known = speed_ == "gsync" || speed_ == "vsync" || speed_ == "sound" || speed_ == "full" || speed_ == "ini";
+            const bool known = speed_ == "gsync" || speed_ == "vsync" || speed_ == "sound" || speed_ == "full";
             if (!known && std::atoi(speed_.c_str()) <= 0)
             {
                const std::string message = "Unknown speed : '" + speed_ + "'\n\n" + usage;
@@ -182,6 +202,8 @@ namespace
       if (!ParseCommandLine(argc, argv)) return 0;
 
       SDL_SetAppMetadata("Sugarbox", "2.1.1", "org.sugarbox.emulator");
+      // Read before the emulation : the window and the speed come from them
+      settings_.Load("Sugarbox.ini");
       if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
       {
          SDL_Log("SDL_Init failed : %s", SDL_GetError());
@@ -192,7 +214,18 @@ namespace
       float scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
       if (scale <= 0.0f) scale = 1.0f;
       const SDL_WindowFlags window_flags = SDL_WINDOW_RESIZABLE | (init_._no_show ? SDL_WINDOW_HIDDEN : 0);
-      window_ = SDL_CreateWindow("Sugarbox", static_cast<int>(768 * scale), static_cast<int>(544 * scale), window_flags);
+      const bool window_known = settings_.window_width > 0 && settings_.window_height > 0;
+      window_ = SDL_CreateWindow("Sugarbox",
+         window_known ? settings_.window_width : static_cast<int>(768 * scale),
+         window_known ? settings_.window_height : static_cast<int>(544 * scale), window_flags);
+      if (window_ != nullptr && window_known)
+      {
+         SDL_SetWindowPosition(window_, settings_.window_x, settings_.window_y);
+      }
+      if (window_ != nullptr && settings_.start_full_screen && !init_._no_show)
+      {
+         SDL_SetWindowFullscreen(window_, true);
+      }
       if (window_ == nullptr || !display_.Init(window_))
       {
          SDL_Log("Display creation failed : %s", SDL_GetError());
@@ -209,18 +242,34 @@ namespace
       emulation_.AddNotifierDbg(this);
       StartDebugServer();
 
-      // Speed limit : the one of the command line. Without it, the G-Sync mode, not the one of
-      // Sugarbox.ini (full speed by default). The menu changes it for the session.
+      // Speed limit : the one of the command line, else the one of the preferences (G-Sync when
+      // Sugarbox.ini has none). The menu changes it for the session.
       EmulatorEngine* engine = emulation_.GetEngine();
-      if (speed_.empty() || speed_ == "gsync") engine->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
-      else if (speed_ == "vsync") engine->SetSpeedLimit(EmulatorEngine::E_VBL);
-      else if (speed_ == "sound") engine->SetSpeedLimit(EmulatorEngine::E_SOUND);
-      else if (speed_ == "full") engine->SetSpeedLimit(EmulatorEngine::E_FULL);
-      else if (speed_ != "ini")
+      std::string speed = speed_;
+      if (speed.empty())
+      {
+         switch (settings_.limit_speed)
+         {
+         case 'F': speed = "full"; break;
+         case 'V': speed = "vsync"; break;
+         case 'S': speed = "sound"; break;
+         case 'C': speed = std::to_string(settings_.speed > 0 ? settings_.speed : 100); break;
+         default: speed = "gsync"; break;
+         }
+      }
+      if (speed == "gsync") engine->SetSpeedLimit(EmulatorEngine::E_SOUND_AND_VBL);
+      else if (speed == "vsync") engine->SetSpeedLimit(EmulatorEngine::E_VBL);
+      else if (speed == "sound") engine->SetSpeedLimit(EmulatorEngine::E_SOUND);
+      else if (speed == "full") engine->SetSpeedLimit(EmulatorEngine::E_FULL);
+      else
       {
          engine->SetSpeedLimit(EmulatorEngine::E_CUSTOM);
-         engine->SetSpeed(std::atoi(speed_.c_str()));
+         engine->SetSpeed(std::atoi(speed.c_str()));
       }
+
+      LoadMachines();
+      // Sound, autoload... (saved once more : the keys missing in Sugarbox.ini are written)
+      ApplySettings();
 
       script_context_.Init(&emulation_, &display_);
       ScriptCommandFactory::InitFactory(&script_context_);
@@ -237,8 +286,11 @@ namespace
       {
          // Once the height of the bars is known (first frame) : room for them around the screen
          RenderFrame();
-         SDL_SetWindowSize(window_, static_cast<int>(768 * scale),
-            static_cast<int>(544 * scale) + ui_.GetTopMargin() + ui_.GetBottomMargin());
+         if (!window_known)
+         {
+            SDL_SetWindowSize(window_, static_cast<int>(768 * scale),
+               static_cast<int>(544 * scale) + ui_.GetTopMargin() + ui_.GetBottomMargin());
+         }
       }
       else
       {
@@ -268,6 +320,8 @@ namespace
             RenderFrame();
          }
       }
+
+      SaveSettingsAtExit();
 
       // The debug server first : its commands wait for the emulation loop
       if (debug_server_ != nullptr)
@@ -373,6 +427,44 @@ namespace
       ui_.BuildFrame(statistics_);
       display_.SetMargins(ui_.GetTopMargin(), ui_.GetBottomMargin());
       display_.Render(&ui_);
+   }
+
+   void SugarboxSDL::LoadMachines()
+   {
+      if (machines_) old_machines_.push_back(std::move(machines_));
+      machines_ = std::make_unique<SettingsList>();
+      const std::filesystem::path conf_path = std::filesystem::current_path() / "CONF";
+      machines_->InitSettingsList(&machines_configuration_, conf_path.string().c_str());
+      machines_->BuildList();
+   }
+
+   // The preferences changed : what the running emulator uses now, then Sugarbox.ini
+   void SugarboxSDL::ApplySettings()
+   {
+      sound_.SetVolume(settings_.volume);
+      sound_.Mute(settings_.mute);
+      if (emulation_.IsAutoloadEnabled() != settings_.autoload)
+      {
+         emulation_.ToggleAutoload();
+      }
+      settings_.Save("Sugarbox.ini");
+   }
+
+   // What changes while running : the window, the disks in the drives
+   void SugarboxSDL::SaveSettingsAtExit()
+   {
+      if (!IsFullScreen() && !init_._no_show)
+      {
+         SDL_GetWindowPosition(window_, &settings_.window_x, &settings_.window_y);
+         SDL_GetWindowSize(window_, &settings_.window_width, &settings_.window_height);
+      }
+      FDC* fdc = emulation_.GetEngine()->GetFDC();
+      for (int drive = 0; drive < 2; drive++)
+      {
+         const char* path = emulation_.IsDiskPresent(drive) ? fdc->GetDiskPath(drive) : nullptr;
+         settings_.disks[drive] = (path != nullptr) ? path : "";
+      }
+      settings_.Save("Sugarbox.ini");
    }
 
    void SugarboxSDL::StartDebugServer()
