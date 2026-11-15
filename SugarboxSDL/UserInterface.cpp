@@ -85,6 +85,7 @@ bool UserInterface::Init(SDL_Window* window, SDLDisplay* display, Emulation* emu
    initialised_ = true;
 
    settings_dialog_.Init(window, host);
+   debugger_.Init(emulation);
 
    // Disk formats. The strings are all stored before the filters point to them.
    const std::vector<FormatType*> load_formats = disk_builder_.GetFormatsList(DiskBuilder::READ);
@@ -130,7 +131,7 @@ void UserInterface::ProcessEvent(const SDL_Event& event)
 
 bool UserInterface::WantsKeyboard() const
 {
-   return initialised_ && ImGui::GetIO().WantCaptureKeyboard;
+   return initialised_ && (ImGui::GetIO().WantCaptureKeyboard || debugger_.HasFocus() || settings_dialog_.HasFocus());
 }
 
 ///////////////////////////////////////////////////
@@ -171,6 +172,12 @@ void UserInterface::BuildFrame(const Statistics& statistics)
          bottom_margin_ = 0;
       }
    }
+   if (open_debugger_)
+   {
+      open_debugger_ = false;
+      debugger_.OpenDebugger();
+   }
+   debugger_.Draw();
    settings_dialog_.Draw();
    popup_open_ = ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
 
@@ -375,6 +382,12 @@ void UserInterface::DrawMenuBar()
    if (ImGui::BeginMenu("Cartridge"))
    {
       if (ImGui::MenuItem("Load...")) OpenDialog(DLG_LOAD_CPR);
+      ImGui::EndMenu();
+   }
+
+   if (ImGui::BeginMenu("Debug"))
+   {
+      debugger_.DrawMenu();
       ImGui::EndMenu();
    }
 

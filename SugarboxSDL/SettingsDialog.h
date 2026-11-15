@@ -41,6 +41,8 @@ public:
 
    void Open();
    bool IsOpen() const { return open_; }
+   // The window has the keyboard : the keys are not for the CPC
+   bool HasFocus() const { return open_ && has_focus_; }
    // Main thread, in the ImGui frame
    void Draw();
    // A key pressed : true when it was waited for, to set a key of a joystick
@@ -74,6 +76,7 @@ protected:
    ISettingsHost* host_ = nullptr;
    bool open_ = false;
    bool just_opened_ = false;
+   bool has_focus_ = false;
 
    AppSettings edited_;
 

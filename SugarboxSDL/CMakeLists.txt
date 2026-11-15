@@ -58,6 +58,8 @@ set(SRCS
    main.cpp
    AppSettings.cpp
    AppSettings.h
+   DebuggerWindows.cpp
+   DebuggerWindows.h
    GamepadInput.cpp
    GamepadInput.h
    KeyboardMap.cpp

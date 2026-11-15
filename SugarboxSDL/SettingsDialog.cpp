@@ -260,11 +260,13 @@ void SettingsDialog::Draw()
       just_opened_ = false;
    }
    ImGui::SetNextWindowSize(ImVec2(font * 46.0f, font * 30.0f), ImGuiCond_FirstUseEver);
+   has_focus_ = false;
    if (!ImGui::Begin("Settings", &open_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings))
    {
       ImGui::End();
       return;
    }
+   has_focus_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
    // Tabs above, buttons below
    const float buttons_height = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;

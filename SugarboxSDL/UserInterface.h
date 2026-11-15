@@ -9,6 +9,7 @@
 #include "DiskBuilder.h"
 #include "SettingsList.h"
 
+#include "DebuggerWindows.h"
 #include "SDLDisplay.h"
 #include "SettingsDialog.h"
 
@@ -43,8 +44,12 @@ public:
    bool IsReady() const { return initialised_; }
 
    void ProcessEvent(const SDL_Event& event);
-   // A text is edited in the interface : the keys are not for the emulated keyboard
+   // A text is edited in the interface, or one of its windows has the focus : the keys are not
+   // for the emulated keyboard
    bool WantsKeyboard() const;
+   // The emulation stopped (any thread) : the debugger shows where, and opens if asked
+   void NotifyStop(bool open_debugger) { debugger_.NotifyStop(open_debugger); }
+   void OpenDebugger() { open_debugger_ = true; }
    // A key waited for by the settings (key of a joystick) : true when taken
    bool CaptureKey(SDL_Scancode code) { return settings_dialog_.CaptureKey(code); }
 
@@ -128,6 +133,8 @@ protected:
    Uint64 message_end_ = 0;
 
    SettingsDialog settings_dialog_;
+   DebuggerWindows debugger_;
+   bool open_debugger_ = false;
 
    // File dialogs : the filters must live until the dialog is closed
    DiskBuilder disk_builder_;

@@ -60,7 +60,12 @@ namespace
       void DiskEjected() override { if (debug_server_ != nullptr) debug_server_->NotifyMediaChanged(-1, false); }
 
       // IDebugerStopped
-      void NotifyStop(Reason reason) override { if (debug_server_ != nullptr) debug_server_->NotifyStop(reason); }
+      void NotifyStop(Reason reason) override
+      {
+         if (debug_server_ != nullptr) debug_server_->NotifyStop(reason);
+         // Without a debug client, the debugger window shows where it stopped
+         ui_.NotifyStop(debug_server_ == nullptr && !init_._no_show);
+      }
 
       // ISoundFactory
       ISound* GetSound(const char* name) override { return &sound_; }
@@ -291,6 +296,8 @@ namespace
 
       if (ui_.Init(window_, &display_, &emulation_, &sound_, this, scale))
       {
+         // Started in break : the debugger is shown
+         if (init_._debug_start && debug_server_ == nullptr) ui_.OpenDebugger();
          // Once the height of the bars is known (first frame) : room for them around the screen
          RenderFrame();
          if (!window_known)
