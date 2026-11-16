@@ -302,12 +302,22 @@ void Emulation::ChangeConfig(MachineSettings* settings)
    const CommandLock lock(this);
    emulator_engine_->ChangeSettings(settings);
    emulator_engine_->OnOff();
+   RestartSound();
 }
 
 void Emulation::HardReset()
 {
    const CommandLock lock(this);
-   return emulator_engine_->OnOff();
+   emulator_engine_->OnOff();
+   RestartSound();
+}
+
+// Power on also restarts the sound output : the mixer thread is stopped, then started again,
+// which reinitialises the audio driver (a stalled stream or a full queue is dropped).
+void Emulation::RestartSound()
+{
+   emulator_engine_->GetMixer()->StopMixer();
+   emulator_engine_->GetMixer()->StartMixer();
 }
 
 DataContainer* Emulation::CanLoad(const char* file, std::vector<MediaManager::MediaType>list_of_types)
