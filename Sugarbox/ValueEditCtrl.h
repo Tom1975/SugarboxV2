@@ -31,11 +31,15 @@ public:
       _ValueInt
    };
 
+   // Owners delete controls through this class: the derived destructor, which
+   // deletes edit_, has to run.
+   virtual ~ValueEditCtrl() = default;
+
    virtual void UpdateValue(bool is_running) = 0;
    virtual void Validate(bool is_running) = 0;
 
-   QLabel* label_;
-   QLineEdit* edit_;
+   QLabel* label_ = nullptr;
+   QLineEdit* edit_ = nullptr;
 };
 
 

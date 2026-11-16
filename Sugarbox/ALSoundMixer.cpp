@@ -94,9 +94,29 @@ bool ALSoundMixer::Init(int sample_rate, int sample_bits, int nb_channels)
    return true;
 }
 
+// Called when the mixer thread (re)starts, so no buffer is being filled : the driver starts
+// clean, whatever state the previous session left it in (stalled stream, queued buffers).
 void ALSoundMixer::Reinit()
 {
+   if (context_ == nullptr) return;
 
+   // A stopped source has processed all its buffers : they can all be taken back
+   alSourceStop(source_);
+   ALint nb_processed_buffers = 0;
+   alGetSourcei(source_, AL_BUFFERS_PROCESSED, &nb_processed_buffers);
+   if (nb_processed_buffers > 0)
+   {
+      ALuint buffer_to_remove[NB_BUFFERS_];
+      alSourceUnqueueBuffers(source_, nb_processed_buffers < (ALint)NB_BUFFERS_ ? nb_processed_buffers : NB_BUFFERS_, buffer_to_remove);
+   }
+   alGetError();
+
+   for (auto& wav_index : wav_buffers_list_)
+   {
+      wav_index.status_ = IWaveHDR::UNUSED;
+   }
+   play_ = false;
+   buffer_size_for_sync_ = 1;
 }
 
 unsigned int ALSoundMixer::GetMaxValue()
@@ -140,7 +160,7 @@ void ALSoundMixer::CheckBuffersStatus()
 IWaveHDR* ALSoundMixer::GetFreeBuffer()
 {
    IWaveHDR* next_buffer = nullptr;
-   ALint nb_processed_buffers;
+   ALint nb_processed_buffers = 0;
    alGetSourcei(source_, AL_BUFFERS_PROCESSED, &nb_processed_buffers);
    ALuint buffer_to_remove[NB_BUFFERS_] ;
 
@@ -212,17 +232,41 @@ void ALSoundMixer::SyncOnSound(bool set)
 
 void ALSoundMixer::SyncWithSound()
 {
-   // Wait until there's only xx buffer
-   ALint buffer_queued;
-   ALint buffer_processed;
+   // Wait until there's only xx buffer. The emulation thread waits here with the machine locked :
+   // without an audio device, or when the stream stops consuming (stalled driver), it must give up,
+   // or the emulation and every command (reset, snapshot) would wait forever.
+   if (context_ == nullptr) return;
+
+   ALint buffer_queued = 0;
+   ALint buffer_processed = 0;
    alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
    alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
 
+   // A buffer lasts 20 ms : no buffer played for 100 ms means the stream is stalled
+   const auto stall_delay = std::chrono::milliseconds(100);
+   auto last_progress = std::chrono::steady_clock::now();
+   ALint last_processed = buffer_processed;
    while (sync_on_sound_ && buffer_queued - buffer_processed > buffer_size_for_sync_)
    {
+      ALint source_state = AL_STOPPED;
+      alGetSourcei(source_, AL_SOURCE_STATE, &source_state);
+      if (alGetError() != AL_NO_ERROR || source_state != AL_PLAYING)
+         break;
+
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
       alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
       alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
-      std::this_thread::sleep_for(std::chrono::microseconds(1));
+
+      const auto now = std::chrono::steady_clock::now();
+      if (buffer_processed != last_processed)
+      {
+         last_processed = buffer_processed;
+         last_progress = now;
+      }
+      else if (now - last_progress > stall_delay)
+      {
+         break;
+      }
    }
 
 }

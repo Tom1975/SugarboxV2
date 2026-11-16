@@ -33,9 +33,8 @@ void CRTCDialog::Cleanup()
    for (auto& it : edit_list_)
    {
       disconnect(it->edit_);
-      delete it->edit_;
       delete it->label_;
-      delete it;
+      delete it;  // also deletes edit_, in ~ValueEditCtrlImp
    }
 
    edit_list_.clear();

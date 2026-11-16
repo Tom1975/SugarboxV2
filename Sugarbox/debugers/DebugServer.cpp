@@ -11,6 +11,8 @@ using socklen_t = int;
 #include "DebugServer.h"
 
 #include <algorithm>
+#include <optional>
+#include <set>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -22,6 +24,28 @@ using socklen_t = int;
 #include <QByteArray>
 
 using json = nlohmann::json;
+
+// ─── Bounds of what a client may name ────────────────────────────────────────
+// Memory::GetDebugValue and the FDC index fixed arrays with the bank or drive
+// they are given and do not check it, so everything that comes from a client
+// is checked here first.
+static const int kNbExtendedRamBanks = 8;    // Memory::extended_ram_buffer_
+static const int kNbUpperRomBanks    = 256;  // Memory::rom_
+
+static bool IsBankInRange(Memory::DbgMemAccess access, long long bank)
+{
+   switch (access)
+   {
+   case Memory::MEM_RAM_BANK: return bank >= 0 && bank < kNbExtendedRamBanks;
+   case Memory::MEM_ROM_BANK: return bank >= 0 && bank < kNbUpperRomBanks;
+   default:                   return true;  // no bank, or masked by the accessor (cart)
+   }
+}
+
+static bool IsDriveInRange(long long drive)
+{
+   return drive >= 0 && drive < NB_DRIVES;
+}
 
 // ─── Base64 decode ────────────────────────────────────────────────────────────
 static std::vector<uint8_t> Base64Decode(const std::string& in)
@@ -368,478 +392,16 @@ void DebugServer::handleClient(int clientSocket)
          continue;
       }
 
-      json response;
-
-      std::string cmd = request.value("cmd", "");
-
-      std::cout << "Command : " << cmd << std::endl;
-
-      if (cmd == "readRegisters")
+      try
       {
-         Z80* z80 = emulation_->GetEngine()->GetProc();
-
-         response["AF"]  = z80->af_.w;
-         response["AF'"] = z80->af_p_.w;
-         response["BC"]  = z80->bc_.w;
-         response["BC'"] = z80->bc_p_.w;
-         response["DE"]  = z80->de_.w;
-         response["DE'"] = z80->de_p_.w;
-         response["HL"]  = z80->hl_.w;
-         response["HL'"] = z80->hl_p_.w;
-         response["IX"]  = z80->ix_.w;
-         response["IY"]  = z80->iy_.w;
-         response["SP"]  = z80->sp_;
-         response["PC"]  = emulation_->GetDebugPC();
-         response["I"]   = z80->ir_.b.h;
-         response["R"]   = z80->ir_.b.l;
-         SendResponse(response);
+         HandleCommand(request);
       }
-      else if (cmd == "getState")
+      catch (const std::exception& e)
       {
-         Z80* z80 = emulation_->GetEngine()->GetProc();
-         json response;
-
-         // To choose which bank is used
-         // PC : source:address. 
-
-         response["pc"] = emulation_->GetDebugPC();
-         response["sp"] = z80->sp_;
-
-         response["running"] =
-            (emulation_->IsStepping()) ? "true" : "false";
-         SendResponse(response);
-      }
-      else if (cmd == "step")
-      {
-         response = { {"status", "ok"} };
-         SendResponse(response);
-         emulation_->StepOver();
-      }
-      else if (cmd == "stepIn")
-      {
-         response = { {"status", "ok"} };
-         SendResponse(response);
-         emulation_->Step();
-      }
-      else if (cmd == "stepOut")
-      {
-         response = { {"status", "ok"} };
-         SendResponse(response);
-         emulation_->StepOut();
-      }
-      else if (cmd == "halt")
-      {
-         response = { {"status", "ok"} };
-         SendResponse(response);
-         emulation_->Break();
-      }
-      else if (cmd == "setPC")
-      {
-         uint16_t pc = static_cast<uint16_t>(request.value("address", 0));
-         emulation_->GetEngine()->GetProc()->PrepareForFetch(pc);
-         emulation_->SetDebugPC(pc);
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "setRegisters")
-      {
-         Z80* z80 = emulation_->GetEngine()->GetProc();
-         if (request.contains("pc")) {
-            uint16_t newPc = static_cast<uint16_t>(request["pc"]);
-            z80->PrepareForFetch(newPc);
-            emulation_->SetDebugPC(newPc);
-         }
-         if (request.contains("sp"))  z80->sp_    = static_cast<uint16_t>(request["sp"]);
-         if (request.contains("af"))  z80->af_.w  = static_cast<uint16_t>(request["af"]);
-         if (request.contains("bc"))  z80->bc_.w  = static_cast<uint16_t>(request["bc"]);
-         if (request.contains("de"))  z80->de_.w  = static_cast<uint16_t>(request["de"]);
-         if (request.contains("hl"))  z80->hl_.w  = static_cast<uint16_t>(request["hl"]);
-         if (request.contains("ix"))  z80->ix_.w  = static_cast<uint16_t>(request["ix"]);
-         if (request.contains("iy"))  z80->iy_.w  = static_cast<uint16_t>(request["iy"]);
-         if (request.contains("af'")) z80->af_p_.w = static_cast<uint16_t>(request["af'"]);
-         if (request.contains("bc'")) z80->bc_p_.w = static_cast<uint16_t>(request["bc'"]);
-         if (request.contains("de'")) z80->de_p_.w = static_cast<uint16_t>(request["de'"]);
-         if (request.contains("hl'")) z80->hl_p_.w = static_cast<uint16_t>(request["hl'"]);
-         if (request.contains("i"))   z80->ir_.b.h = static_cast<uint8_t>(request["i"]);
-         if (request.contains("r"))   z80->ir_.b.l = static_cast<uint8_t>(request["r"]);
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "continue")
-      {
-         response = { {"status", "running"} };
-         SendResponse(response);
-         emulation_->Run();
-      }
-      else if (cmd == "readMemory")
-      {
-         HandleReadMemory (request);
-      }
-      else if (cmd == "getMemBanks")
-      {
-         HandleGetMemBanks();
-      }
-      else if (cmd == "writeMemory")
-      {
-         uint16_t address = request.value("address", 0);
-         const auto& bytes = request["bytes"];
-         Memory* mem = emulation_->GetEngine()->GetMem();
-         for (size_t i = 0; i < bytes.size(); i++)
-         {
-            uint16_t dest = static_cast<uint16_t>(address + i);
-            mem->SetDbg(dest, static_cast<unsigned char>(bytes[i]), dest >> 14);
-         }
-         response = { {"status", "ok"}, {"written", (int)bytes.size()} };
-         SendResponse(response);
-      }
-      else if (cmd == "evaluate")
-      {
-         std::string expr = request.value("expression", "");
-         Z80* z80 = emulation_->GetEngine()->GetProc();
-
-         // Normalize to uppercase
-         std::string up = expr;
-         std::transform(up.begin(), up.end(), up.begin(), ::toupper);
-
-         std::string text;
-
-         auto hex16 = [](uint16_t v) -> std::string {
-            char buf[8];
-            snprintf(buf, sizeof(buf), "0x%04X", v);
-            return buf;
-         };
-         auto hex8 = [](unsigned char v) -> std::string {
-            char buf[6];
-            snprintf(buf, sizeof(buf), "0x%02X", v);
-            return buf;
-         };
-
-         if      (up == "AF")  text = hex16(z80->af_.w);
-         else if (up == "AF'") text = hex16(z80->af_p_.w);
-         else if (up == "BC")  text = hex16(z80->bc_.w);
-         else if (up == "BC'") text = hex16(z80->bc_p_.w);
-         else if (up == "DE")  text = hex16(z80->de_.w);
-         else if (up == "DE'") text = hex16(z80->de_p_.w);
-         else if (up == "HL")  text = hex16(z80->hl_.w);
-         else if (up == "HL'") text = hex16(z80->hl_p_.w);
-         else if (up == "IX")  text = hex16(z80->ix_.w);
-         else if (up == "IY")  text = hex16(z80->iy_.w);
-         else if (up == "SP")  text = hex16(z80->sp_);
-         else if (up == "PC")  text = hex16(z80->new_instruction_ ? z80->pc_ : z80->GetPC());
-         else if (up == "A")   text = hex8(z80->af_.b.h);
-         else if (up == "F")   text = hex8(z80->af_.b.l);
-         else if (up == "B")   text = hex8(z80->bc_.b.h);
-         else if (up == "C")   text = hex8(z80->bc_.b.l);
-         else if (up == "D")   text = hex8(z80->de_.b.h);
-         else if (up == "E")   text = hex8(z80->de_.b.l);
-         else if (up == "H")   text = hex8(z80->hl_.b.h);
-         else if (up == "L")   text = hex8(z80->hl_.b.l);
-         else if (up == "I")   text = hex8(z80->ir_.b.h);
-         else if (up == "R")   text = hex8(z80->ir_.b.l);
-         else {
-            // Try to parse as [mode:]address
-            // Syntax:
-            //   0x4000 / 16384        → MEM_READ (default)
-            //   read:0x4000           → MEM_READ
-            //   write:0x4000          → MEM_WRITE
-            //   ram:0x4000            → MEM_RAM_LOWER_BANK
-            //   ram[N]:0x4000         → MEM_RAM_BANK, bank N
-            //   rom:0x0000            → MEM_LOWER_ROM
-            //   rom[N]:0x0000         → MEM_ROM_BANK, slot N
-            //   cart[N]:0x0000        → MEM_CART_SLOT, slot N
-            Memory::DbgMemAccess access = Memory::MEM_READ;
-            unsigned int bank_data = 0;
-            std::string addr_str = expr;
-            bool parse_ok = true;
-
-            auto colon = up.find(':');
-            if (colon != std::string::npos) {
-               std::string prefix = up.substr(0, colon);
-               addr_str = expr.substr(colon + 1);
-
-               auto lb = prefix.find('[');
-               auto rb = prefix.find(']');
-               if (lb != std::string::npos && rb != std::string::npos) {
-                  try { bank_data = std::stoul(prefix.substr(lb + 1, rb - lb - 1)); }
-                  catch (...) { parse_ok = false; }
-                  prefix = prefix.substr(0, lb);
-               }
-
-               if      (prefix == "READ")  access = Memory::MEM_READ;
-               else if (prefix == "WRITE") access = Memory::MEM_WRITE;
-               else if (prefix == "RAM")   access = (lb != std::string::npos) ? Memory::MEM_RAM_BANK : Memory::MEM_RAM_LOWER_BANK;
-               else if (prefix == "ROM")   access = (lb != std::string::npos) ? Memory::MEM_ROM_BANK : Memory::MEM_LOWER_ROM;
-               else if (prefix == "CART")  access = Memory::MEM_CART_SLOT;
-               else                        parse_ok = false;
-            }
-
-            if (parse_ok) {
-               try {
-                  uint32_t addr = std::stoul(addr_str, nullptr, 0);
-                  unsigned char byte = 0;
-                  emulation_->GetEngine()->GetMem()->GetDebugValue(&byte, addr & 0xFFFF, 1, access, bank_data);
-                  text = hex8(byte) + " @ " + hex16(static_cast<uint16_t>(addr));
-               } catch (...) { text = "?"; }
-            } else {
-               text = "?";
-            }
-         }
-
-         response = { {"text", text} };
-         SendResponse(response);
-      }
-      else if (cmd == "loadSnapshot")
-      {
-         bool ok = false;
-         std::string errmsg;
-
-         if (request.contains("data"))
-         {
-            // Inline base64 payload — decode to a temp file then load
-            std::string b64 = request.value("data", "");
-            auto bytes = Base64Decode(b64);
-
-            // Write temp file
-            std::string tmpPath;
-#ifdef _WIN32
-            char tmpBuf[MAX_PATH];
-            GetTempPathA(MAX_PATH, tmpBuf);
-            tmpPath = std::string(tmpBuf) + "sugarbox_dap.sna";
-#else
-            tmpPath = "/tmp/sugarbox_dap.sna";
-#endif
-            {
-               std::ofstream f(tmpPath, std::ios::binary | std::ios::trunc);
-               if (f) f.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-               else   errmsg = "cannot write temp file: " + tmpPath;
-            }
-            if (errmsg.empty())
-            {
-               ok = emulation_->LoadSnapshot(tmpPath.c_str());
-               if (!ok) errmsg = "snapshot load failed (from inline data)";
-               std::remove(tmpPath.c_str());
-            }
-         }
-         else
-         {
-            // Legacy path-based load
-            std::string path = request.value("path", "");
-            ok = emulation_->LoadSnapshot(path.c_str());
-            if (!ok) errmsg = "snapshot load failed: " + path;
-         }
-
-         response = { {"status", ok ? "ok" : "error"} };
-         if (!ok) response["message"] = errmsg;
-         SendResponse(response);
-      }
-      else if (cmd == "reset")
-      {
-         emulation_->HardReset();
-         emulation_->Break();
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "setBreakpoints")
-      {
-         emulation_->GetEngine()->CleanBreakpoints();
-         const auto& bps = request.value("breakpoints", json::array());
-         for (const auto& bp : bps)
-         {
-            uint16_t address = static_cast<uint16_t>(bp.value("address", 0));
-            emulation_->GetEngine()->AddBreakpoint(address);
-         }
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "disassemble")
-      {
-         uint16_t pc        = static_cast<uint16_t>(request.value("address", 0));
-         unsigned int count = request.value("count", 0);
-
-         // Optional source: memType = "read"|"write"|"ram"|"rom"|"cart", bank = int
-         std::string memType = request.value("memType", "read");
-         int         bank    = request.value("bank", -1);
-
-         std::string up = memType;
-         std::transform(up.begin(), up.end(), up.begin(), ::toupper);
-
-         Memory* mem = emulation_->GetEngine()->GetMem();
-
-         // Determine access mode (mirrors HandleReadMemory logic)
-         Memory::DbgMemAccess access = Memory::MEM_READ;
-         if      (up == "WRITE") access = Memory::MEM_WRITE;
-         else if (up == "RAM"  && bank < 0) access = Memory::MEM_RAM_LOWER_BANK;
-         else if (up == "RAM"  )            access = Memory::MEM_RAM_BANK;
-         else if (up == "ROM"  && bank < 0) access = Memory::MEM_LOWER_ROM;
-         else if (up == "ROM"  )            access = Memory::MEM_ROM_BANK;
-         else if (up == "CART" )            access = Memory::MEM_CART_SLOT;
-
-         // For non-READ sources: read the whole address space into a local buffer.
-         // ROM/RAM banks are 0x4000 bytes; READ/WRITE/RAM_LOWER span 0x10000.
-         // Always snapshot even for MEM_READ: Memory::Get() has a bank-switching
-         // side effect (SwitchBank) that corrupts the active cartridge bank when
-         // the disassembler reads sequentially across bank boundaries.
-         const uint32_t BUF_SIZE = (access == Memory::MEM_READ || access == Memory::MEM_WRITE
-                                    || access == Memory::MEM_RAM_LOWER_BANK)
-                                   ? 0x10000u : 0x4000u;
-         std::vector<unsigned char> bankBuf(BUF_SIZE, 0);
-         mem->GetDebugValue(bankBuf.data(), 0,
-                            BUF_SIZE,
-                            access,
-                            static_cast<unsigned int>(bank < 0 ? 0 : bank));
-
-         Z80Desassember* dasm = emulation_->GetDisassembler();
-
-         auto readByte = [&bankBuf, BUF_SIZE](unsigned short a) -> unsigned char {
-            return bankBuf[a % BUF_SIZE];
-         };
-
-         json arr = json::array();
-         for (unsigned int i = 0; i < count; i++)
-         {
-            char mnemonic[16], argument[16];
-            int increment = dasm->DasmMnemonicEx(pc, readByte, mnemonic, argument);
-            if (increment <= 0) increment = 1;
-
-            // Format: "MNEMONIC ARGUMENT" in a fixed-width field
-            char out_buffer[128];
-            std::snprintf(out_buffer, sizeof(out_buffer), "%s %s", mnemonic, argument);
-
-            // Raw bytes for hex/ASCII display column
-            int byteCount = (increment <= 4) ? increment : 1;
-            json bytesArr = json::array();
-            for (int b = 0; b < byteCount; b++)
-               bytesArr.push_back(readByte(static_cast<uint16_t>(pc + b)));
-
-            arr.push_back({
-               { "address",     pc          },
-               { "instruction", out_buffer  },
-               { "bytes",       bytesArr    }
-            });
-            pc += static_cast<uint16_t>(increment);
-         }
-         response = {
-            { "type",         "response"    },
-            { "command",      "disassemble" },
-            { "instructions", arr           },
-         };
-         SendResponse(response);
-      }
-      else if (cmd == "getCrtcState")
-      {
-         HandleGetCrtcState();
-      }
-      else if (cmd == "getGateArrayState")
-      {
-         HandleGetGateArrayState();
-      }
-      else if (cmd == "getPsgState")
-      {
-         HandleGetPsgState();
-      }
-      else if (cmd == "getPpiState")
-      {
-         HandleGetPpiState();
-      }
-      else if (cmd == "getFdcState")
-      {
-         HandleGetFdcState();
-      }
-      else if (cmd == "getTapeState")
-      {
-         HandleGetTapeState();
-      }
-      else if (cmd == "getAsicState")
-      {
-         HandleGetAsicState();
-      }
-      else if (cmd == "getTrackRaw")
-      {
-         HandleGetTrackRaw(request);
-      }
-      else if (cmd == "getTapeSignal")
-      {
-         HandleGetTapeSignal();
-      }
-      else if (cmd == "getScreen")
-      {
-         HandleGetScreen();
-      }
-      else if (cmd == "subscribeScreen")
-      {
-         screen_subscribed_ = true;
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "unsubscribeScreen")
-      {
-         screen_subscribed_ = false;
-         response = { {"status", "ok"} };
-         SendResponse(response);
-      }
-      else if (cmd == "insertDisk")
-      {
-         int drive = request.value("drive", 0);
-         std::string path = request.value("path", "");
-         int result = emulation_->LoadDisk(path.c_str(), drive, false);
-         json resp;
-         if (result == 0)
-            resp = { {"status", "ok"} };
-         else
-            resp = { {"error", "LoadDisk failed"}, {"code", result} };
-         SendResponse(resp);
-      }
-      else if (cmd == "insertTape")
-      {
-         std::string path = request.value("path", "");
-         int result = emulation_->LoadTape(path.c_str());
-         json resp;
-         if (result == 0)
-            resp = { {"status", "ok"} };
-         else
-            resp = { {"error", "LoadTape failed"}, {"code", result} };
-         SendResponse(resp);
-      }
-      else if (cmd == "getEmulatorSettings")
-      {
-         HandleGetEmulatorSettings();
-      }
-      else if (cmd == "getEmulatorSetting")
-      {
-         HandleGetEmulatorSetting(request);
-      }
-      else if (cmd == "setEmulatorSetting")
-      {
-         HandleSetEmulatorSetting(request);
-      }
-      else if (cmd == "setEmulatorSettings")
-      {
-         HandleSetEmulatorSettings(request);
-      }
-      else if (cmd == "sendKey")
-      {
-         int line    = request.value("line", -1);
-         int bit     = request.value("bit", -1);
-         bool pressed = request.value("pressed", false);
-         if (line >= 0 && line <= 9 && bit >= 0 && bit <= 7)
-         {
-            IKeyboard* kb = emulation_->GetKeyboardHandler();
-            unsigned int scanCode = kb->GetScanCode(
-               static_cast<unsigned int>(line),
-               static_cast<unsigned int>(bit));
-            kb->SendScanCode(scanCode, pressed);
-            response = { {"status", "ok"} };
-         }
-         else
-         {
-            response = { {"error", "invalid line/bit"} };
-         }
-         SendResponse(response);
-      }
-      else
-      {
-         response = { {"error", "unknown command"} };
-         SendResponse(response);
+         // A line can be valid JSON and still carry the wrong types (a number where
+         // an object is expected, a string for an address...). nlohmann throws on
+         // those, and an exception leaving this thread would terminate Sugarbox.
+         SendResponse({ {"error", std::string("invalid request: ") + e.what()} });
       }
       } // end inner while (complete lines)
    }
@@ -847,6 +409,524 @@ void DebugServer::handleClient(int clientSocket)
    // Client gone: stop capturing/encoding frames nobody will receive.
    screen_subscribed_ = false;
 }
+
+void DebugServer::HandleCommand(nlohmann::json& request)
+{
+   if (!request.is_object())
+   {
+      SendResponse({ {"error", "invalid request: not a JSON object"} });
+      return;
+   }
+
+   json response;
+
+   std::string cmd = request.value("cmd", "");
+
+   // A command that changes the machine, or reads a structure that a disk or tape change
+   // reallocates, holds it: the emulation thread is not running a slice meanwhile.
+   // Reads of registers, memory and chip registers stay unlocked, as before: while
+   // running, a lock waits for the end of the slice, and the panels poll them live.
+   static const std::set<std::string> kUnlockedReads = {
+      "readRegisters", "getState", "readMemory", "getMemBanks", "evaluate", "disassemble",
+      "getCrtcState", "getGateArrayState", "getPsgState", "getPpiState", "getAsicState",
+      "getScreen", "subscribeScreen", "unsubscribeScreen",
+      "getEmulatorSettings", "getEmulatorSetting", "sendKey",
+   };
+   std::optional<Emulation::CommandLock> lock;
+   if (kUnlockedReads.count(cmd) == 0)
+   {
+      lock.emplace(emulation_);
+   }
+
+   std::cout << "Command : " << cmd << std::endl;
+
+   if (cmd == "readRegisters")
+   {
+      Z80* z80 = emulation_->GetEngine()->GetProc();
+
+      response["AF"]  = z80->af_.w;
+      response["AF'"] = z80->af_p_.w;
+      response["BC"]  = z80->bc_.w;
+      response["BC'"] = z80->bc_p_.w;
+      response["DE"]  = z80->de_.w;
+      response["DE'"] = z80->de_p_.w;
+      response["HL"]  = z80->hl_.w;
+      response["HL'"] = z80->hl_p_.w;
+      response["IX"]  = z80->ix_.w;
+      response["IY"]  = z80->iy_.w;
+      response["SP"]  = z80->sp_;
+      response["PC"]  = emulation_->GetDebugPC();
+      response["I"]   = z80->ir_.b.h;
+      response["R"]   = z80->ir_.b.l;
+      SendResponse(response);
+   }
+   else if (cmd == "getState")
+   {
+      Z80* z80 = emulation_->GetEngine()->GetProc();
+      json response;
+
+      // To choose which bank is used
+      // PC : source:address. 
+
+      unsigned short pc = 0;
+      const bool stepping = emulation_->GetDebugState(pc);
+      response["pc"] = pc;
+      response["sp"] = z80->sp_;
+
+      response["running"] = stepping ? "true" : "false";
+      SendResponse(response);
+   }
+   else if (cmd == "step")
+   {
+      response = { {"status", "ok"} };
+      SendResponse(response);
+      emulation_->StepOver();
+   }
+   else if (cmd == "stepIn")
+   {
+      response = { {"status", "ok"} };
+      SendResponse(response);
+      emulation_->Step();
+   }
+   else if (cmd == "stepOut")
+   {
+      response = { {"status", "ok"} };
+      SendResponse(response);
+      emulation_->StepOut();
+   }
+   else if (cmd == "halt")
+   {
+      response = { {"status", "ok"} };
+      SendResponse(response);
+      emulation_->Break();
+   }
+   else if (cmd == "setPC")
+   {
+      uint16_t pc = static_cast<uint16_t>(request.value("address", 0));
+      emulation_->GetEngine()->GetProc()->PrepareForFetch(pc);
+      emulation_->SetDebugPC(pc);
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "setRegisters")
+   {
+      Z80* z80 = emulation_->GetEngine()->GetProc();
+      if (request.contains("pc")) {
+         uint16_t newPc = static_cast<uint16_t>(request["pc"]);
+         z80->PrepareForFetch(newPc);
+         emulation_->SetDebugPC(newPc);
+      }
+      if (request.contains("sp"))  z80->sp_    = static_cast<uint16_t>(request["sp"]);
+      if (request.contains("af"))  z80->af_.w  = static_cast<uint16_t>(request["af"]);
+      if (request.contains("bc"))  z80->bc_.w  = static_cast<uint16_t>(request["bc"]);
+      if (request.contains("de"))  z80->de_.w  = static_cast<uint16_t>(request["de"]);
+      if (request.contains("hl"))  z80->hl_.w  = static_cast<uint16_t>(request["hl"]);
+      if (request.contains("ix"))  z80->ix_.w  = static_cast<uint16_t>(request["ix"]);
+      if (request.contains("iy"))  z80->iy_.w  = static_cast<uint16_t>(request["iy"]);
+      if (request.contains("af'")) z80->af_p_.w = static_cast<uint16_t>(request["af'"]);
+      if (request.contains("bc'")) z80->bc_p_.w = static_cast<uint16_t>(request["bc'"]);
+      if (request.contains("de'")) z80->de_p_.w = static_cast<uint16_t>(request["de'"]);
+      if (request.contains("hl'")) z80->hl_p_.w = static_cast<uint16_t>(request["hl'"]);
+      if (request.contains("i"))   z80->ir_.b.h = static_cast<uint8_t>(request["i"]);
+      if (request.contains("r"))   z80->ir_.b.l = static_cast<uint8_t>(request["r"]);
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "continue")
+   {
+      response = { {"status", "running"} };
+      SendResponse(response);
+      emulation_->Run();
+   }
+   else if (cmd == "readMemory")
+   {
+      HandleReadMemory (request);
+   }
+   else if (cmd == "getMemBanks")
+   {
+      HandleGetMemBanks();
+   }
+   else if (cmd == "writeMemory")
+   {
+      uint16_t address = request.value("address", 0);
+      const auto& bytes = request["bytes"];
+      Memory* mem = emulation_->GetEngine()->GetMem();
+      for (size_t i = 0; i < bytes.size(); i++)
+      {
+         uint16_t dest = static_cast<uint16_t>(address + i);
+         mem->SetDbg(dest, static_cast<unsigned char>(bytes[i]), dest >> 14);
+      }
+      response = { {"status", "ok"}, {"written", (int)bytes.size()} };
+      SendResponse(response);
+   }
+   else if (cmd == "evaluate")
+   {
+      std::string expr = request.value("expression", "");
+      Z80* z80 = emulation_->GetEngine()->GetProc();
+
+      // Normalize to uppercase
+      std::string up = expr;
+      std::transform(up.begin(), up.end(), up.begin(), ::toupper);
+
+      std::string text;
+
+      auto hex16 = [](uint16_t v) -> std::string {
+         char buf[8];
+         snprintf(buf, sizeof(buf), "0x%04X", v);
+         return buf;
+      };
+      auto hex8 = [](unsigned char v) -> std::string {
+         char buf[6];
+         snprintf(buf, sizeof(buf), "0x%02X", v);
+         return buf;
+      };
+
+      if      (up == "AF")  text = hex16(z80->af_.w);
+      else if (up == "AF'") text = hex16(z80->af_p_.w);
+      else if (up == "BC")  text = hex16(z80->bc_.w);
+      else if (up == "BC'") text = hex16(z80->bc_p_.w);
+      else if (up == "DE")  text = hex16(z80->de_.w);
+      else if (up == "DE'") text = hex16(z80->de_p_.w);
+      else if (up == "HL")  text = hex16(z80->hl_.w);
+      else if (up == "HL'") text = hex16(z80->hl_p_.w);
+      else if (up == "IX")  text = hex16(z80->ix_.w);
+      else if (up == "IY")  text = hex16(z80->iy_.w);
+      else if (up == "SP")  text = hex16(z80->sp_);
+      else if (up == "PC")  text = hex16(z80->new_instruction_ ? z80->pc_ : z80->GetPC());
+      else if (up == "A")   text = hex8(z80->af_.b.h);
+      else if (up == "F")   text = hex8(z80->af_.b.l);
+      else if (up == "B")   text = hex8(z80->bc_.b.h);
+      else if (up == "C")   text = hex8(z80->bc_.b.l);
+      else if (up == "D")   text = hex8(z80->de_.b.h);
+      else if (up == "E")   text = hex8(z80->de_.b.l);
+      else if (up == "H")   text = hex8(z80->hl_.b.h);
+      else if (up == "L")   text = hex8(z80->hl_.b.l);
+      else if (up == "I")   text = hex8(z80->ir_.b.h);
+      else if (up == "R")   text = hex8(z80->ir_.b.l);
+      else {
+         // Try to parse as [mode:]address
+         // Syntax:
+         //   0x4000 / 16384        → MEM_READ (default)
+         //   read:0x4000           → MEM_READ
+         //   write:0x4000          → MEM_WRITE
+         //   ram:0x4000            → MEM_RAM_LOWER_BANK
+         //   ram[N]:0x4000         → MEM_RAM_BANK, bank N
+         //   rom:0x0000            → MEM_LOWER_ROM
+         //   rom[N]:0x0000         → MEM_ROM_BANK, slot N
+         //   cart[N]:0x0000        → MEM_CART_SLOT, slot N
+         Memory::DbgMemAccess access = Memory::MEM_READ;
+         unsigned int bank_data = 0;
+         std::string addr_str = expr;
+         bool parse_ok = true;
+
+         auto colon = up.find(':');
+         if (colon != std::string::npos) {
+            std::string prefix = up.substr(0, colon);
+            addr_str = expr.substr(colon + 1);
+
+            auto lb = prefix.find('[');
+            auto rb = prefix.find(']');
+            if (lb != std::string::npos && rb != std::string::npos) {
+               try { bank_data = std::stoul(prefix.substr(lb + 1, rb - lb - 1)); }
+               catch (...) { parse_ok = false; }
+               prefix = prefix.substr(0, lb);
+            }
+
+            if      (prefix == "READ")  access = Memory::MEM_READ;
+            else if (prefix == "WRITE") access = Memory::MEM_WRITE;
+            else if (prefix == "RAM")   access = (lb != std::string::npos) ? Memory::MEM_RAM_BANK : Memory::MEM_RAM_LOWER_BANK;
+            else if (prefix == "ROM")   access = (lb != std::string::npos) ? Memory::MEM_ROM_BANK : Memory::MEM_LOWER_ROM;
+            else if (prefix == "CART")  access = Memory::MEM_CART_SLOT;
+            else                        parse_ok = false;
+         }
+
+         if (parse_ok && !IsBankInRange(access, bank_data))
+            parse_ok = false;
+
+         if (parse_ok) {
+            try {
+               uint32_t addr = std::stoul(addr_str, nullptr, 0);
+               unsigned char byte = 0;
+               emulation_->GetEngine()->GetMem()->GetDebugValue(&byte, addr & 0xFFFF, 1, access, bank_data);
+               text = hex8(byte) + " @ " + hex16(static_cast<uint16_t>(addr));
+            } catch (...) { text = "?"; }
+         } else {
+            text = "?";
+         }
+      }
+
+      response = { {"text", text} };
+      SendResponse(response);
+   }
+   else if (cmd == "loadSnapshot")
+   {
+      bool ok = false;
+      std::string errmsg;
+
+      if (request.contains("data"))
+      {
+         // Inline base64 payload — decode to a temp file then load
+         std::string b64 = request.value("data", "");
+         auto bytes = Base64Decode(b64);
+
+         // Write temp file
+         std::string tmpPath;
+#ifdef _WIN32
+         char tmpBuf[MAX_PATH];
+         GetTempPathA(MAX_PATH, tmpBuf);
+         tmpPath = std::string(tmpBuf) + "sugarbox_dap.sna";
+#else
+         tmpPath = "/tmp/sugarbox_dap.sna";
+#endif
+         {
+            std::ofstream f(tmpPath, std::ios::binary | std::ios::trunc);
+            if (f) f.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            else   errmsg = "cannot write temp file: " + tmpPath;
+         }
+         if (errmsg.empty())
+         {
+            ok = emulation_->LoadSnapshot(tmpPath.c_str());
+            if (!ok) errmsg = "snapshot load failed (from inline data)";
+            std::remove(tmpPath.c_str());
+         }
+      }
+      else
+      {
+         // Legacy path-based load
+         std::string path = request.value("path", "");
+         ok = emulation_->LoadSnapshot(path.c_str());
+         if (!ok) errmsg = "snapshot load failed: " + path;
+      }
+
+      response = { {"status", ok ? "ok" : "error"} };
+      if (!ok) response["message"] = errmsg;
+      SendResponse(response);
+   }
+   else if (cmd == "reset")
+   {
+      emulation_->HardReset();
+      emulation_->Break();
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "setBreakpoints")
+   {
+      emulation_->GetEngine()->CleanBreakpoints();
+      const auto& bps = request.value("breakpoints", json::array());
+      for (const auto& bp : bps)
+      {
+         uint16_t address = static_cast<uint16_t>(bp.value("address", 0));
+         emulation_->GetEngine()->AddBreakpoint(address);
+      }
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "disassemble")
+   {
+      uint16_t pc        = static_cast<uint16_t>(request.value("address", 0));
+      unsigned int count = request.value("count", 0);
+
+      // Optional source: memType = "read"|"write"|"ram"|"rom"|"cart", bank = int
+      std::string memType = request.value("memType", "read");
+      int         bank    = request.value("bank", -1);
+
+      std::string up = memType;
+      std::transform(up.begin(), up.end(), up.begin(), ::toupper);
+
+      Memory* mem = emulation_->GetEngine()->GetMem();
+
+      // Determine access mode (mirrors HandleReadMemory logic)
+      Memory::DbgMemAccess access = Memory::MEM_READ;
+      if      (up == "WRITE") access = Memory::MEM_WRITE;
+      else if (up == "RAM"  && bank < 0) access = Memory::MEM_RAM_LOWER_BANK;
+      else if (up == "RAM"  )            access = Memory::MEM_RAM_BANK;
+      else if (up == "ROM"  && bank < 0) access = Memory::MEM_LOWER_ROM;
+      else if (up == "ROM"  )            access = Memory::MEM_ROM_BANK;
+      else if (up == "CART" )            access = Memory::MEM_CART_SLOT;
+
+      if (!IsBankInRange(access, bank))
+      {
+         response = { {"error", "invalid bank"} };
+         SendResponse(response);
+         return;
+      }
+
+      // For non-READ sources: read the whole address space into a local buffer.
+      // ROM banks are 0x4000 bytes; READ/WRITE and the RAM pages (lower 64 KB and each
+      // expansion page) span 0x10000.
+      // Always snapshot even for MEM_READ: Memory::Get() has a bank-switching
+      // side effect (SwitchBank) that corrupts the active cartridge bank when
+      // the disassembler reads sequentially across bank boundaries.
+      const uint32_t BUF_SIZE = (access == Memory::MEM_READ || access == Memory::MEM_WRITE
+                                 || access == Memory::MEM_RAM_LOWER_BANK
+                                 || access == Memory::MEM_RAM_BANK)
+                                ? 0x10000u : 0x4000u;
+      std::vector<unsigned char> bankBuf(BUF_SIZE, 0);
+      mem->GetDebugValue(bankBuf.data(), 0,
+                         BUF_SIZE,
+                         access,
+                         static_cast<unsigned int>(bank < 0 ? 0 : bank));
+
+      Z80Desassember* dasm = emulation_->GetDisassembler();
+
+      auto readByte = [&bankBuf, BUF_SIZE](unsigned short a) -> unsigned char {
+         return bankBuf[a % BUF_SIZE];
+      };
+
+      json arr = json::array();
+      for (unsigned int i = 0; i < count; i++)
+      {
+         char mnemonic[16], argument[16];
+         int increment = dasm->DasmMnemonicEx(pc, readByte, mnemonic, argument);
+         if (increment <= 0) increment = 1;
+
+         // Format: "MNEMONIC ARGUMENT" in a fixed-width field
+         char out_buffer[128];
+         std::snprintf(out_buffer, sizeof(out_buffer), "%s %s", mnemonic, argument);
+
+         // Raw bytes for hex/ASCII display column
+         int byteCount = (increment <= 4) ? increment : 1;
+         json bytesArr = json::array();
+         for (int b = 0; b < byteCount; b++)
+            bytesArr.push_back(readByte(static_cast<uint16_t>(pc + b)));
+
+         arr.push_back({
+            { "address",     pc          },
+            { "instruction", out_buffer  },
+            { "bytes",       bytesArr    }
+         });
+         pc += static_cast<uint16_t>(increment);
+      }
+      response = {
+         { "type",         "response"    },
+         { "command",      "disassemble" },
+         { "instructions", arr           },
+      };
+      SendResponse(response);
+   }
+   else if (cmd == "getCrtcState")
+   {
+      HandleGetCrtcState();
+   }
+   else if (cmd == "getGateArrayState")
+   {
+      HandleGetGateArrayState();
+   }
+   else if (cmd == "getPsgState")
+   {
+      HandleGetPsgState();
+   }
+   else if (cmd == "getPpiState")
+   {
+      HandleGetPpiState();
+   }
+   else if (cmd == "getFdcState")
+   {
+      HandleGetFdcState();
+   }
+   else if (cmd == "getTapeState")
+   {
+      HandleGetTapeState();
+   }
+   else if (cmd == "getAsicState")
+   {
+      HandleGetAsicState();
+   }
+   else if (cmd == "getTrackRaw")
+   {
+      HandleGetTrackRaw(request);
+   }
+   else if (cmd == "getTapeSignal")
+   {
+      HandleGetTapeSignal();
+   }
+   else if (cmd == "getScreen")
+   {
+      HandleGetScreen();
+   }
+   else if (cmd == "subscribeScreen")
+   {
+      screen_subscribed_ = true;
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "unsubscribeScreen")
+   {
+      screen_subscribed_ = false;
+      response = { {"status", "ok"} };
+      SendResponse(response);
+   }
+   else if (cmd == "insertDisk")
+   {
+      int drive = request.value("drive", 0);
+      std::string path = request.value("path", "");
+      if (!IsDriveInRange(drive))
+      {
+         SendResponse({ {"error", "invalid drive"} });
+         return;
+      }
+      int result = emulation_->LoadDisk(path.c_str(), drive, false);
+      json resp;
+      if (result == 0)
+         resp = { {"status", "ok"} };
+      else
+         resp = { {"error", "LoadDisk failed"}, {"code", result} };
+      SendResponse(resp);
+   }
+   else if (cmd == "insertTape")
+   {
+      std::string path = request.value("path", "");
+      int result = emulation_->LoadTape(path.c_str());
+      json resp;
+      if (result == 0)
+         resp = { {"status", "ok"} };
+      else
+         resp = { {"error", "LoadTape failed"}, {"code", result} };
+      SendResponse(resp);
+   }
+   else if (cmd == "getEmulatorSettings")
+   {
+      HandleGetEmulatorSettings();
+   }
+   else if (cmd == "getEmulatorSetting")
+   {
+      HandleGetEmulatorSetting(request);
+   }
+   else if (cmd == "setEmulatorSetting")
+   {
+      HandleSetEmulatorSetting(request);
+   }
+   else if (cmd == "setEmulatorSettings")
+   {
+      HandleSetEmulatorSettings(request);
+   }
+   else if (cmd == "sendKey")
+   {
+      int line    = request.value("line", -1);
+      int bit     = request.value("bit", -1);
+      bool pressed = request.value("pressed", false);
+      if (line >= 0 && line <= 9 && bit >= 0 && bit <= 7)
+      {
+         IKeyboard* kb = emulation_->GetKeyboardHandler();
+         unsigned int scanCode = kb->GetScanCode(
+            static_cast<unsigned int>(line),
+            static_cast<unsigned int>(bit));
+         kb->SendScanCode(scanCode, pressed);
+         response = { {"status", "ok"} };
+      }
+      else
+      {
+         response = { {"error", "invalid line/bit"} };
+      }
+      SendResponse(response);
+   }
+   else
+   {
+      response = { {"error", "unknown command"} };
+      SendResponse(response);
+   }
+}
+
 void DebugServer::HandleReadMemory(const nlohmann::json& request)
 {
     uint32_t address = request.value("address", 0);
@@ -873,6 +953,12 @@ void DebugServer::HandleReadMemory(const nlohmann::json& request)
     else if (up == "ROM"  ) access = Memory::MEM_ROM_BANK;
     else if (up == "CART" ) access = Memory::MEM_CART_SLOT;
 
+    if (!IsBankInRange(access, bank))
+    {
+        SendResponse({ {"error", "invalid bank"} });
+        return;
+    }
+
     std::vector<unsigned char> buf(size, 0);
     mem->GetDebugValue(buf.data(), static_cast<uint16_t>(address & 0xFFFF), size, access, bank);
 
@@ -897,7 +983,7 @@ void DebugServer::HandleGetMemBanks()
     // ── Extended RAM banks (up to 8) ──────────────────────────────────────────
     bool* ramAvail = mem->GetAvailableRam();
     int nbRam = 0;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < kNbExtendedRamBanks; i++)
     {
         if (ramAvail && ramAvail[i])
         {
@@ -917,7 +1003,7 @@ void DebugServer::HandleGetMemBanks()
     // ── Upper ROM banks (0-255) ───────────────────────────────────────────────
     bool* romAvail = mem->GetAvailableROM();
     int nbRom = 0;
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i < kNbUpperRomBanks; i++)
     {
         if (romAvail && romAvail[i])
         {
@@ -1321,10 +1407,16 @@ void DebugServer::HandleGetTrackRaw(const json& request)
     int side  = request.value("side",  0);
     int track = request.value("track", 0);
 
+    json resp;
+    if (!IsDriveInRange(drive) || side < 0 || track < 0) {
+        resp["error"] = "Invalid drive/side/track";
+        SendResponse(resp);
+        return;
+    }
+
     FDC* fdc = emulation_->GetEngine()->GetFDC();
     IDisk* disk = fdc->GetIDisk(drive);
 
-    json resp;
     if (!disk || !fdc->IsDiskPresent(drive)) {
         resp["error"] = "No disk in drive";
         SendResponse(resp);
