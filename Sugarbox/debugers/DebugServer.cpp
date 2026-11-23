@@ -1072,7 +1072,8 @@ void DebugServer::HandleGetCrtcState()
     resp["vertAdj"]     = crtc->vertical_adjust_counter_;
     resp["ma"]          = crtc->ma_;
     resp["hPulse"]      = crtc->horinzontal_pulse_;
-    resp["vertPulse"]   = crtc->scanline_vbl_;
+    // VSYNC width counter C3h in lines : the CRTC 1 counts half lines (CPCCore CRTC_1.cpp)
+    resp["vertPulse"]   = (crtc->type_crtc_ == CRTC::UM6845R) ? (crtc->scanline_vbl_ >> 1) : crtc->scanline_vbl_;
     resp["r52"]         = emulation_->GetEngine()->GetVGA()->interrupt_counter_;
     resp["beamX"]       = emulation_->GetEngine()->GetMonitor()->GetX();
     resp["beamY"]       = emulation_->GetEngine()->GetMonitor()->GetY();
