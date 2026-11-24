@@ -25,11 +25,23 @@ jobs:
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on:  windows-latest
+    # One job and one package per frontend. The package has the frontend in its name, the binary is always Sugarbox.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - frontend: Qt
+          options: -DSUGARBOX_BUILD_QT=ON -DSUGARBOX_BUILD_SDL=OFF
+          directory: Sugarbox
+        - frontend: SDL
+          options: -DSUGARBOX_BUILD_QT=OFF -DSUGARBOX_BUILD_SDL=ON
+          directory: SugarboxSDL
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Install Qt
+      if: matrix.frontend == 'Qt'
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.6.2'
@@ -48,7 +60,7 @@ jobs:
     - name: Configure CMake
       run: |
         echo 'Version : '  ${{ inputs.version }}
-        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}' -DSUGARBOX_BUILD_SDL=ON
+        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}' ${{ matrix.options }}
 
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
@@ -61,17 +73,8 @@ jobs:
         cd Sugarbox\debugers
         python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\SugarboxV2Qt.exe
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\${{ matrix.directory }}\Release\Sugarbox.exe
         SUGARBOX_PORT: 1234
-
-    # The same tests with the SDL frontend (hidden: it runs without GPU if there is none)
-    - name: Run protocol integration tests (SugarboxV2SDL)
-      run: |
-        cd Sugarbox\debugers
-        python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
-      env:
-        SUGARBOX_BINARY: ${{ github.workspace }}\build\SugarboxSDL\Release\SugarboxV2SDL.exe
-        SUGARBOX_PORT: 1235
 
     - name: Install
       run: cmake --install ${{github.workspace}}\build
@@ -84,7 +87,7 @@ jobs:
     - name: Archive zip
       uses: actions/upload-artifact@v4
       with:
-          name: SugarboxV2
+          name: SugarboxV2${{ matrix.frontend }}-Windows
           path: ${{github.workspace}}\build\*.7z
           
           

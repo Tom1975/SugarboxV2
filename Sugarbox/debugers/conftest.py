@@ -7,7 +7,7 @@ Usage:
     pytest test_protocol.py test_conformance.py -v
 
 Environment variables:
-    SUGARBOX_BINARY   path to Sugarbox binary  (default: ../../build/Sugarbox/SugarboxV2Qt)
+    SUGARBOX_BINARY   path to Sugarbox binary  (default: ../../build/Sugarbox/Sugarbox)
     SUGARBOX_PORT     TCP port for debug server (default: 1234)
 """
 
@@ -26,17 +26,17 @@ _IS_WINDOWS = platform.system() == "Windows"
 _IS_MACOS   = platform.system() == "Darwin"
 
 # Default binary path: .exe on Windows, plain executable elsewhere.
-# On macOS a Qt app may be bundled as SugarboxV2Qt.app — check both locations.
+# On macOS a Qt app may be bundled as Sugarbox.app — check both locations.
 def _default_binary() -> str:
     if _IS_WINDOWS:
-        return os.path.join(REPO_ROOT, "build", "Sugarbox", "Release", "SugarboxV2Qt.exe")
+        return os.path.join(REPO_ROOT, "build", "Sugarbox", "Release", "Sugarbox.exe")
     if _IS_MACOS:
         # Prefer plain binary; fall back to .app bundle
-        plain = os.path.join(REPO_ROOT, "build", "Sugarbox", "SugarboxV2Qt")
+        plain = os.path.join(REPO_ROOT, "build", "Sugarbox", "Sugarbox")
         bundle = os.path.join(REPO_ROOT, "build", "Sugarbox",
-                              "SugarboxV2Qt.app", "Contents", "MacOS", "SugarboxV2Qt")
+                              "Sugarbox.app", "Contents", "MacOS", "Sugarbox")
         return plain if os.path.isfile(plain) else bundle
-    return os.path.join(REPO_ROOT, "build", "Sugarbox", "SugarboxV2Qt")
+    return os.path.join(REPO_ROOT, "build", "Sugarbox", "Sugarbox")
 
 
 STARTUP_TIMEOUT = 30  # seconds (Windows CI can be slower)

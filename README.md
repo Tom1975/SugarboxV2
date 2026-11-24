@@ -8,10 +8,12 @@
 
 Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+. Two frontends share the same emulation:
 
-| Binary | Interface | Platforms |
+| Package | Interface | Platforms |
 |--------|-----------|-----------|
 | **SugarboxV2Qt** | Qt 6 | Windows, Linux, macOS |
 | **SugarboxV2SDL** | SDL3 and Dear ImGui | Windows, Linux |
+
+The binary is named `Sugarbox` in both packages.
 
 ## Table of contents
 
@@ -28,8 +30,8 @@ Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+. Two frontends shar
 
 ## What's new in 2.2
 
-- **SugarboxV2SDL**: a new SDL3 frontend (settings window, gamepads, scaling and scanlines, debugger windows). The Qt
-  binary is now named `SugarboxV2Qt` (it was `Sugarbox`).
+- **SugarboxV2SDL**: a new SDL3 frontend (settings window, gamepads, scaling and scanlines, debugger windows).
+  Each frontend has its own package.
 - **CRTC emulation reworked** for the five types (0 to 4), following the *Amstrad CPC CRTC Compendium* and checked
   against SHAKER screens photographed on real machines.
 - **Gate Array, interrupts and I/O**: inks, mode changes, VSYNC and INT timings, PAL and bus conflicts.
@@ -53,7 +55,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ### Windows
 
-Extract the `.7z` archive and run `SugarboxV2Qt.exe` or `SugarboxV2SDL.exe`. No installer needed.
+One archive per frontend (`SugarboxV2Qt-<version>-Windows.7z`, `SugarboxV2SDL-<version>-Windows.7z`). Extract it and run
+`Sugarbox.exe`. No installer needed.
 
 ### Linux (x86_64, Ubuntu 24.04 or later)
 
@@ -66,7 +69,7 @@ chmod +x SugarboxV2Qt-Linux-x86_64.AppImage
 
 ### macOS
 
-Extract the `.tar.gz` archive and open `SugarboxV2Qt.app`.
+Extract the `.tar.gz` archive and open `Sugarbox.app`.
 
 ---
 
@@ -75,7 +78,8 @@ Extract the `.tar.gz` archive and open `SugarboxV2Qt.app`.
 **Requirements:** CMake ≥ 3.16, Qt 6.5+ (Core, Widgets, WebSockets, OpenGLWidgets), a C++17 compiler.
 
 The SDL frontend is off by default. Add `-DSUGARBOX_BUILD_SDL=ON` to build it: SDL3 and Dear ImGui are downloaded when
-CMake configures. `-DSUGARBOX_BUILD_QT=OFF` leaves the Qt one out (Qt is then not needed). On Linux, SDL3 needs the
+CMake configures. `-DSUGARBOX_BUILD_QT=OFF` leaves the Qt one out (Qt is then not needed). With
+both, only the Qt one is installed and packaged. On Linux, SDL3 needs the
 development packages listed in [`.github/workflows/ubuntu.yml`](.github/workflows/ubuntu.yml).
 
 ### Clone
@@ -99,7 +103,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
-Binaries: `build/Sugarbox/SugarboxV2Qt`, `build/SugarboxSDL/SugarboxV2SDL`
+Binaries: `build/Sugarbox/Sugarbox` (Qt), `build/SugarboxSDL/Sugarbox` (SDL)
 
 ### Windows
 
@@ -111,7 +115,7 @@ cmake --build build --config Release
 cmake --install build
 ```
 
-Binaries: `build\Sugarbox\Release\SugarboxV2Qt.exe`, `build\SugarboxSDL\Release\SugarboxV2SDL.exe`
+Binaries: `build\Sugarbox\Release\Sugarbox.exe` (Qt), `build\SugarboxSDL\Release\Sugarbox.exe` (SDL)
 
 ### macOS
 
@@ -166,7 +170,7 @@ Extra options: `--speed <gsync|vsync|sound|full|percentage>`, and the media to l
 ### Command-line options
 
 ```
-SugarboxV2Qt [options]
+Sugarbox [options]
 
   -cfg, --config <name>    Load a machine configuration by name
   -cart, --cartridge <path> Insert a cartridge (.cpr)
@@ -179,7 +183,7 @@ SugarboxV2Qt [options]
 Example — headless with debug server:
 
 ```bash
-./SugarboxV2Qt --hide -d --ds 1234
+./Sugarbox --hide -d --ds 1234
 ```
 
 ---
@@ -205,7 +209,7 @@ pip install pytest
 
 # Run against a running emulator
 cd Sugarbox/debugers
-SUGARBOX_BINARY=../../build/Sugarbox/SugarboxV2Qt \
+SUGARBOX_BINARY=../../build/Sugarbox/Sugarbox \
 pytest test_protocol.py z80-debug-adapter/test_conformance.py -v
 ```
 

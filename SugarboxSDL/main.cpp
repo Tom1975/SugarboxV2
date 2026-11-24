@@ -132,7 +132,7 @@ namespace
    {
       // The application has no console on Windows : the help and the errors go in a message box
       static const char* usage =
-         "SugarboxV2SDL [options] [media...]\n"
+         "Sugarbox [options] [media...]\n"
          "  -s, --csl <script>    Run a CSL script\n"
          "  --cfg <configuration> Configuration to load\n"
          "  --cart <path>         Cartridge to insert\n"

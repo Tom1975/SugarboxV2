@@ -155,15 +155,13 @@ IF(APPLE)
    set_target_properties(Sugarbox PROPERTIES
        BUNDLE True
        MACOSX_BUNDLE_GUI_IDENTIFIER org.sugarbox.emulator.qt
-       MACOSX_BUNDLE_BUNDLE_NAME SugarboxV2Qt
+       MACOSX_BUNDLE_BUNDLE_NAME Sugarbox
        MACOSX_BUNDLE_BUNDLE_VERSION "${SUGARBOX_VERSION_NUMBER}"
        MACOSX_BUNDLE_SHORT_VERSION_STRING "${SUGARBOX_VERSION_NUMBER}"
        MACOSX_BUNDLE_COPYRIGHT "Thomas GUILLEMIN"
    )
  
 endif()
-
-set_target_properties(Sugarbox PROPERTIES OUTPUT_NAME SugarboxV2Qt)
 
 target_include_directories(Sugarbox PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../json/single_include/nlohmann)
 target_compile_definitions(Sugarbox PRIVATE SUGARBOX_VERSION="${SUGARBOX_VERSION_NUMBER}" WIN32_LEAN_AND_MEAN)

@@ -48,30 +48,15 @@ jobs:
           mkdir release_bin
           cd release_bin
 
-      - name: Download artifact Ubuntu
+      - name: Download the packages
         uses: actions/download-artifact@v4
-        id: art-ubuntu
         with:
-          name: SugarboxV2Ubuntu
-
-      - name: Download artifact Windows
-        uses: actions/download-artifact@v4
-        id: art-windows
-        with:
-          name: SugarboxV2
-
-      - name: Download artifact MacOS
-        uses: actions/download-artifact@v4
-        id: art-macos
-        with:
-          name: SugarboxV2MacOS
+          pattern: SugarboxV2*
+          path: release_bin
+          merge-multiple: true
 
       - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            ${{ steps.art-ubuntu.outputs.download-path }}/*
-            ${{ steps.art-windows.outputs.download-path }}/*
-            ${{ steps.art-macos.outputs.download-path }}/*
-
+          files: release_bin/*

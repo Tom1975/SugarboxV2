@@ -75,7 +75,7 @@ set(SRCS
 )
 
 add_executable(SugarboxSDL WIN32 ${SRCS} ${SHARED_SRCS})
-set_target_properties(SugarboxSDL PROPERTIES OUTPUT_NAME SugarboxV2SDL)
+set_target_properties(SugarboxSDL PROPERTIES OUTPUT_NAME Sugarbox)
 target_compile_definitions(SugarboxSDL PRIVATE SUGARBOX_VERSION="${SUGARBOX_VERSION_NUMBER}")
 source_group("Shared" FILES ${SHARED_SRCS})
 
@@ -108,6 +108,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
    target_link_libraries(SugarboxSDL PRIVATE pthread)
 endif()
 
-# Runs next to the Qt application : same ROM, CONF, Keyboards and Sugarbox.ini
-install(TARGETS SugarboxSDL RUNTIME DESTINATION . BUNDLE DESTINATION .)
+# Same name as the Qt application : not installed over it
+if(NOT SUGARBOX_BUILD_QT)
+   install(TARGETS SugarboxSDL RUNTIME DESTINATION . BUNDLE DESTINATION .)
+endif()
 set_property(TARGET SugarboxSDL PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")

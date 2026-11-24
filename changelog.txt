@@ -1,7 +1,7 @@
 Sugarbox changelog
 ------------------
 v2.2.0 -
-   * Add SugarboxV2SDL, a SDL3 frontend (Windows, Linux). The Qt binary is renamed SugarboxV2Qt
+   * Add a SDL3 frontend (Windows, Linux). One package per frontend : SugarboxV2Qt and SugarboxV2SDL
    * CRTC emulation reworked for the types 0 to 4 (CRTC Compendium, SHAKER, measures on real machines)
    * Gate Array, interrupts and I/O : inks, mode changes, VSYNC and INT timings, PAL and bus conflicts
    * CPC+ / GX4000 : GX4000 console support in the core, ASIC DMA sequencer, malformed cartridges refused
