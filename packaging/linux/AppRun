@@ -6,4 +6,8 @@ cd "$HERE/usr"
 export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export QT_PLUGIN_PATH="$HERE/usr/plugins"
 export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/plugins/platforms"
-exec "$HERE/usr/Sugarbox" "$@"
+for FRONTEND in SugarboxV2Qt SugarboxV2SDL; do
+    [ -x "$HERE/usr/$FRONTEND" ] && exec "$HERE/usr/$FRONTEND" "$@"
+done
+echo "Sugarbox: no binary found in the AppImage" >&2
+exit 1

@@ -61,16 +61,16 @@ jobs:
         cd Sugarbox\debugers
         python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\Sugarbox.exe
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\SugarboxV2Qt.exe
         SUGARBOX_PORT: 1234
 
     # The same tests with the SDL frontend (hidden: it runs without GPU if there is none)
-    - name: Run protocol integration tests (SugarboxSDL)
+    - name: Run protocol integration tests (SugarboxV2SDL)
       run: |
         cd Sugarbox\debugers
         python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}\build\SugarboxSDL\Release\SugarboxSDL.exe
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\SugarboxSDL\Release\SugarboxV2SDL.exe
         SUGARBOX_PORT: 1235
 
     - name: Install

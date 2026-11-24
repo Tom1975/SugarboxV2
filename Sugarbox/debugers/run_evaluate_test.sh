@@ -9,7 +9,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BINARY="$REPO_ROOT/build/Sugarbox/Sugarbox"
+BINARY="$REPO_ROOT/build/Sugarbox/SugarboxV2Qt"
 TEST_SCRIPT="$SCRIPT_DIR/test_evaluate.py"
 PORT=1234
 TIMEOUT=10  # seconds to wait for server

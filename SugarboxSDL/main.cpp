@@ -132,7 +132,7 @@ namespace
    {
       // The application has no console on Windows : the help and the errors go in a message box
       static const char* usage =
-         "SugarboxSDL [options] [media...]\n"
+         "SugarboxV2SDL [options] [media...]\n"
          "  -s, --csl <script>    Run a CSL script\n"
          "  --cfg <configuration> Configuration to load\n"
          "  --cart <path>         Cartridge to insert\n"
@@ -212,7 +212,7 @@ namespace
    {
       if (!ParseCommandLine(argc, argv)) return 0;
 
-      SDL_SetAppMetadata("Sugarbox", "2.1.1", "org.sugarbox.emulator");
+      SDL_SetAppMetadata("Sugarbox", SUGARBOX_VERSION, "org.sugarbox.emulator");
       // Read before the emulation : the window and the speed come from them
       settings_.Load("Sugarbox.ini");
       if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))

@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
    QCoreApplication::setOrganizationName("Sugarbox");
    QCoreApplication::setApplicationName("Sugarbox");
-   QCoreApplication::setApplicationVersion("2.0.1");
+   QCoreApplication::setApplicationVersion(SUGARBOX_VERSION);
    QCommandLineParser parser;
    parser.setApplicationDescription(QCoreApplication::applicationName());
    parser.addHelpOption();

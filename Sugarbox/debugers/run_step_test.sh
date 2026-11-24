@@ -1,7 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BINARY="$REPO_ROOT/build/Sugarbox/Sugarbox"
+BINARY="$REPO_ROOT/build/Sugarbox/SugarboxV2Qt"
 PORT=1234
 TIMEOUT=10
 

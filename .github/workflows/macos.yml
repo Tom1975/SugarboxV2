@@ -59,7 +59,7 @@ jobs:
 
     - name: Find Sugarbox binary
       run: |
-        BINARY=$(find ${{ github.workspace }}/build/Sugarbox -type f -name "Sugarbox" | head -1)
+        BINARY=$(find ${{ github.workspace }}/build/Sugarbox -type f -name "SugarboxV2Qt" | head -1)
         echo "SUGARBOX_BINARY=$BINARY" >> $GITHUB_ENV
         echo "Found binary: $BINARY"
 

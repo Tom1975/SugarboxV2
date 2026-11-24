@@ -63,16 +63,16 @@ jobs:
         cd Sugarbox/debugers
         pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/SugarboxV2Qt
         SUGARBOX_PORT: 1234
 
     # The same tests with the SDL frontend, under xvfb (hidden: it runs without GPU if there is none)
-    - name: Run protocol integration tests (SugarboxSDL)
+    - name: Run protocol integration tests (SugarboxV2SDL)
       run: |
         cd Sugarbox/debugers
         pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}/build/SugarboxSDL/SugarboxSDL
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/SugarboxSDL/SugarboxV2SDL
         SUGARBOX_PORT: 1235
 
     - name: Download linuxdeploy + Qt plugin
@@ -88,22 +88,38 @@ jobs:
         cmake --install build --prefix AppDir/usr
         cp packaging/linux/AppRun AppDir/AppRun
         chmod +x AppDir/AppRun
+        # One AppImage per frontend, on the same files ; the deployed Qt libraries are for the Qt one only
+        cp -r AppDir AppDirSDL
+        rm AppDir/usr/SugarboxV2SDL AppDirSDL/usr/SugarboxV2Qt
+        rm -rf AppDirSDL/usr/plugins AppDirSDL/usr/lib
+        sed 's/Exec=SugarboxV2Qt/Exec=SugarboxV2SDL/' Sugarbox/sugarbox.desktop > sugarbox-sdl.desktop
 
     - name: Build AppImage
       env:
         QMAKE: /usr/bin/qmake6
-        OUTPUT: Sugarbox-Linux-x86_64.AppImage
+        OUTPUT: SugarboxV2Qt-Linux-x86_64.AppImage
       run: |
         ./linuxdeploy.AppImage \
           --appdir AppDir \
-          --executable AppDir/usr/Sugarbox \
+          --executable AppDir/usr/SugarboxV2Qt \
           --desktop-file Sugarbox/sugarbox.desktop \
           --icon-file Sugarbox/sugarbox.svg \
           --plugin qt \
+          --output appimage
+
+    - name: Build AppImage (SDL)
+      env:
+        OUTPUT: SugarboxV2SDL-Linux-x86_64.AppImage
+      run: |
+        ./linuxdeploy.AppImage \
+          --appdir AppDirSDL \
+          --executable AppDirSDL/usr/SugarboxV2SDL \
+          --desktop-file sugarbox-sdl.desktop \
+          --icon-file Sugarbox/sugarbox.svg \
           --output appimage
 
     - name: Archive AppImage
       uses: actions/upload-artifact@v4
       with:
         name: SugarboxV2Ubuntu
-        path: Sugarbox-*.AppImage
+        path: SugarboxV2*.AppImage

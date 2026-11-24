@@ -75,6 +75,8 @@ set(SRCS
 )
 
 add_executable(SugarboxSDL WIN32 ${SRCS} ${SHARED_SRCS})
+set_target_properties(SugarboxSDL PROPERTIES OUTPUT_NAME SugarboxV2SDL)
+target_compile_definitions(SugarboxSDL PRIVATE SUGARBOX_VERSION="${SUGARBOX_VERSION_NUMBER}")
 source_group("Shared" FILES ${SHARED_SRCS})
 
 target_include_directories(SugarboxSDL PRIVATE

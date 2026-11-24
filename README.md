@@ -6,16 +6,44 @@
 
 # SugarboxV2
 
-Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+. Built with Qt 6, runs on Windows, Linux and macOS.
+Amstrad CPC emulator — CPC 464, CPC 664, CPC 6128 and CPC+. Two frontends share the same emulation:
+
+| Binary | Interface | Platforms |
+|--------|-----------|-----------|
+| **SugarboxV2Qt** | Qt 6 | Windows, Linux, macOS |
+| **SugarboxV2SDL** | SDL3 and Dear ImGui | Windows, Linux |
 
 ## Table of contents
 
+- [What's new in 2.2](#whats-new-in-22)
 - [Install](#install)
 - [Build](#build)
 - [Usage](#usage)
 - [Debug server](#debug-server)
 - [VS Code debug extension](#vs-code-debug-extension)
+- [Accuracy](#accuracy)
 - [Credits](#credits)
+
+---
+
+## What's new in 2.2
+
+- **SugarboxV2SDL**: a new SDL3 frontend (settings window, gamepads, scaling and scanlines, debugger windows). The Qt
+  binary is now named `SugarboxV2Qt` (it was `Sugarbox`).
+- **CRTC emulation reworked** for the five types (0 to 4), following the *Amstrad CPC CRTC Compendium* and checked
+  against SHAKER screens photographed on real machines.
+- **Gate Array, interrupts and I/O**: inks, mode changes, VSYNC and INT timings, PAL and bus conflicts.
+- **CPC+ / GX4000**: GX4000 console support in the core, ASIC DMA sequencer, stricter cartridge loading.
+- **CTM644 monitor model**: the horizontal AFC follows the sync pulses.
+- **Tape**: new input model and drive start-up; Speedlock loaders fixed.
+- **Disk**: FDC status and FORMAT fixes.
+- **G-Sync mode**: frames paced on the display, sound resampled to follow.
+- **Snapshots**: the real CPC type is saved, CRTC and PSG states fixed.
+- **Reliability**: invalid debug requests no longer close the emulator; CSL escape keys, `reset soft` and freezes fixed;
+  power on no longer leaves the previous picture or colours; sound no longer blocks the emulation.
+
+Some behaviours are deduced from measures and not proven yet: see
+[the real CPC test list](https://github.com/Tom1975/CPCCore/blob/master/UnitTests/RealCpc/README.md).
 
 ---
 
@@ -25,31 +53,30 @@ Download the latest release for your platform from the [Releases](https://github
 
 ### Windows
 
-Unzip and run `Sugarbox.exe`. No installer needed.
+Extract the `.7z` archive and run `SugarboxV2Qt.exe` or `SugarboxV2SDL.exe`. No installer needed.
 
-### Linux (Ubuntu / Debian)
+### Linux (x86_64, Ubuntu 24.04 or later)
+
+One AppImage per frontend:
 
 ```bash
-sudo apt-get install libopenal1
+chmod +x SugarboxV2Qt-Linux-x86_64.AppImage
+./SugarboxV2Qt-Linux-x86_64.AppImage
 ```
-
-Unzip and run `./Sugarbox`.
 
 ### macOS
 
-Install OpenAL via Homebrew if missing:
-
-```bash
-brew install openal-soft
-```
-
-Unzip and open `Sugarbox.app`.
+Extract the `.tar.gz` archive and open `SugarboxV2Qt.app`.
 
 ---
 
 ## Build
 
 **Requirements:** CMake ≥ 3.16, Qt 6.5+ (Core, Widgets, WebSockets, OpenGLWidgets), a C++17 compiler.
+
+The SDL frontend is off by default. Add `-DSUGARBOX_BUILD_SDL=ON` to build it: SDL3 and Dear ImGui are downloaded when
+CMake configures. `-DSUGARBOX_BUILD_QT=OFF` leaves the Qt one out (Qt is then not needed). On Linux, SDL3 needs the
+development packages listed in [`.github/workflows/ubuntu.yml`](.github/workflows/ubuntu.yml).
 
 ### Clone
 
@@ -72,7 +99,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
-Binary: `build/Sugarbox/Sugarbox`
+Binaries: `build/Sugarbox/SugarboxV2Qt`, `build/SugarboxSDL/SugarboxV2SDL`
 
 ### Windows
 
@@ -84,7 +111,7 @@ cmake --build build --config Release
 cmake --install build
 ```
 
-Binary: `build\Sugarbox\Release\Sugarbox.exe`
+Binaries: `build\Sugarbox\Release\SugarboxV2Qt.exe`, `build\SugarboxSDL\Release\SugarboxV2SDL.exe`
 
 ### macOS
 
@@ -101,35 +128,45 @@ make -j$(sysctl -n hw.logicalcpu)
 
 ## Usage
 
-Double-click the binary to launch with a default CPC 6128 FR configuration.
+Double-click the binary to launch with a default CPC 6128 FR configuration. Files can be dropped on the window.
 
-### Machine configurations
+### Qt frontend
 
-Configurations are in `Sugarbox/CONF/`. Use **File → Configuration** to switch between them (CPC 464, 664, 6128, various locales, DDI, CRTC variants…).
-
-### Loading media
+Choose the machine in the toolbar list (the configurations are in `CONF/`).
 
 | Action | Menu |
 |--------|------|
-| Load disk image (`.dsk`) | **File → Drive A / Drive B** |
-| Load tape (`.cdt`, `.wav`) | **File → Tape** |
-| Load snapshot (`.sna`) | **File → Snapshot → Load** |
-| Load cartridge (`.cpr`) | **File → Cartridge** |
-
-### Keyboard shortcuts
+| Disks: insert, blank, flip, save | **Disks → Disk 1 / Disk 2** |
+| Tapes: `.wav` `.cdt` `.csw` `.tzx` | **Tape** |
+| Snapshots and SNR recordings | **Snapshots** |
+| Cartridges (Plus only) | **Cartridges → Load Cartridge** |
+| Autorun, paste, CSL script | **Files** |
+| Speed: 10% to 400%, VSync, Sound, GSync, max | **Controls → Speed** |
 
 | Key | Action |
 |-----|--------|
-| F1 | Reset |
-| F2 | Pause / Resume |
-| F5 | Save snapshot |
-| F6 | Load snapshot |
-| F7 | Insert disk (drive A) |
+| F1 | Full screen |
+| F5 (debugger) | Run / break |
+| F9 (debugger) | Toggle breakpoint |
+| F10 / F11 / Shift+F11 (debugger) | Step / step in / step out |
+
+### SDL frontend
+
+The menus follow the same tasks: **File**, **Control**, **Machine**, **Disk**, **Tape**, **Snapshot**, **Cartridge**,
+**Debug**, **Display** and **Sound**. The preferences are saved in `Sugarbox.ini`.
+
+| Key | Action |
+|-----|--------|
+| Alt+Enter | Full screen |
+| F12 | Screenshot |
+| F5, F10, F11, Shift+F11 (debugger) | Run / break, step over, step into, step out |
+
+Extra options: `--speed <gsync|vsync|sound|full|percentage>`, and the media to load (disk, tape, snapshot…).
 
 ### Command-line options
 
 ```
-Sugarbox [options]
+SugarboxV2Qt [options]
 
   -cfg, --config <name>    Load a machine configuration by name
   -cart, --cartridge <path> Insert a cartridge (.cpr)
@@ -142,7 +179,7 @@ Sugarbox [options]
 Example — headless with debug server:
 
 ```bash
-./Sugarbox --hide -d --ds 1234
+./SugarboxV2Qt --hide -d --ds 1234
 ```
 
 ---
@@ -168,7 +205,7 @@ pip install pytest
 
 # Run against a running emulator
 cd Sugarbox/debugers
-SUGARBOX_BINARY=../../build/Sugarbox/Sugarbox \
+SUGARBOX_BINARY=../../build/Sugarbox/SugarboxV2Qt \
 pytest test_protocol.py z80-debug-adapter/test_conformance.py -v
 ```
 
@@ -184,6 +221,16 @@ See the [extension repository](https://github.com/Tom1975/amstrad-cpc-debug) for
 
 ---
 
+## Accuracy
+
+The emulation core is [CPCCore](https://github.com/Tom1975/CPCCore). Its tests cover the CRTC Compendium chapter by
+chapter, 163 disk and tape images, and the SHAKER 2.7 modules on CRTC 0 to 4. Remaining differences are listed in
+[COMPENDIUM_TESTS.md](https://github.com/Tom1975/CPCCore/blob/master/UnitTests/COMPENDIUM_TESTS.md).
+
+---
+
 ## Credits
 
+- **Longshot (Serge Querné)** / [Logon System](http://www.logonsystem.eu): *Amstrad CPC CRTC Compendium*
+  (CC BY-NC-ND 4.0) and [SHAKER](https://shaker.logonsystem.eu)
 - Sugarbox logo by **Barjack**
