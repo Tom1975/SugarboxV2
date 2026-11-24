@@ -6,6 +6,9 @@
 
 #include "ALSoundMixer.h"
 
+// Smallest number of buffers kept ahead when the emulation waits on the sound (20 ms each)
+static const int kMinBufferForSync = 2;
+
 ALSoundMixer::ALSoundMixer():sample_rate_(0), 
    sample_bits_(0), 
    nb_channels_(0), 
@@ -17,8 +20,10 @@ ALSoundMixer::ALSoundMixer():sample_rate_(0),
    emulation_(nullptr),
    mute_(false),
    volume_(1.0),
-   buffer_size_for_sync_(1),
-   sync_on_sound_(false)
+   sync_on_sound_(false),
+   buffer_size_for_sync_(kMinBufferForSync),
+   last_underrun_(std::chrono::steady_clock::now()),
+   prebuffer_buffers_(0)
 {
    device_ = alcOpenDevice(NULL);
    if (device_) 
@@ -115,8 +120,10 @@ void ALSoundMixer::Reinit()
    {
       wav_index.status_ = IWaveHDR::UNUSED;
    }
+   held_buffers_.clear();
    play_ = false;
-   buffer_size_for_sync_ = 1;
+   buffer_size_for_sync_ = kMinBufferForSync;
+   last_underrun_ = std::chrono::steady_clock::now();
 }
 
 unsigned int ALSoundMixer::GetMaxValue()
@@ -200,29 +207,114 @@ IWaveHDR* ALSoundMixer::GetFreeBuffer()
    return next_buffer;
 }
 
+void ALSoundMixer::QueueBuffer(OAWaveHDR* oal_wav)
+{
+   alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
+   alSourceQueueBuffers(source_, 1, &oal_wav->buffer);
+   oal_wav->status_ = IWaveHDR::INQUEUE;
+}
+
+void ALSoundMixer::ReleaseProcessedBuffers()
+{
+   ALint nb_processed_buffers = 0;
+   alGetSourcei(source_, AL_BUFFERS_PROCESSED, &nb_processed_buffers);
+   if (nb_processed_buffers <= 0) return;
+   if (nb_processed_buffers > (ALint)NB_BUFFERS_) nb_processed_buffers = NB_BUFFERS_;
+
+   ALuint buffer_to_remove[NB_BUFFERS_];
+   alSourceUnqueueBuffers(source_, nb_processed_buffers, buffer_to_remove);
+   for (int j = 0; j < nb_processed_buffers; j++)
+   {
+      for (auto& wav_index : wav_buffers_list_)
+      {
+         if (wav_index.buffer == buffer_to_remove[j])
+         {
+            wav_index.status_ = IWaveHDR::UNUSED;
+         }
+      }
+   }
+}
+
 void ALSoundMixer::AddBufferToPlay(IWaveHDR* new_buffer)
 {
    OAWaveHDR* oal_wav = (OAWaveHDR*)new_buffer;
-   alBufferData(oal_wav->buffer, AL_FORMAT_STEREO16, oal_wav->data_, oal_wav->buffer_length_, sample_rate_);
-
-   alSourceQueueBuffers(source_, 1, &((OAWaveHDR*)new_buffer)->buffer);
-   // If not launch, play the music !
    ALint source_state;
    alGetSourcei(source_, AL_SOURCE_STATE, &source_state);
-   
+
+   if (prebuffer_buffers_ > 0 && source_state != AL_PLAYING)
+   {
+      // The stream is stopped (start, or ran dry) : hold the buffers until there is enough audio
+      // ahead, so it restarts with its whole latency instead of running dry again at once
+      oal_wav->status_ = IWaveHDR::INQUEUE;
+      held_buffers_.push_back(oal_wav);
+      if (held_buffers_.size() < prebuffer_buffers_)
+         return;
+
+      // A stopped source plays its queue from the start : the buffers already played leave first
+      ReleaseProcessedBuffers();
+      for (auto* held : held_buffers_)
+      {
+         QueueBuffer(held);
+      }
+      held_buffers_.clear();
+      alSourcePlay(source_);
+      play_ = true;
+      return;
+   }
+
+   // Held when the prebuffering was stopped : they play first
+   for (auto* held : held_buffers_)
+   {
+      QueueBuffer(held);
+   }
+   held_buffers_.clear();
+
+   QueueBuffer(oal_wav);
+   // If not launch, play the music !
    if (!play_ || source_state != AL_PLAYING)
-   {          
+   {
       alSourcePlay(source_);
       if (sync_on_sound_ && source_state == AL_STOPPED)
       {
-         // Adjust buffer
-         buffer_size_for_sync_++;
+         // Ran dry : keep more sound ahead
+         if (buffer_size_for_sync_ < (int)NB_BUFFERS_ / 2)
+            buffer_size_for_sync_++;
+         last_underrun_ = std::chrono::steady_clock::now();
       }
 
       play_ = true;
    }
-   new_buffer->status_ = IWaveHDR::INQUEUE;
+}
 
+int ALSoundMixer::GetPendingSamples()
+{
+   if (context_ == nullptr) return -1;
+
+   ALint buffer_queued = 0;
+   ALint buffer_processed = 0;
+   ALint sample_offset = 0;
+   alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
+   alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
+   alGetSourcei(source_, AL_SAMPLE_OFFSET, &sample_offset);
+   if (alGetError() != AL_NO_ERROR) return -1;
+
+   // The offset counts from the start of the queue (OpenAL Soft : the played buffers not
+   // unqueued yet included), or from the current buffer : keep the part in the current buffer
+   if (sample_offset >= buffer_processed * (ALint)NB_SAMPLES_)
+      sample_offset -= buffer_processed * NB_SAMPLES_;
+   if (sample_offset > (ALint)NB_SAMPLES_) sample_offset = NB_SAMPLES_;
+   if (sample_offset < 0) sample_offset = 0;
+
+   int pending = (buffer_queued - buffer_processed) * (int)NB_SAMPLES_ - sample_offset;
+   pending += (int)(held_buffers_.size() * NB_SAMPLES_);
+   return pending < 0 ? 0 : pending;
+}
+
+void ALSoundMixer::SetPrebuffer(unsigned int nb_samples)
+{
+   unsigned int nb_buffers = (nb_samples + NB_SAMPLES_ - 1) / NB_SAMPLES_;
+   if (nb_buffers > NB_BUFFERS_ / 2) nb_buffers = NB_BUFFERS_ / 2;
+   prebuffer_buffers_ = nb_buffers;
 }
 
 void ALSoundMixer::SyncOnSound(bool set)
@@ -242,9 +334,16 @@ void ALSoundMixer::SyncWithSound()
    alGetSourcei(source_, AL_BUFFERS_PROCESSED, &buffer_processed);
    alGetSourcei(source_, AL_BUFFERS_QUEUED, &buffer_queued);
 
+   // No underrun for a long time : the margin taken after the last one can shrink back
+   auto last_progress = std::chrono::steady_clock::now();
+   if (buffer_size_for_sync_ > kMinBufferForSync && last_progress - last_underrun_ > std::chrono::seconds(10))
+   {
+      buffer_size_for_sync_--;
+      last_underrun_ = last_progress;
+   }
+
    // A buffer lasts 20 ms : no buffer played for 100 ms means the stream is stalled
    const auto stall_delay = std::chrono::milliseconds(100);
-   auto last_progress = std::chrono::steady_clock::now();
    ALint last_processed = buffer_processed;
    while (sync_on_sound_ && buffer_queued - buffer_processed > buffer_size_for_sync_)
    {

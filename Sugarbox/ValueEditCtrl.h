@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtWidgets>
 #include <QLabel>
 #include <QLineEdit>
 

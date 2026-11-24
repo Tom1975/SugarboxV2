@@ -25,12 +25,12 @@ void Script::Execute()
 ScriptContext* ScriptCommandFactory::context_= nullptr;
 
 std::map<std::string, IScriptCommand* > ScriptCommandFactory::function_map_ = {};
-std::map<std::string, Qt::Key> ScriptCommandFactory::Escape_map_ = {};
+std::map<std::string, unsigned int> ScriptCommandFactory::Escape_map_ = {};
 
 
 void ScriptCommandFactory::AddScanCode(std::string key, ScriptContext* context, unsigned int line, unsigned int column)
 {
-   Escape_map_[key] = static_cast<Qt::Key>(context->GetEmulation()->GetKeyboardHandler()->GetScanCode(line, column));
+   Escape_map_[key] = context->GetEmulation()->GetKeyboardHandler()->GetScanCode(line, column);
 }
 
 void ScriptCommandFactory::InitFactory(ScriptContext* context)

@@ -1,4 +1,8 @@
 #ifdef _WIN32
+// No min / max macros : std::min and std::max are used
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 using socklen_t = int;
@@ -19,9 +23,7 @@ using socklen_t = int;
 #include <fstream>
 #include <vector>
 
-#include <QImage>
-#include <QBuffer>
-#include <QByteArray>
+#include "ImageWriter.h"
 
 using json = nlohmann::json;
 
@@ -221,6 +223,8 @@ void DebugServer::networkThread()
       if ( clientSocket_ != -1)
       {
          std::string msg = outgoing_queue_.pop();
+         // Empty : pushed by stop() to wake this thread up
+         if (msg.empty()) continue;
          std::cout << "Trying to send " << msg << std::endl;
          sendAll(clientSocket_, msg.c_str(), (int)msg.size());
       }
@@ -236,6 +240,8 @@ void DebugServer::stop()
 {
    running_ = false;
 
+   // Wakes the threads up : accept (server socket closed), and the wait for a message to send.
+   // The client thread checks running_ every 100 ms.
    if (serverSocket_ != -1)
    {
 #ifdef _WIN32
@@ -245,6 +251,7 @@ void DebugServer::stop()
 #endif
       serverSocket_ = -1;
    }
+   outgoing_queue_.push(std::string());
 
    if (thread_.joinable())
       thread_.join();
@@ -292,6 +299,7 @@ void DebugServer::serverThread()
 #else
       close(clientSocket_);
 #endif
+      clientSocket_ = -1;
       std::cout << "Debugger disconnected" << std::endl;
    }
 }
@@ -364,6 +372,18 @@ void DebugServer::handleClient(int clientSocket)
 
    while (running_)
    {
+      // Waits for data at most 100 ms : a blocking recv is not always woken by a shutdown of
+      // the socket from another thread (Windows), and stop() must not wait for the client
+      fd_set read_set;
+      FD_ZERO(&read_set);
+      FD_SET(clientSocket, &read_set);
+      timeval timeout = { 0, 100000 };
+      const int ready = select(clientSocket + 1, &read_set, nullptr, nullptr, &timeout);
+      if (ready == 0)
+         continue;
+      if (ready < 0)
+         break;
+
       int received = recv(clientSocket, chunk, sizeof(chunk), 0);
       if (received <= 0)
          break;
@@ -1095,17 +1115,14 @@ bool DebugServer::BuildScreenBody(nlohmann::json& body)
     if (!display->CaptureFrameRGBA(rgba, width, height) || width <= 0 || height <= 0)
         return false;
 
-    QImage img(rgba.data(), width, height, width * 4, QImage::Format_RGBA8888);
-    QByteArray pngBytes;
-    QBuffer buf(&pngBytes);
-    buf.open(QIODevice::WriteOnly);
-    img.save(&buf, "PNG");
-    buf.close();
+    std::vector<unsigned char> png;
+    if (!ImageWriter::EncodePng(rgba.data(), width, height, png))
+        return false;
 
     body["format"] = "png";
     body["width"]  = width;
     body["height"] = height;
-    body["data"]   = pngBytes.toBase64().toStdString();
+    body["data"]   = ImageWriter::Base64(png);
     return true;
 }
 

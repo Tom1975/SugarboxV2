@@ -175,6 +175,10 @@ set ( SUGARBOX_OUTPUT_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
 
 # Link test executable against gtest & gtest_main
 target_link_libraries(Sugarbox CPCCoreEmu zlibstatic OpenAL Qt6::Core Qt6::Widgets Qt6::WebSockets Qt6::OpenGLWidgets  ${LIB_EXT})
+if(WIN32)
+    # timeBeginPeriod : 1 ms timer resolution, for the frame pacing
+    target_link_libraries(Sugarbox winmm)
+endif()
 
 set_property(TARGET Sugarbox PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_INSTALL_BINDIR}")
 MESSAGE ( CMAKE_INSTALL_BINDIR = ${CMAKE_INSTALL_BINDIR})

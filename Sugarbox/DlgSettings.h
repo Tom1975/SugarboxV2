@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtWidgets>
 #include <QComboBox>
 #include <QWidget>
 #include "ConfigurationManager.h"

@@ -11,7 +11,9 @@ on:
     branches: [ "master", "develop" ]
   pull_request:
     branches: [ "master", "develop" ]
-  
+  # Run by hand on any branch (Actions tab, "Run workflow")
+  workflow_dispatch:
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
@@ -46,7 +48,7 @@ jobs:
     - name: Configure CMake
       run: |
         echo 'Version : '  ${{ inputs.version }}
-        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}' -DSUGARBOX_BUILD_SDL=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
@@ -61,6 +63,15 @@ jobs:
       env:
         SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\Sugarbox.exe
         SUGARBOX_PORT: 1234
+
+    # The same tests with the SDL frontend (hidden: it runs without GPU if there is none)
+    - name: Run protocol integration tests (SugarboxSDL)
+      run: |
+        cd Sugarbox\debugers
+        python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
+      env:
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\SugarboxSDL\Release\SugarboxSDL.exe
+        SUGARBOX_PORT: 1235
 
     - name: Install
       run: cmake --install ${{github.workspace}}\build
