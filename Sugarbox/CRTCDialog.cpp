@@ -8,6 +8,38 @@
 
 #include "CRTCDialog.h"
 
+namespace
+{
+// VSYNC width counter C3h, shown and edited in lines. The CRTC 1 counts half lines (CPCCore CRTC_1.cpp) : its half line
+// bit is kept when the value is written. The CRTC type is read each time, as it can change while the dialog is open.
+class VertPulseEditCtrl : public ValueEditCtrlImp<unsigned char>
+{
+public:
+   VertPulseEditCtrl(QWidget* parent, Settings* settings, CRTC* crtc) :
+      ValueEditCtrlImp<unsigned char>(parent, settings, _8Bit), crtc_(crtc), lines_(0)
+   {
+      value_ = &lines_;
+   }
+
+   void UpdateValue(bool is_running) override
+   {
+      lines_ = HalfLines() ? (crtc_->scanline_vbl_ >> 1) : crtc_->scanline_vbl_;
+      ValueEditCtrlImp<unsigned char>::UpdateValue(is_running);
+   }
+
+   void Validate(bool is_running) override
+   {
+      ValueEditCtrlImp<unsigned char>::Validate(is_running);
+      crtc_->scanline_vbl_ = HalfLines() ? (((lines_ << 1) & 0x1E) | (crtc_->scanline_vbl_ & 1)) : lines_;
+   }
+
+private:
+   bool HalfLines() const { return crtc_->type_crtc_ == CRTC::UM6845R; }
+
+   CRTC* crtc_;
+   unsigned char lines_;
+};
+}
 
 CRTCDialog::CRTCDialog(QWidget *parent) :
    QDialog(nullptr),
@@ -50,10 +82,15 @@ template<typename T>
 void CRTCDialog::CreateEditValue(QWidget* parent, QGridLayout* layout, QString l, int row, int column, ValueEditCtrl::RegisterType reg_type, T* ptr_current)
 {
    ValueEditCtrlImp<T> * edit_value = new ValueEditCtrlImp<T>(parent, settings_, reg_type);
+   edit_value->value_ = ptr_current;
+   AddEditValue(layout, l, row, column, edit_value);
+}
+
+void CRTCDialog::AddEditValue(QGridLayout* layout, QString l, int row, int column, ValueEditCtrl* edit_value)
+{
    edit_value->label_ = new QLabel(l, this);
    layout->addWidget(edit_value->label_, row, column);
    layout->addWidget(edit_value->edit_, row, column + 1);
-   edit_value->value_ = ptr_current;
    edit_list_.push_back(edit_value );
 
    connect(edit_value->edit_, &QLineEdit::editingFinished, this, [=]() mutable {edit_value->Validate(emu_handler_->IsRunning()); });
@@ -99,7 +136,7 @@ void CRTCDialog::SetEmulator(Emulation* emu_handler, MultiLanguage* language)
    CreateEditValue<unsigned char>(this, layout_counters_, QString("Addr. Reg."), 1, 2, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->adddress_register_);
    CreateEditValue<unsigned char>(this, layout_counters_, QString("Status Reg."), 1, 4, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->status_register_);
    CreateEditValue<unsigned char>(this, layout_counters_, QString("Horiz.Pulse"), 1, 6, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->horinzontal_pulse_);
-   CreateEditValue<unsigned char>(this, layout_counters_, QString("Vert.Pulse"), 1, 8, ValueEditCtrl::_8Bit, &emu_handler->GetEngine()->GetCRTC()->scanline_vbl_);
+   AddEditValue(layout_counters_, QString("Vert.Pulse"), 1, 8, new VertPulseEditCtrl(this, settings_, emu_handler->GetEngine()->GetCRTC()));
    CreateEditValue<int>(this, layout_counters_, QString("Video Beam X"), 2, 0, ValueEditCtrl::_ValueInt, &emu_handler->GetEngine()->GetMonitor()->x_);
    CreateEditValue<int>(this, layout_counters_, QString("Video Beam Y"), 2, 2, ValueEditCtrl::_ValueInt, &emu_handler->GetEngine()->GetMonitor()->y_);
 
