@@ -11,7 +11,9 @@ on:
     branches: [ "master", "develop" ]
   pull_request:
     branches: [ "master", "develop" ]
-  
+  # Run by hand on any branch (Actions tab, "Run workflow")
+  workflow_dispatch:
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
@@ -22,12 +24,25 @@ jobs:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on:  windows-latest
+    # Not windows-latest : openal-soft 1.25.1 does not compile with its MSVC 14.52 (alc.cpp, views::transform)
+    runs-on: windows-2022
+    # One job and one package per frontend. The package has the frontend in its name, the binary is always Sugarbox.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - frontend: Qt
+          options: -DSUGARBOX_BUILD_QT=ON -DSUGARBOX_BUILD_SDL=OFF
+          directory: Sugarbox
+        - frontend: SDL
+          options: -DSUGARBOX_BUILD_QT=OFF -DSUGARBOX_BUILD_SDL=ON
+          directory: SugarboxSDL
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Install Qt
+      if: matrix.frontend == 'Qt'
       uses: jurplel/install-qt-action@v4
       with:
         version: '6.6.2'
@@ -46,7 +61,7 @@ jobs:
     - name: Configure CMake
       run: |
         echo 'Version : '  ${{ inputs.version }}
-        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake -DCMAKE_BUILD_TYPE=Release -B ${{github.workspace}}\build  -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DSUGARBOX_VERSION='${{ inputs.version }}' ${{ matrix.options }}
 
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
@@ -59,7 +74,7 @@ jobs:
         cd Sugarbox\debugers
         python -m pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}\build\Sugarbox\Release\Sugarbox.exe
+        SUGARBOX_BINARY: ${{ github.workspace }}\build\${{ matrix.directory }}\Release\Sugarbox.exe
         SUGARBOX_PORT: 1234
 
     - name: Install
@@ -73,7 +88,7 @@ jobs:
     - name: Archive zip
       uses: actions/upload-artifact@v4
       with:
-          name: SugarboxV2
+          name: SugarboxV2${{ matrix.frontend }}-Windows
           path: ${{github.workspace}}\build\*.7z
           
           

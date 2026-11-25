@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.16)
 
 project(SugarboxV2 LANGUAGES CXX C)
 
+# Version : the one given with -DSUGARBOX_VERSION (a release tag, "v2.2.0"), else this one. A name that is not a
+# version ("develop", "2.x.x") gives this one too.
+set(SUGARBOX_DEFAULT_VERSION "2.2.0")
+set(SUGARBOX_VERSION "" CACHE STRING "Version to build")
+string(REGEX REPLACE "^v" "" SUGARBOX_VERSION_NUMBER "${SUGARBOX_VERSION}")
+if(NOT SUGARBOX_VERSION_NUMBER MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+")
+   set(SUGARBOX_VERSION_NUMBER "${SUGARBOX_DEFAULT_VERSION}")
+endif()
+message(STATUS "Sugarbox version : ${SUGARBOX_VERSION_NUMBER}")
+
 if (MSVC)
    set (CMAKE_INSTALL_BINDIR .)
    set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install)
@@ -26,6 +36,47 @@ set ( BUILD_SHARED_LIB_ OFF CACHE BOOL "" FORCE )
 set ( USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE )
 
 add_subdirectory(CPCCore)
-add_subdirectory(openal-soft)
 add_subdirectory(json)
-add_subdirectory(Sugarbox)
+
+# Both frontends give a binary named Sugarbox : a package holds one of them, and has its name (SugarboxV2Qt,
+# SugarboxV2SDL). With both enabled, only the Qt one is installed.
+# Qt frontend (and OpenAL, its sound output)
+option(SUGARBOX_BUILD_QT "Build the Qt frontend" ON)
+if(SUGARBOX_BUILD_QT)
+   add_subdirectory(openal-soft)
+   add_subdirectory(Sugarbox)
+endif()
+
+# SDL3 frontend, on the way to replace the Qt one (SDL3 and Dear ImGui are downloaded at configure time)
+option(SUGARBOX_BUILD_SDL "Build the SDL3 frontend" OFF)
+if(SUGARBOX_BUILD_SDL)
+   add_subdirectory(SugarboxSDL)
+endif()
+
+# Files used by both frontends (Keyboards is installed by CPCCore)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Sugarbox/Sugarbox.ini" DESTINATION .)
+foreach(data_dir ROM CART CONF Resources)
+   install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Sugarbox/${data_dir}" DESTINATION .)
+endforeach()
+
+# Packages
+set(CPACK_GENERATOR "TGZ;ZIP")
+set(CPACK_PACKAGE_NAME "Sugarbox")
+set(CPACK_PACKAGE_VENDOR "Thomas GUILLEMIN")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sugarbox - An Amstrad CPC/CPC+/GX4000 Emulator")
+set(CPACK_PACKAGE_VERSION ${SUGARBOX_VERSION_NUMBER})
+if(SUGARBOX_BUILD_QT)
+   set(SUGARBOX_PACKAGE SugarboxV2Qt)
+else()
+   set(SUGARBOX_PACKAGE SugarboxV2SDL)
+endif()
+if(WIN32)
+   set(SUGARBOX_PLATFORM Windows)
+elseif(APPLE)
+   set(SUGARBOX_PLATFORM macOS)
+else()
+   set(SUGARBOX_PLATFORM Linux)
+endif()
+set(CPACK_PACKAGE_FILE_NAME "${SUGARBOX_PACKAGE}-${SUGARBOX_VERSION_NUMBER}-${SUGARBOX_PLATFORM}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sugarbox")
+include(CPack)

@@ -11,6 +11,8 @@ on:
         description: 'Version to build'
         default: 2.x.x
         type: string
+  # Run by hand on any branch (Actions tab, "Run workflow")
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-ubuntu-${{ github.ref }}
@@ -24,6 +26,17 @@ jobs:
   build:
     # ubuntu-24.04 (GLIBC 2.39) — AppImage runs on 24.04 and future 26.04+.
     runs-on: ubuntu-24.04
+    # One job and one package per frontend. The package has the frontend in its name, the binary is always Sugarbox.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - frontend: Qt
+          options: -DSUGARBOX_BUILD_QT=ON -DSUGARBOX_BUILD_SDL=OFF
+          directory: Sugarbox
+        - frontend: SDL
+          options: -DSUGARBOX_BUILD_QT=OFF -DSUGARBOX_BUILD_SDL=ON
+          directory: SugarboxSDL
 
     steps:
     - uses: actions/checkout@v4
@@ -40,7 +53,11 @@ jobs:
           libudev-dev libsecret-1-dev libnotify-dev \
           checkinstall libtiff5-dev libcairo2-dev \
           xvfb libopenal1 python3-pytest \
-          libfuse2
+          libfuse2 \
+          libxext-dev libxss-dev libxtst-dev libxkbcommon-dev \
+          libwayland-dev wayland-protocols libdecor-0-dev libegl1-mesa-dev \
+          libdrm-dev libgbm-dev libasound2-dev libpulse-dev libpipewire-0.3-dev \
+          libdbus-1-dev
 
     - name: Checkout submodules
       run: git submodule update --init --recursive
@@ -49,7 +66,7 @@ jobs:
       run: |
         mkdir build && cd build
         echo 'Version : ' ${{ inputs.version }}
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}'
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DSUGARBOX_VERSION='${{ inputs.version }}' ${{ matrix.options }}
         make -j$(nproc)
 
     - name: Run protocol integration tests
@@ -57,7 +74,7 @@ jobs:
         cd Sugarbox/debugers
         pytest test_protocol.py z80-debug-adapter/test_conformance.py -v --tb=short
       env:
-        SUGARBOX_BINARY: ${{ github.workspace }}/build/Sugarbox/Sugarbox
+        SUGARBOX_BINARY: ${{ github.workspace }}/build/${{ matrix.directory }}/Sugarbox
         SUGARBOX_PORT: 1234
 
     - name: Download linuxdeploy + Qt plugin
@@ -77,18 +94,18 @@ jobs:
     - name: Build AppImage
       env:
         QMAKE: /usr/bin/qmake6
-        OUTPUT: Sugarbox-Linux-x86_64.AppImage
+        OUTPUT: SugarboxV2${{ matrix.frontend }}-Linux-x86_64.AppImage
       run: |
         ./linuxdeploy.AppImage \
           --appdir AppDir \
           --executable AppDir/usr/Sugarbox \
           --desktop-file Sugarbox/sugarbox.desktop \
           --icon-file Sugarbox/sugarbox.svg \
-          --plugin qt \
+          ${{ matrix.frontend == 'Qt' && '--plugin qt' || '' }} \
           --output appimage
 
     - name: Archive AppImage
       uses: actions/upload-artifact@v4
       with:
-        name: SugarboxV2Ubuntu
-        path: Sugarbox-*.AppImage
+        name: SugarboxV2${{ matrix.frontend }}-Ubuntu
+        path: SugarboxV2*.AppImage

@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <QtWidgets>
 #include <QtWebSockets/QtWebSockets>
 #include "Emulation.h"
 

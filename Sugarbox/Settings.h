@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 
+#include <QtWidgets>
 #include <QWidget>
 
 class ISettingsListener

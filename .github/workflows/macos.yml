@@ -80,5 +80,5 @@ jobs:
     - name: Archive zip
       uses: actions/upload-artifact@v4
       with:
-          name: SugarboxV2MacOS
+          name: SugarboxV2Qt-macOS
           path: ${{github.workspace}}/build/*.tar.gz

@@ -1,5 +1,21 @@
 Sugarbox changelog
 ------------------
+v2.2.0 -
+   * Add a SDL3 frontend (Windows, Linux). One package per frontend : SugarboxV2Qt and SugarboxV2SDL
+   * CRTC emulation reworked for the types 0 to 4 (CRTC Compendium, SHAKER, measures on real machines)
+   * Gate Array, interrupts and I/O : inks, mode changes, VSYNC and INT timings, PAL and bus conflicts
+   * CPC+ / GX4000 : GX4000 console support in the core, ASIC DMA sequencer, malformed cartridges refused
+   * Add a model of the CTM644 monitor (horizontal AFC)
+   * Tape : new input model and drive start-up, Speedlock loaders fixed
+   * Disk : FDC status and FORMAT fixes
+   * Add G-Sync mode, paced on the display
+   * Snapshots : the real CPC type is saved, CRTC and PSG states fixed
+   * Fix : invalid debug requests no longer close the emulator
+   * Fix : CSL escape keys, "reset soft", freezes of the tape and snapshot commands
+   * Fix : power on no longer leaves the previous picture or colours, sound no longer blocks the emulation
+   * Fix : CRTC dialog and debug server, vertical pulse in lines on the CRTC 1
+   * Fix : the version given by the release build is used
+
 v2.1.1 -
    * Add VS Code debug adapter (DAP) for Z80/Amstrad CPC development: breakpoints, registers, stack, disassembly and memory read/write, launch & attach modes
    * Add GDB-compatible debug interface

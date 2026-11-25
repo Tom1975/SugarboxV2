@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <QtWidgets>
 #include <QDialog>
 #include <QListWidgetItem>
 
@@ -76,5 +77,6 @@ private:
 
    template<typename T>
    void CreateEditValue(QWidget* parent, QGridLayout* layout, QString l, int row, int column, ValueEditCtrl::RegisterType reg_type, T* ptr_current);
+   void AddEditValue(QGridLayout* layout, QString l, int row, int column, ValueEditCtrl* edit_value);
 
 };

@@ -3,6 +3,7 @@
 #include <map>
 #include <functional>
 
+#include <QtWidgets>
 #include <QWidget>
 #include <QScrollBar>
 

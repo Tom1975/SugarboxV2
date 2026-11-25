@@ -8,6 +8,20 @@
 
 #include "SugarboxApp.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#include <timeapi.h>
+
+// Since Windows 10 2004, a sleep is only as precise as the timer resolution this process asks for
+// (15.6 ms by default) : the frame and sound pacing needs 1 ms.
+class TimerResolution
+{
+public:
+   TimerResolution() { timeBeginPeriod(1); }
+   ~TimerResolution() { timeEndPeriod(1); }
+};
+#endif
+
 class MenuStyle : public QProxyStyle
 {
 public:
@@ -93,6 +107,9 @@ protected:
 int main(int argc, char *argv[])
 {
    Q_INIT_RESOURCE(resources);
+#ifdef _WIN32
+   TimerResolution timer_resolution;
+#endif
 
 
    QApplication app(argc, argv);
@@ -106,7 +123,7 @@ int main(int argc, char *argv[])
 
    QCoreApplication::setOrganizationName("Sugarbox");
    QCoreApplication::setApplicationName("Sugarbox");
-   QCoreApplication::setApplicationVersion("2.0.1");
+   QCoreApplication::setApplicationVersion(SUGARBOX_VERSION);
    QCommandLineParser parser;
    parser.setApplicationDescription(QCoreApplication::applicationName());
    parser.addHelpOption();
