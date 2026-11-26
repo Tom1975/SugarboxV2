@@ -117,6 +117,8 @@ void CDisplay::initializeGL()
    textures[0]->setSize(1024, 1024, 1);
    textures[0]->setFormat(QOpenGLTexture::RGBA8_UNorm);
    textures[0]->allocateStorage();
+   // New texture (the context can be created again) : nothing to show again yet
+   texture_has_frame_ = false;
 
    QVector<GLfloat> vertData;
 
@@ -313,12 +315,34 @@ void CDisplay::VSync (bool bDbg)
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
    } while (sync_on_frame_ && next_to_play == -1 && count_deadlock < 100);
-   
+
+   if (next_to_play == -1 && !sync_on_frame_)
+   {
+      // The display is late, and the emulation must not wait for it : the oldest frame not shown
+      // yet is dropped, so the newest ones are kept
+      int oldest_sample = -1;
+      sync_mutex_.lock();
+      for (int i = 0; i < NB_FRAMES; i++)
+      {
+         if (buffer_list_[i].status_ == FrameItem::TO_PLAY
+            && (oldest_sample == -1 || buffer_list_[i].sample_number_ < oldest_sample))
+         {
+            oldest_sample = buffer_list_[i].sample_number_;
+            next_to_play = i;
+         }
+      }
+      if (next_to_play != -1)
+      {
+         buffer_list_[next_to_play].status_ = FrameItem::FREE;
+      }
+      sync_mutex_.unlock();
+   }
+
    if (next_to_play != -1)
    {
       // Buffer is full ? Prepare next, and mark this one to be played
-      buffer_list_[index_current_buffer_].status_ = FrameItem::TO_PLAY;
       sync_mutex_.lock();
+      buffer_list_[index_current_buffer_].status_ = FrameItem::TO_PLAY;
       frame_emitted_++;
       sync_mutex_.unlock();
       emit FrameIsReady();
@@ -330,8 +354,10 @@ void CDisplay::VSync (bool bDbg)
       // What ?!!!
       int dbg = 1;
    }
+   sync_mutex_.lock();
    buffer_list_[index_current_buffer_].status_ = FrameItem::IN_USE;
    buffer_list_[index_current_buffer_].sample_number_ = sample_number_++;
+   sync_mutex_.unlock();
 }
 
 void CDisplay::Display()
@@ -366,18 +392,28 @@ void CDisplay::paintGL()
    if (index_to_convert != -1)
    {
       buffer_list_[index_to_convert].status_ = FrameItem::LOCKED;
-      sync_mutex_.unlock();
-   //if (number_of_frame_to_display_ > 0)
-   //{
-      //textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)framebufferArray_[0]);
-      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)buffer_list_[index_to_convert].framebufferArray_);
-      
+   }
+   sync_mutex_.unlock();
 
+   if (index_to_convert != -1)
+   {
+      textures[0]->setData(QOpenGLTexture::BGRA, QOpenGLTexture::UInt8, (unsigned char*)buffer_list_[index_to_convert].framebufferArray_);
+      texture_has_frame_ = true;
+
+      // Put it back to 'free_buffers_' : the texture holds it now
+      sync_mutex_.lock();
+      buffer_list_[index_to_convert].status_ = FrameItem::FREE;
+      sync_mutex_.unlock();
+   }
+
+   if (texture_has_frame_)
+   {
+      // New frame, or a repaint without any (window exposed, resized, emulation paused) : the
+      // texture holds the last frame, show it again rather than a black screen
       glDisable(GL_MULTISAMPLE);
       glClearColor(clearColor.redF(), clearColor.greenF(), clearColor.blueF(), clearColor.alphaF());
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      //program->setUniformValue("matrix", m);
       program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
       program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
       program->enableAttributeArray(2);
@@ -391,27 +427,12 @@ void CDisplay::paintGL()
 
       textures[0]->bind();
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-      // Put it back to 'free_buffers_'
-      buffer_list_[index_to_convert].status_ = FrameItem::FREE;
-
-      // Wait vsync if vsync needed
-      if (sync_on_frame_)
-      {
-
-         const QSurfaceFormat fmt = format();
-         int swp = fmt.swapInterval();
-         glFinish();
-
-      }
-      
+      // No glFinish : Qt presents the frame after paintGL, waiting for the GPU here only blocks
    }
    else
    {
-      // No new frame ready (e.g. emulation paused in debug mode).
-      // Clear to black so the widget is opaque, not transparent.
+      // No frame yet : clear to black so the widget is opaque, not transparent.
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
-      sync_mutex_.unlock();
    }
 }

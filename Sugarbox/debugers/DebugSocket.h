@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include <QtWidgets>
 #include <QtWebSockets/QtWebSockets>
 #include <QTcpServer>
 #include <QTcpSocket>

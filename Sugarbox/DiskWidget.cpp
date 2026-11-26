@@ -52,8 +52,17 @@ void DiskWidget::Update()
    // Set status of protection button
    if (emulation_)
    {
-      disk_a_protection_.setIcon(emulation_->GetEngine()->GetFDC()->IsDiskWriteProtected(0)?protected_icon_on_: protected_icon_off_);
-      disk_b_protection_.setIcon(emulation_->GetEngine()->GetFDC()->IsDiskWriteProtected(1) ? protected_icon_on_ : protected_icon_off_);
+      // setIcon repaints the button : every frame, it repainted the whole window
+      QToolButton* buttons[2] = { &disk_a_protection_, &disk_b_protection_ };
+      for (int drive = 0; drive < 2; drive++)
+      {
+         const int protection = emulation_->GetEngine()->GetFDC()->IsDiskWriteProtected(drive) ? 1 : 0;
+         if (protection != protection_shown_[drive])
+         {
+            protection_shown_[drive] = protection;
+            buttons[drive]->setIcon(protection ? protected_icon_on_ : protected_icon_off_);
+         }
+      }
    }
 }
 
